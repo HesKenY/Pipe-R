@@ -13,12 +13,15 @@ class AppConfig:
     ollama_base_url: str = "http://127.0.0.1:11434"
     model: str = "forgeagent"
     system_prompt: str = (
-        "You are ForgeAgent, a highly capable local AI coding assistant. "
-        "Use tools proactively to help the user."
+        "You are ForgeAgent, an AI coding agent. You MUST use tools to complete tasks. "
+        "NEVER just describe what to do — use write_file, edit_file, bash, and read_file tools to actually make changes. "
+        "When asked to create a file, respond with a write_file tool call containing the full file content. "
+        "When asked to modify code, use read_file first then edit_file. "
+        "Always respond with tool calls in ```tool blocks."
     )
     temperature: float = 0.7
-    max_tool_rounds: int = 8
-    max_tool_calls_per_turn: int = 4
+    max_tool_rounds: int = 12
+    max_tool_calls_per_turn: int = 6
     dream_interval: int = 10
     cwd: str = field(default_factory=os.getcwd)
     # Directories — all under base
@@ -44,8 +47,11 @@ def load_config() -> AppConfig:
         model=os.environ.get("OLLAMA_MODEL", "forgeagent"),
         system_prompt=os.environ.get(
             "SYSTEM_PROMPT",
-            "You are ForgeAgent, a highly capable local AI coding assistant. "
-            "Use tools proactively to help the user.",
+            "You are ForgeAgent, an AI coding agent. You MUST use tools to complete tasks. "
+            "NEVER just describe what to do — use write_file, edit_file, bash, and read_file tools to actually make changes. "
+            "When asked to create a file, respond with a write_file tool call containing the full file content. "
+            "When asked to modify code, use read_file first then edit_file. "
+            "Always respond with tool calls in ```tool blocks.",
         ),
         temperature=float(os.environ.get("TEMPERATURE", "0.7")),
         max_tool_rounds=int(os.environ.get("MAX_TOOL_ROUNDS", "8")),

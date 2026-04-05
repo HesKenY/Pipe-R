@@ -1717,9 +1717,14 @@ class ForgeAgentApp(App):
 
             try:
                 result = await self.engine.submit_user_message(
-                    f"Complete this task in the project:\n\n{task}\n\n"
-                    f"Use your tools (read_file, write_file, edit_file, bash, search_files, etc.) "
-                    f"to actually make the changes. Do the work, don't just describe it."
+                    f"TASK: {task}\n\n"
+                    f"INSTRUCTIONS: You MUST use tool calls to complete this task. "
+                    f"Do NOT explain what to do — actually do it.\n"
+                    f"- To create files: use write_file tool with the full file content\n"
+                    f"- To modify files: use read_file first, then edit_file\n"
+                    f"- To run commands: use bash tool\n"
+                    f"- Start by reading relevant existing files with read_file, then make changes with write_file or edit_file.\n"
+                    f"Respond with a ```tool block containing your tool calls NOW."
                 )
 
                 # Show tool usage

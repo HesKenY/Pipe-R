@@ -399,6 +399,7 @@ class ForgeAgentApp(App):
                     yield Static("Launch", classes="section-header")
                     yield Button("COMPLETE TODO", id="btn-complete-todo", classes="hero")
                     yield Button("TEAM MODE", id="btn-team-mode", classes="hero")
+                    yield Button("WORK ON PROJECT", id="btn-work-project", classes="hero-alt")
                     yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
                     yield Button("Manage Projects", id="btn-agents")
                     yield Button("Add Task", id="btn-add-task")
@@ -646,6 +647,9 @@ class ForgeAgentApp(App):
             await self._show_datasets()
         elif bid == "btn-agents":
             await self._show_agents()
+        elif bid == "btn-work-project":
+            from .wizards import FolderPicker
+            self.push_screen(FolderPicker(), callback=self._on_work_project)
         elif bid == "btn-team-mode":
             chat = self.query_one("#chatlog", RichLog)
             chat.write(f"\n  [#00e5ff]Launching Team Mode terminal...[/]")
@@ -1558,6 +1562,91 @@ class ForgeAgentApp(App):
         if profile.get("git", {}).get("autoPush") and result["success"]:
             push_result = pp.git_push()
             chat.write(f"  [dim]Auto-push: {push_result['message']}[/]")
+
+    # ── Work on external project ───────────────
+    @work(thread=False)
+    async def _on_work_project(self, path: str | None) -> None:
+        if not path:
+            return
+        chat = self.query_one("#chatlog", RichLog)
+        from pathlib import Path as P
+        from ..core.iteration import IterationEngine
+        from ..deploy.agent_instructions import detect_frameworks, scan_project_structure
+
+        pp = P(path).resolve()
+        if not pp.is_dir():
+            chat.write(f"  [#ff1744]Not a directory: {path}[/]")
+            return
+
+        chat.write(f"\n  [bold #00e5ff]{'━' * 56}[/]")
+        chat.write(f"  [bold #00e5ff]  WORK ON PROJECT[/]")
+        chat.write(f"  [bold #00e5ff]{'━' * 56}[/]")
+        chat.write(f"  [#5c6b7a]Path: {pp}[/]")
+
+        # Scan project
+        chat.write(f"  [#7c4dff]Scanning project...[/]")
+        frameworks = detect_frameworks(str(pp))
+        structure = scan_project_structure(str(pp))
+        if frameworks:
+            fw_names = ", ".join(f["label"] for f in frameworks)
+            chat.write(f"  [#00e676]Detected: {fw_names}[/]")
+        chat.write(f"  [#5c6b7a]{structure['total_files']} files, {len(structure['dirs'])} dirs[/]")
+
+        # Create .claude/ log folder in project root
+        claude_dir = pp / ".claude"
+        claude_dir.mkdir(parents=True, exist_ok=True)
+        from datetime import datetime as _dt
+        (claude_dir / "work_log.md").write_text(
+            f"# ForgeAgent Work Log — {pp.name}\n\nStarted: {_dt.now().isoformat()}\n\n",
+            encoding="utf-8",
+        )
+
+        # Create .forgeagent/ in the target project
+        forge_dir = pp / ".forgeagent"
+        forge_dir.mkdir(parents=True, exist_ok=True)
+        for sub in ("memory", "sessions", "dreams"):
+            (forge_dir / sub).mkdir(exist_ok=True)
+
+        # Generate iteration tasks
+        iteration = IterationEngine(str(pp), str(forge_dir / "memory"))
+        tasks = iteration.generate_iteration_tasks()
+        if tasks:
+            iteration.write_iteration(tasks)
+            chat.write(f"  [#00e676]Generated {len(tasks)} tasks[/]")
+            for t in tasks[:5]:
+                chat.write(f"    [#ffd740][ ][/] {t[:65]}")
+            if len(tasks) > 5:
+                chat.write(f"    [#5c6b7a]...and {len(tasks) - 5} more[/]")
+        chat.write("")
+
+        # Log to .claude/
+        with open(claude_dir / "work_log.md", "a", encoding="utf-8") as f:
+            f.write(f"## Iteration {iteration.get_iteration_count()}\n")
+            f.write(f"Tasks: {len(tasks)}\n")
+            for t in tasks:
+                f.write(f"- [ ] {t}\n")
+            f.write("\n")
+
+        # Launch team terminal pointed at this project
+        chat.write(f"  [#7c4dff]Launching team terminal...[/]")
+        try:
+            import sys, subprocess as _sp
+            if sys.platform == "win32":
+                _sp.Popen(
+                    f'start "ForgeAgent — {pp.name}" cmd /c "python -m forgeagent --team --project \\"{pp}\\" & pause"',
+                    shell=True, cwd=str(pp),
+                )
+            else:
+                _sp.Popen(
+                    ["bash", "-c", f'python -m forgeagent --team --project "{pp}"'],
+                    cwd=str(pp),
+                )
+            chat.write(f"  [#00e676]Team terminal opened for {pp.name}[/]")
+            chat.write(f"  [#5c6b7a]Agents will scan the project and work through tasks.[/]")
+            chat.write(f"  [#5c6b7a]Logs saved to: {claude_dir}[/]")
+        except Exception as ex:
+            chat.write(f"  [#ff1744]Launch failed: {ex}[/]")
+        chat.write("")
 
     # ── Restart handler (async worker) ─────────
     @work(thread=False)

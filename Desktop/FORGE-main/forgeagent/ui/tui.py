@@ -393,6 +393,7 @@ class ForgeAgentApp(App):
 
                     # ── Launch ──
                     yield Static("Launch", classes="section-header")
+                    yield Button("COMPLETE TODO", id="btn-complete-todo", classes="hero")
                     yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
                     yield Button("Manage Projects", id="btn-agents")
                     yield Button("Add Task", id="btn-add-task")
@@ -622,6 +623,11 @@ class ForgeAgentApp(App):
             await self._show_datasets()
         elif bid == "btn-agents":
             await self._show_agents()
+        elif bid == "btn-complete-todo":
+            if self._training_active:
+                self.notify("Agent already working", severity="warning", timeout=3)
+                return
+            self._do_complete_todo()
         elif bid == "btn-add-task":
             self.push_screen(
                 ToolInputModal("Add Task", "Task for agents to complete", "Add error handling to all API endpoints", "ADDTASK:{value}"),
@@ -1490,6 +1496,141 @@ class ForgeAgentApp(App):
         if profile.get("git", {}).get("autoPush") and result["success"]:
             push_result = pp.git_push()
             chat.write(f"  [dim]Auto-push: {push_result['message']}[/]")
+
+    # ── COMPLETE TODO — auto-run all AGENT.md tasks ─
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_complete_todo(self) -> None:
+        """Read AGENT.md tasks, deploy an agent to complete each one, show progress."""
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        self._face("training")
+        status_bar.set_training("working...")
+
+        from ..deploy.agent_instructions import get_pending_tasks, complete_task, write_agent_instructions
+        from pathlib import Path as P
+        import shutil
+
+        project_path = self.config.cwd
+        agent_md = P(project_path) / ".forgeagent" / "AGENT.md"
+
+        # Generate AGENT.md if missing
+        if not agent_md.exists():
+            write_agent_instructions(project_path, model_name=self.config.model)
+
+        tasks = get_pending_tasks(project_path)
+        if not tasks:
+            chat.write(f"\n  [#ffd740]No pending tasks in AGENT.md[/]")
+            chat.write(f"  [#5c6b7a]Click 'Add Task' to create tasks, or I'll write them for you.[/]")
+            self._training_active = False
+            self._face("idle")
+            status_bar.set_training("idle")
+            return
+
+        total = len(tasks)
+        chat.write(f"\n  [bold #00e5ff]{'━' * 56}[/]")
+        chat.write(f"  [bold #00e5ff]  COMPLETE TODO — {total} task(s)[/]")
+        chat.write(f"  [bold #00e5ff]{'━' * 56}[/]")
+        chat.write(f"  [#5c6b7a]Model: {self.config.model}[/]")
+        chat.write(f"  [#5c6b7a]Project: {project_path}[/]")
+        chat.write("")
+
+        completed = 0
+        failed = 0
+
+        for i, task in enumerate(tasks):
+            pct = round((i / total) * 100)
+            remaining = total - i
+            chat.write(f"  [bold #00e5ff][{pct}%][/]  [#ffd740]Task {i+1}/{total}:[/]  {task}")
+            status_bar.set_training(f"{pct}% task {i+1}/{total}")
+            self._show_progress(f"Task {i+1}/{total}", i, total)
+
+            try:
+                # Send task to the model as a user message
+                result = await self.engine.submit_user_message(
+                    f"Complete this task in the project:\n\n{task}\n\n"
+                    f"Use your tools (read_file, write_file, edit_file, bash, search_files, etc.) "
+                    f"to actually make the changes. Do the work, don't just describe it."
+                )
+
+                # Show tool usage
+                if result.tool_calls:
+                    tools_used = ", ".join(tc.tool_name for tc in result.tool_calls)
+                    chat.write(f"    [#7c4dff]Tools: {tools_used}[/]")
+                    for tc in result.tool_calls:
+                        self.buddy.on_tool_use()
+
+                # Show response summary (first 200 chars)
+                response = result.assistant_message.content
+                summary = response[:200].replace("\n", " ")
+                if len(response) > 200:
+                    summary += "..."
+                chat.write(f"    [#5c6b7a]{summary}[/]")
+
+                # Mark task complete
+                complete_task(project_path, task[:40])
+                completed += 1
+                chat.write(f"    [#00e676]Done[/]")
+
+            except Exception as ex:
+                failed += 1
+                chat.write(f"    [#ff1744]Error: {ex}[/]")
+                log.error(f"complete_todo task {i+1}: {ex}", exc_info=True)
+
+            chat.write("")
+
+        # ── Final percentage ──
+        pct = 100
+        self._show_progress("Complete", total, total)
+        status_bar.set_training(f"100% done")
+
+        chat.write(f"  [bold #00e5ff]{'━' * 56}[/]")
+        chat.write(f"  [bold #00e676]  100% COMPLETE[/]")
+        chat.write(f"  [bold #00e5ff]{'━' * 56}[/]")
+        chat.write(f"  [#00e676]Completed: {completed}/{total}[/]")
+        if failed:
+            chat.write(f"  [#ff1744]Failed: {failed}[/]")
+        chat.write("")
+
+        # ── Zip the project to Outputs/ ──
+        chat.write(f"  [#5c6b7a]Packaging build...[/]")
+        try:
+            from datetime import datetime
+            outputs_dir = P(project_path) / "Outputs"
+            outputs_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            zip_name = f"build-{timestamp}"
+            zip_path = outputs_dir / zip_name
+
+            # Create zip excluding heavy dirs
+            import zipfile
+            with zipfile.ZipFile(str(zip_path) + ".zip", "w", zipfile.ZIP_DEFLATED) as zf:
+                skip = {".git", "node_modules", "__pycache__", ".next", "dist",
+                        "venv", ".venv", "Outputs", ".forgeagent", ".memory",
+                        "forgeagent.egg-info", ".claude"}
+                root = P(project_path)
+                for fp in root.rglob("*"):
+                    if fp.is_file() and not any(s in fp.parts for s in skip):
+                        rel = fp.relative_to(root)
+                        zf.write(fp, rel)
+
+            zip_full = str(zip_path) + ".zip"
+            size_mb = P(zip_full).stat().st_size / (1024 * 1024)
+            chat.write(f"  [#00e676]Build saved: Outputs/{zip_name}.zip ({size_mb:.1f} MB)[/]")
+            chat.write("")
+            self.notify(f"Build complete! {completed}/{total} tasks done.", timeout=8)
+
+        except Exception as ex:
+            chat.write(f"  [#ff1744]Zip failed: {ex}[/]")
+            log.error(f"zip: {ex}", exc_info=True)
+
+        chat.write(f"  [#5c6b7a]Ready for next iteration. Add new tasks and click COMPLETE TODO again.[/]")
+        chat.write("")
+
+        self._training_active = False
+        self._face("idle")
+        status_bar.set_training("idle")
+        self._hide_progress()
 
     @work(thread=False, exclusive=True, group="training")
     async def _do_evaluate(self) -> None:

@@ -9,7 +9,7 @@ from textual.binding import Binding
 from textual import work
 
 from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal, ModelSelectWizard
-from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level
+from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition
 
 # ── Logging ───────────────────────────────────────────────────
 _LD = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
@@ -388,6 +388,7 @@ class ForgeAgentApp(App):
                     yield Button("Agents", id="btn-agents")
                     yield Button("Evaluate", id="btn-evaluate")
                     yield Button("Code Test", id="btn-codetest")
+                    yield Button("VS Claude Code", id="btn-competition")
                     yield Button("Benchmark vs Claude", id="btn-benchmark")
 
                     # Session
@@ -588,6 +589,14 @@ class ForgeAgentApp(App):
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
                 return
             self._do_evaluate()
+        elif bid == "btn-competition":
+            if self._training_active:
+                self.notify("Training in progress — please wait", severity="warning", timeout=3)
+                return
+            self.push_screen(
+                ToolInputModal("VS Claude Code", "Project folder (or . for current)", ".", "COMPETITION:{value}"),
+                callback=self._on_competition_input,
+            )
         elif bid == "btn-codetest":
             if self._training_active:
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
@@ -1218,6 +1227,101 @@ class ForgeAgentApp(App):
         except Exception as ex:
             chat.write(f"\n  [red]Code test error: {ex}[/]")
             log.error(f"code_test: {ex}", exc_info=True)
+        finally:
+            self._training_active = False
+            status_bar.set_training("idle")
+            self._hide_progress()
+            self._face("idle")
+
+    # ── Competition: local model vs Claude Code CLI ─
+    async def _on_competition_input(self, message: str | None):
+        if not message or not message.startswith("COMPETITION:"):
+            return
+        path = message.replace("COMPETITION:", "").strip() or "."
+        self._do_competition(path)
+
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_competition(self, project_path: str) -> None:
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        self._face("training")
+        status_bar.set_training("competing...")
+
+        chat.write(f"\n  [bold magenta]{'━'*56}[/]")
+        chat.write(f"  [bold magenta]  VS CLAUDE CODE — Head-to-Head Competition[/]")
+        chat.write(f"  [bold magenta]{'━'*56}[/]")
+        chat.write(f"  [dim]Local: {self.config.model} | Opponent: Claude Code CLI[/]")
+        chat.write(f"  [dim]Project: {project_path}[/]")
+        chat.write("")
+
+        def on_step(step, total, message):
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"vs {step}/{total}")
+                self._show_progress(message[:30], step, total)
+            except Exception:
+                pass
+
+        try:
+            result = await run_competition(self.ctx, self.config.model, project_path, on_step)
+
+            if result["success"]:
+                chat.write("")
+                chat.write(f"  [bold]{'━'*56}[/]")
+                chat.write(f"  [bold]  COMPETITION RESULTS[/]")
+                chat.write(f"  [bold]{'━'*56}[/]")
+                chat.write("")
+
+                # Scoreboard
+                lp, cp = result["local_passed"], result["claude_passed"]
+                lt, ct = result["total_cases"], result["total_cases"]
+                chat.write(f"  [bold]{'':>20} {'Score':<12} {'Passed':<12}[/]")
+                chat.write(f"  {'─'*50}")
+
+                local_color = "[green]" if lp >= cp else "[yellow]"
+                claude_color = "[green]" if cp >= lp else "[yellow]"
+                chat.write(f"  {'Your Model':<20} {local_color}{result['local_pct']}%[/]{'':>8} {lp}/{lt}")
+                chat.write(f"  {'Claude Code':<20} {claude_color}{result['claude_pct']}%[/]{'':>8} {cp}/{ct}")
+                chat.write("")
+
+                # Winner
+                if lp > cp:
+                    chat.write(f"  [bold green]YOUR MODEL WINS! Outperformed Claude Code.[/]")
+                elif cp > lp:
+                    chat.write(f"  [bold cyan]Claude Code wins this round. But your model is learning...[/]")
+                else:
+                    chat.write(f"  [bold yellow]TIE! Evenly matched.[/]")
+                chat.write("")
+
+                # Per-challenge breakdown
+                chat.write(f"  [bold]Per-Challenge:[/]")
+                chat.write(f"  {'Challenge':<35} {'You':<8} {'Claude':<8}[/]")
+                chat.write(f"  {'─'*50}")
+                for lr, cr in zip(result["local_results"], result["claude_results"]):
+                    l_icon = "[green]PASS[/]" if lr["passed"] else "[red]FAIL[/]"
+                    c_icon = "[green]PASS[/]" if cr["passed"] else "[red]FAIL[/]"
+                    diff_c = {"easy": "green", "medium": "yellow", "hard": "red"}.get(lr["difficulty"], "white")
+                    chat.write(f"  [{diff_c}]{lr['difficulty']:<6}[/] {lr['prompt'][:27]:<28} {l_icon}{'':>3} {c_icon}")
+                chat.write("")
+
+                # Learning report
+                if result["lessons_learned"] > 0:
+                    chat.write(f"  [bold cyan]Learned {result['lessons_learned']} lessons from Claude's solutions[/]")
+                    if result["rebuilt"]:
+                        chat.write(f"  [green]Model rebuilt with new training data![/]")
+                    chat.write(f"  [dim]Run the competition again to see improvement.[/]")
+                else:
+                    chat.write(f"  [dim]No new lessons — your model matched Claude on all challenges.[/]")
+                chat.write("")
+
+                # Show training level
+                await self._show_training_level(self.config.model, "After Competition")
+
+                self.notify("Competition complete!", timeout=5)
+        except Exception as ex:
+            chat.write(f"\n  [red]Competition error: {ex}[/]")
+            log.error(f"competition: {ex}", exc_info=True)
         finally:
             self._training_active = False
             status_bar.set_training("idle")

@@ -969,3 +969,200 @@ async def run_benchmark(ctx: dict, model_name: str, on_step) -> dict:
         "claude_results": claude_results,
         "cases": len(cases),
     }
+
+
+# ── Competition: Local model vs Claude Code CLI ──────────────
+COMPETITION_CHALLENGES = [
+    {
+        "id": "comp-1", "difficulty": "easy",
+        "prompt": "Write a Python function called `reverse_string` that takes a string and returns it reversed. Only output the function, no explanation.",
+        "test_code": 'assert reverse_string("hello") == "olleh"\nassert reverse_string("") == ""\nprint("PASS")',
+    },
+    {
+        "id": "comp-2", "difficulty": "easy",
+        "prompt": "Write a Python function called `count_vowels` that takes a string and returns the number of vowels (a,e,i,o,u). Only output the function.",
+        "test_code": 'assert count_vowels("hello") == 2\nassert count_vowels("xyz") == 0\nassert count_vowels("AEIOU") == 5\nprint("PASS")',
+    },
+    {
+        "id": "comp-3", "difficulty": "easy",
+        "prompt": "Write a Python function called `flatten` that takes a nested list and returns a flat list. Only output the function.",
+        "test_code": 'assert flatten([1, [2, 3], [4, [5, 6]]]) == [1, 2, 3, 4, 5, 6]\nassert flatten([]) == []\nprint("PASS")',
+    },
+    {
+        "id": "comp-4", "difficulty": "medium",
+        "prompt": "Write a Python function called `two_sum` that takes a list of integers and a target, returns a list of two indices that add to target. Only output the function.",
+        "test_code": 'assert sorted(two_sum([2,7,11,15], 9)) == [0,1]\nassert sorted(two_sum([3,2,4], 6)) == [1,2]\nprint("PASS")',
+    },
+    {
+        "id": "comp-5", "difficulty": "medium",
+        "prompt": "Write a Python function called `valid_parentheses` that takes a string of brackets ()[]{}  and returns True if valid. Only output the function.",
+        "test_code": 'assert valid_parentheses("()[]{}") == True\nassert valid_parentheses("(]") == False\nassert valid_parentheses("{[]}") == True\nprint("PASS")',
+    },
+    {
+        "id": "comp-6", "difficulty": "medium",
+        "prompt": "Write a Python function called `max_subarray` that takes a list of integers and returns the maximum contiguous subarray sum (Kadane's algorithm). Only output the function.",
+        "test_code": 'assert max_subarray([-2,1,-3,4,-1,2,1,-5,4]) == 6\nassert max_subarray([1]) == 1\nassert max_subarray([-1,-2,-3]) == -1\nprint("PASS")',
+    },
+    {
+        "id": "comp-7", "difficulty": "hard",
+        "prompt": "Write a Python function called `lru_cache_dict` that implements a simple LRU cache as a class with get(key) and put(key, value) methods, with a max capacity passed to __init__. Only output the class.",
+        "test_code": 'c = lru_cache_dict(2)\nc.put(1,"a"); c.put(2,"b")\nassert c.get(1) == "a"\nc.put(3,"c")\nassert c.get(2) is None\nprint("PASS")',
+    },
+    {
+        "id": "comp-8", "difficulty": "hard",
+        "prompt": "Write a Python function called `merge_intervals` that takes a list of [start, end] intervals and returns merged overlapping intervals sorted by start. Only output the function.",
+        "test_code": 'assert merge_intervals([[1,3],[2,6],[8,10],[15,18]]) == [[1,6],[8,10],[15,18]]\nassert merge_intervals([[1,4],[4,5]]) == [[1,5]]\nprint("PASS")',
+    },
+]
+
+
+async def _run_claude_cli(prompt: str, cwd: str = ".") -> tuple[str, float]:
+    """Run a prompt through Claude Code CLI and return (response, latency_ms)."""
+    import asyncio
+    import subprocess as sp
+    start = time.time()
+
+    def _call():
+        result = sp.run(
+            ["claude", "-p", prompt, "--no-input"],
+            capture_output=True, text=True, timeout=120,
+            cwd=cwd,
+        )
+        return result.stdout.strip()
+
+    try:
+        response = await asyncio.to_thread(_call)
+        latency = int((time.time() - start) * 1000)
+        return response, latency
+    except Exception as e:
+        return f"ERROR: {e}", int((time.time() - start) * 1000)
+
+
+async def run_competition(ctx: dict, model_name: str, project_path: str, on_step) -> dict:
+    """
+    Head-to-head competition: local model vs Claude Code CLI.
+    Both solve the same coding challenges. Claude's winning answers
+    are harvested as training data for the local model.
+    """
+    import asyncio
+    from ..providers.ollama.client import OllamaClient
+    from ..core.interfaces import ChatMessage
+    from ..utils.helpers import make_id
+    from datetime import datetime
+
+    client = OllamaClient(ctx["config"].ollama_base_url)
+    dm = ctx["dataset_manager"]
+    mb = ctx["model_builder"]
+    cases = COMPETITION_CHALLENGES
+    total = len(cases) * 2 + 3  # local runs + claude runs + harvest + build + assess
+
+    local_results = []
+    claude_results = []
+
+    # ── Phase 1: Local model attempts ─────────────
+    on_step(0, total, "Starting competition: Local Model vs Claude Code")
+    step = 0
+    for case in cases:
+        step += 1
+        on_step(step, total, f"[Local] {case['difficulty']}: {case['prompt'][:40]}...")
+        start = time.time()
+        try:
+            response = await client.chat(
+                model=model_name,
+                messages=[ChatMessage(make_id(), "user", case["prompt"], datetime.now().isoformat())],
+                temperature=0.2,
+            )
+        except Exception as e:
+            response = f"ERROR: {e}"
+        latency = int((time.time() - start) * 1000)
+        code = _extract_python_code(response)
+        passed, output = await asyncio.to_thread(_run_code_test, code, case["test_code"])
+        local_results.append({
+            "id": case["id"], "difficulty": case["difficulty"],
+            "prompt": case["prompt"], "passed": passed,
+            "latency": latency, "code": code[:800],
+            "response": response[:1000], "output": output,
+        })
+
+    # ── Phase 2: Claude Code attempts ─────────────
+    for case in cases:
+        step += 1
+        on_step(step, total, f"[Claude] {case['difficulty']}: {case['prompt'][:40]}...")
+        response, latency = await _run_claude_cli(case["prompt"], project_path)
+        code = _extract_python_code(response)
+        passed, output = await asyncio.to_thread(_run_code_test, code, case["test_code"])
+        claude_results.append({
+            "id": case["id"], "difficulty": case["difficulty"],
+            "prompt": case["prompt"], "passed": passed,
+            "latency": latency, "code": code[:800],
+            "response": response[:1000], "output": output,
+        })
+
+    # ── Phase 3: Learn from Claude's wins ─────────
+    step += 1
+    on_step(step, total, "Harvesting Claude's winning solutions as training data...")
+
+    safe_name = mb.normalize_model_name(model_name)
+    profile = mb.get_profile(model_name)
+    if not profile:
+        profile = mb.create_profile(safe_name, model_name, dataset_name=f"{safe_name}-data")
+    ds = profile.get("datasetName") or f"{safe_name}-data"
+    try:
+        dm.create_dataset(ds, f"Competition data for {safe_name}")
+    except ValueError:
+        pass
+
+    lessons_learned = 0
+    for i, (lr, cr) in enumerate(zip(local_results, claude_results)):
+        # Learn from Claude when: Claude passed and local failed, or Claude's answer is better
+        if cr["passed"] and not lr["passed"]:
+            from ..training.dataset_manager import TrainingExample, _uid
+            dm.add_example(ds, TrainingExample(
+                id=_uid(), prompt=lr["prompt"],
+                completion=cr["response"][:3000],
+                tags=["competition", "claude-win", lr["difficulty"]],
+                source="competition",
+            ))
+            lessons_learned += 1
+        elif cr["passed"] and lr["passed"]:
+            # Both passed — still learn Claude's style if response is more concise
+            if len(cr["code"]) < len(lr["code"]) * 0.8:
+                from ..training.dataset_manager import TrainingExample, _uid
+                dm.add_example(ds, TrainingExample(
+                    id=_uid(), prompt=lr["prompt"],
+                    completion=cr["response"][:3000],
+                    tags=["competition", "claude-style", lr["difficulty"]],
+                    source="competition",
+                ))
+                lessons_learned += 1
+
+    # ── Phase 4: Rebuild model with new training data ─
+    step += 1
+    on_step(step, total, f"Rebuilding model with {lessons_learned} new lessons...")
+    build_result = None
+    if lessons_learned > 0:
+        build_result = await mb.build_model(safe_name if profile else model_name, dm)
+
+    # ── Phase 5: Assess new level ─────────────────
+    step += 1
+    on_step(step, total, "Assessing updated training level...")
+
+    # Stats
+    local_passed = sum(1 for r in local_results if r["passed"])
+    claude_passed = sum(1 for r in claude_results if r["passed"])
+    local_pct = round(local_passed / len(cases) * 100) if cases else 0
+    claude_pct = round(claude_passed / len(cases) * 100) if cases else 0
+
+    return {
+        "success": True,
+        "model_name": model_name,
+        "local_results": local_results,
+        "claude_results": claude_results,
+        "local_passed": local_passed,
+        "claude_passed": claude_passed,
+        "local_pct": local_pct,
+        "claude_pct": claude_pct,
+        "total_cases": len(cases),
+        "lessons_learned": lessons_learned,
+        "rebuilt": build_result.success if build_result else False,
+    }

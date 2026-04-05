@@ -556,9 +556,13 @@ class ForgeAgentApp(App):
         chat.write("")
 
         def on_step(step, total, message):
-            chat.write(f"  [dim][{step}/{total}][/] {message}")
-            status_bar.set_training(f"step {step}/{total}")
-            self._show_progress(message[:30], step, total)
+            # May be called from a background thread (e.g. during model pull)
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"step {step}/{total}")
+                self._show_progress(message[:30], step, total)
+            except Exception:
+                pass  # Swallow thread-safety errors during rapid progress updates
 
         try:
             result = await run_auto_train(self.ctx, config, on_step)

@@ -133,14 +133,28 @@ class ModelBuilder:
         except Exception as e:
             return BuildResult(False, profile["name"], f"Build failed: {e}", time.time() - start)
 
-    async def pull_base_model(self, model: str) -> dict:
+    async def pull_base_model(self, model: str, on_progress=None) -> dict:
         import asyncio
-        try:
-            await asyncio.to_thread(
-                subprocess.run,
+
+        def _pull():
+            proc = subprocess.Popen(
                 ["ollama", "pull", model],
-                capture_output=True, text=True, timeout=600, check=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, bufsize=1,
             )
+            last_line = ""
+            for line in proc.stdout:
+                line = line.strip()
+                if line:
+                    last_line = line
+                    if on_progress:
+                        on_progress(line)
+            proc.wait()
+            if proc.returncode != 0:
+                raise RuntimeError(f"ollama pull exited with code {proc.returncode}: {last_line}")
+
+        try:
+            await asyncio.to_thread(_pull)
             return {"success": True, "message": f"Pulled {model}"}
         except Exception as e:
             return {"success": False, "message": f"Pull failed: {e}"}

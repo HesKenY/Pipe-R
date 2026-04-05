@@ -90,7 +90,18 @@ async def run_auto_train(ctx: dict, config: dict, on_step) -> dict:
     # Step 6: Pull base model if needed
     if need_pull:
         on_step(6, total, f"Downloading {base_model} (this may take several minutes)...")
-        pull_result = await mb.pull_base_model(base_model)
+
+        import time as _time
+        _last_pull_update = [0.0]
+
+        def _pull_progress(line):
+            # Throttle to every 2 seconds to avoid flooding
+            now = _time.time()
+            if now - _last_pull_update[0] >= 2.0:
+                _last_pull_update[0] = now
+                on_step(6, total, f"Downloading: {line[:60]}")
+
+        pull_result = await mb.pull_base_model(base_model, on_progress=_pull_progress)
         if not pull_result["success"]:
             return {"success": False, "error": pull_result["message"], "step": "pull"}
     else:

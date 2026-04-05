@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.binding import Binding
 from textual import work
 
-from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ShadowLearnWizard, ToolInputModal, InfoModal, ModelSelectWizard
+from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ShadowLearnWizard, ProjectWizard, ToolInputModal, InfoModal, ModelSelectWizard
 from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test, run_shadow_learn, SHADOW_TASKS
 
 # ── Logging ───────────────────────────────────────────────────
@@ -390,8 +390,8 @@ class ForgeAgentApp(App):
                     # ── Deploy ──
                     yield Static("Deploy", classes="section-header")
                     yield Button("DEPLOY AGENT", id="btn-deploy", classes="hero-accent")
+                    yield Button("Manage Projects", id="btn-agents")
                     yield Button("Models", id="btn-models")
-                    yield Button("Agents", id="btn-agents")
                     yield Button("Datasets", id="btn-datasets")
 
                     yield Rule(classes="section-divider")
@@ -1076,12 +1076,24 @@ class ForgeAgentApp(App):
         log.info(f"deploy: {r}")
         try:
             agent = self.ctx["deployer"].deploy(r["name"], r["path"], r["model"], r["template"])
+
+            # Create project profile
+            from ..deploy.project_profile import ProjectProfile
+            pp = ProjectProfile(r["path"])
+            pp.create(r["name"], r["model"], r.get("template", "fullstack"))
+            pp.append_log(f"Agent deployed: {r['name']} ({r['model']})")
+
             chat.write(f"\n  [bold green]Deployed: {agent['name']}[/]")
             chat.write(f"  [dim]Path: {agent['projectPath']}[/]")
             chat.write(f"  [dim]Template: {r['template']} | Model: {r['model']}[/]")
-            chat.write(f"  [dim]To launch: /launch {agent['name']}[/]")
+            chat.write("")
+            chat.write(f"  [bold]Click 'Manage Projects' to start/stop and configure git.[/]")
             chat.write("")
             self.notify(f"Agent '{agent['name']}' deployed!", timeout=5)
+
+            # Open project wizard immediately
+            await self._open_project_wizard(agent)
+
         except Exception as ex:
             chat.write(f"  [red]Deploy failed: {ex}[/]")
             log.error(f"deploy: {ex}", exc_info=True)
@@ -1155,13 +1167,130 @@ class ForgeAgentApp(App):
         deployer = self.ctx["deployer"]
         agents = deployer.list_agents()
         if not agents:
-            content = "[dim]No agents deployed. Click DEPLOY AGENT to set one up.[/]"
+            self.push_screen(InfoModal("Projects", "[dim]No agents deployed. Click DEPLOY AGENT to set one up.[/]"))
+            return
+        if len(agents) == 1:
+            # Single agent — open project wizard directly
+            await self._open_project_wizard(agents[0])
         else:
-            lines = [f"[bold]{'Name':<20} {'Model':<25} {'Template':<12} Status[/]", ""]
+            # Multiple agents — show list, pick first for now
+            # Build content with agent list
+            lines = [f"[bold]{'Name':<20} {'Model':<20} Status[/]", "─" * 50]
             for a in agents:
-                lines.append(f"{a['name']:<20} {a.get('modelName', '?'):<25} {a.get('template', '?'):<12} {a.get('status', '?')}")
-            content = "\n".join(lines)
-        self.push_screen(InfoModal("Deployed Agents", content))
+                from ..deploy.project_profile import ProjectProfile
+                pp = ProjectProfile(a["projectPath"])
+                profile = pp.load()
+                status = (profile or {}).get("status", a.get("status", "stopped"))
+                sc = "[green]" if status == "running" else "[dim]"
+                lines.append(f"[bold]{a['name']:<20}[/] {a.get('modelName', '?'):<20} {sc}{status}[/]")
+            lines.append("")
+            lines.append("[dim]Opening most recent project...[/]")
+            self.push_screen(InfoModal("Deployed Projects", "\n".join(lines)))
+            # Open the most recent agent's project wizard
+            await self._open_project_wizard(agents[0])
+
+    async def _open_project_wizard(self, agent: dict):
+        """Open project management wizard for a deployed agent."""
+        from ..deploy.project_profile import ProjectProfile
+        pp = ProjectProfile(agent["projectPath"])
+        profile = pp.load()
+        if not profile:
+            profile = pp.create(
+                agent["name"], agent.get("modelName", "forgeagent"),
+                template=agent.get("template", "fullstack"),
+            )
+        self.push_screen(ProjectWizard(agent, profile), callback=self._on_project_action)
+        self._current_project = pp
+
+    async def _on_project_action(self, r: dict | None):
+        if not r:
+            return
+        chat = self.query_one("#chatlog", RichLog)
+        pp = getattr(self, "_current_project", None)
+        if not pp:
+            return
+        action = r.get("action", "")
+
+        if action == "save_settings":
+            pp.update_git(**r.get("git", {}))
+            chat.write(f"  [green]Project settings saved.[/]")
+            self.notify("Settings saved", timeout=3)
+
+        elif action == "start":
+            pp.set_status("running")
+            pp.append_log("Agent started")
+            chat.write(f"  [green]Agent started.[/]")
+            self.notify("Agent running", timeout=3)
+
+        elif action == "stop":
+            pp.set_status("stopped")
+            pp.append_log("Agent stopped")
+            chat.write(f"  [yellow]Agent stopped.[/]")
+            self.notify("Agent stopped", timeout=3)
+
+        elif action == "launch":
+            deployer = self.ctx["deployer"]
+            profile = pp.load() or {}
+            agent_name = profile.get("name", "")
+            result = deployer.launch(agent_name)
+            chat.write(f"  [dim]{result.get('message', '')}[/]")
+
+        elif action == "git_status":
+            status = pp.git_status()
+            chat.write(f"\n  [bold]Git Status:[/]")
+            for line in (status or "Clean").split("\n"):
+                chat.write(f"  {line}")
+            chat.write("")
+
+        elif action == "git_commit":
+            self.push_screen(
+                ToolInputModal("Git Commit", "Commit message", "Update from ForgeAgent", "GITCOMMIT:{value}"),
+                callback=self._on_git_commit,
+            )
+
+        elif action == "git_push":
+            chat.write(f"  [dim]Pushing...[/]")
+            result = pp.git_push()
+            color = "green" if result["success"] else "red"
+            chat.write(f"  [{color}]{result['message']}[/]")
+
+        elif action == "git_log":
+            log_text = pp.git_log(15)
+            chat.write(f"\n  [bold]Git Log:[/]")
+            for line in log_text.split("\n"):
+                chat.write(f"  {line}")
+            chat.write("")
+
+        elif action == "view_logs":
+            log_text = pp.read_log(30)
+            if log_text:
+                chat.write(f"\n  [bold]Agent Logs:[/]")
+                for line in log_text.split("\n"):
+                    chat.write(f"  [dim]{line}[/]")
+            else:
+                chat.write(f"  [dim]No logs yet.[/]")
+            chat.write("")
+
+        elif action == "clear_logs":
+            pp.clear_log()
+            chat.write(f"  [dim]Logs cleared.[/]")
+
+    async def _on_git_commit(self, message: str | None):
+        if not message or not message.startswith("GITCOMMIT:"):
+            return
+        msg = message.replace("GITCOMMIT:", "").strip()
+        pp = getattr(self, "_current_project", None)
+        if not pp:
+            return
+        chat = self.query_one("#chatlog", RichLog)
+        result = pp.git_commit(msg)
+        color = "green" if result["success"] else "red"
+        chat.write(f"  [{color}]{result['message']}[/]")
+        # Auto-push if enabled
+        profile = pp.load() or {}
+        if profile.get("git", {}).get("autoPush") and result["success"]:
+            push_result = pp.git_push()
+            chat.write(f"  [dim]Auto-push: {push_result['message']}[/]")
 
     @work(thread=False, exclusive=True, group="training")
     async def _do_evaluate(self) -> None:

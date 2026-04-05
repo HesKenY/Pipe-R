@@ -789,3 +789,121 @@ class ModelSelectWizard(ModalScreen[dict | None]):
             idx = int(bid.split("-")[-1])
             if idx < len(self._models):
                 self.dismiss({"action": "benchmark", "model": self._models[idx]["name"]})
+
+
+# ══════════════════════════════════════════════════════════════
+#  PROJECT WIZARD — manage deployed agent in a project
+# ══════════════════════════════════════════════════════════════
+class ProjectWizard(ModalScreen[dict | None]):
+    """Manage a deployed agent — on/off, git, logs, settings."""
+
+    CSS = """
+    ProjectWizard { align: center middle; }
+    #pw {
+        width: 68; height: 36;
+        border: round $accent; background: $surface;
+        padding: 1 2;
+    }
+    #pw Static.title { text-style: bold; color: $accent; margin: 0 0 1 0; }
+    #pw Static.subtitle { color: $text-muted; margin: 0 0 0 0; }
+    #pw-scroll { height: 1fr; }
+    #pw-scroll Static.field-label { color: $text-muted; margin: 1 0 0 0; }
+    #pw-scroll Input { margin: 0; }
+    .toggle-row { height: 3; padding: 0 0; }
+    .toggle-row Static { padding: 1 1 0 0; }
+    .action-row { height: 3; margin: 0 0 1 0; }
+    .action-row Button { min-width: 14; margin: 0 1 0 0; height: 3; }
+    #pw-actions { height: auto; dock: bottom; margin: 1 0 0 0; }
+    #pw-actions Button { min-width: 14; margin: 0 1 0 0; height: 3; }
+    """
+
+    def __init__(self, agent: dict, profile: dict | None = None):
+        super().__init__()
+        self._agent = agent
+        self._profile = profile or {}
+        self._git = self._profile.get("git", {})
+
+    def compose(self) -> ComposeResult:
+        name = self._agent.get("name", "agent")
+        status = self._profile.get("status", self._agent.get("status", "stopped"))
+        is_running = status == "running"
+        path = self._agent.get("projectPath", "")
+
+        with Vertical(id="pw"):
+            yield Static(f"Project: {name}", classes="title")
+            yield Static(f"[dim]{path}[/]", classes="subtitle")
+            yield Rule()
+            with VerticalScroll(id="pw-scroll"):
+                # Status & control
+                yield Static("Agent Control", classes="field-label")
+                with Horizontal(classes="action-row"):
+                    if is_running:
+                        yield Button("Stop Agent", variant="error", id="pw-stop")
+                    else:
+                        yield Button("Start Agent", variant="success", id="pw-start")
+                    yield Button("Launch Terminal", id="pw-launch")
+
+                # Git
+                yield Static("Git", classes="field-label")
+                with Horizontal(classes="action-row"):
+                    yield Button("Status", id="pw-git-status")
+                    yield Button("Commit", id="pw-git-commit")
+                    yield Button("Push", id="pw-git-push")
+                    yield Button("Log", id="pw-git-log")
+
+                yield Static("Git remote", classes="field-label")
+                yield Input(value=self._git.get("remote", "origin"), id="pw-remote")
+                yield Static("Git branch", classes="field-label")
+                yield Input(value=self._git.get("branch", "main"), id="pw-branch")
+
+                yield Static("Auto-commit after agent tasks?", classes="field-label")
+                with Horizontal(classes="toggle-row"):
+                    yield Switch(value=self._git.get("autoCommit", False), id="pw-auto-commit")
+                    yield Static("Auto-commit")
+                yield Static("Auto-push after commits?", classes="field-label")
+                with Horizontal(classes="toggle-row"):
+                    yield Switch(value=self._git.get("autoPush", False), id="pw-auto-push")
+                    yield Static("Auto-push")
+
+                # Logs
+                yield Static("Logs", classes="field-label")
+                with Horizontal(classes="action-row"):
+                    yield Button("View Logs", id="pw-logs")
+                    yield Button("Clear Logs", id="pw-clear-logs")
+
+            with Horizontal(id="pw-actions"):
+                yield Button("Save Settings", variant="success", id="pw-save")
+                yield Button("Close", id="pw-close")
+
+    def on_button_pressed(self, e: Button.Pressed):
+        bid = e.button.id or ""
+        if bid == "pw-close":
+            self.dismiss(None)
+        elif bid == "pw-save":
+            self.dismiss({
+                "action": "save_settings",
+                "git": {
+                    "remote": self.query_one("#pw-remote", Input).value.strip() or "origin",
+                    "branch": self.query_one("#pw-branch", Input).value.strip() or "main",
+                    "autoCommit": self.query_one("#pw-auto-commit", Switch).value,
+                    "autoPush": self.query_one("#pw-auto-push", Switch).value,
+                },
+            })
+        elif bid == "pw-start":
+            self.dismiss({"action": "start"})
+        elif bid == "pw-stop":
+            self.dismiss({"action": "stop"})
+        elif bid == "pw-launch":
+            self.dismiss({"action": "launch"})
+        elif bid == "pw-git-status":
+            self.dismiss({"action": "git_status"})
+        elif bid == "pw-git-commit":
+            self.dismiss({"action": "git_commit"})
+        elif bid == "pw-git-push":
+            self.dismiss({"action": "git_push"})
+        elif bid == "pw-git-log":
+            self.dismiss({"action": "git_log"})
+        elif bid == "pw-logs":
+            self.dismiss({"action": "view_logs"})
+        elif bid == "pw-clear-logs":
+            self.dismiss({"action": "clear_logs"})

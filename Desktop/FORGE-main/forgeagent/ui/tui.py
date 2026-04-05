@@ -398,6 +398,7 @@ class ForgeAgentApp(App):
                     yield Button("Models", id="btn-models")
                     yield Button("Datasets", id="btn-datasets")
                     yield Button("Upload Dataset", id="btn-upload-dataset")
+                    yield Button("Scan Imports", id="btn-scan-imports")
 
                     # Active agents display
                     yield Static("", id="agent-slots")
@@ -511,6 +512,10 @@ class ForgeAgentApp(App):
         chat.write("")
 
         self._refresh_agent_slots()
+
+        # Auto-scan import folder for new datasets
+        await self._do_scan_imports(silent=True)
+
         self.query_one("#userinput", Input).focus()
         log.info("mount complete")
 
@@ -621,6 +626,8 @@ class ForgeAgentApp(App):
                 ToolInputModal("Upload Dataset", "Path to JSONL/JSON file", "C:/datasets/training.jsonl", "UPLOAD:{value}"),
                 callback=self._on_upload_dataset,
             )
+        elif bid == "btn-scan-imports":
+            await self._do_scan_imports()
         elif bid == "btn-evaluate":
             if self._training_active:
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
@@ -1148,6 +1155,42 @@ class ForgeAgentApp(App):
         except Exception as ex:
             chat.write(f"  [#ff1744]Deploy failed: {ex}[/]")
             log.error(f"deploy: {ex}", exc_info=True)
+
+    # ── Scan import folder ────────────────────────
+    async def _do_scan_imports(self, silent: bool = False):
+        """Scan datasets/import/ for new JSONL/JSON files and auto-load them."""
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        dm = self.ctx["dataset_manager"]
+
+        # Determine import folder path
+        from pathlib import Path as P
+        import_dir = P(self.config.base_dir) / "datasets" / "import"
+        if not import_dir.exists():
+            # Try project root
+            import_dir = P(__file__).resolve().parent.parent.parent / "datasets" / "import"
+        import_dir.mkdir(parents=True, exist_ok=True)
+
+        result = dm.scan_import_folder(str(import_dir))
+
+        if result["files"] == 0:
+            if not silent:
+                chat.write(f"\n  [#5c6b7a]No new files in import folder.[/]")
+                chat.write(f"  [#5c6b7a]Drop .jsonl or .json files into:[/]")
+                chat.write(f"  [#00e5ff]{import_dir}[/]")
+                chat.write("")
+            return
+
+        if result["imported"] > 0:
+            chat.write(f"\n  [#00e676]Imported {result['imported']} examples from {result['files']} file(s)[/]")
+            chat.write(f"  [#5c6b7a]Files moved to import/processed/[/]")
+            status_bar.set_datasets(len(dm.list_datasets()))
+            self.notify(f"Imported {result['imported']} examples from {result['files']} file(s)!", timeout=5)
+
+        for err in result.get("errors", []):
+            chat.write(f"  [#ff1744]{err}[/]")
+
+        chat.write("")
 
     # ── Upload dataset callback ────────────────────
     async def _on_upload_dataset(self, message: str | None):

@@ -352,6 +352,68 @@ class DatasetManager:
             return str(path)
         raise ValueError(f"Unknown format: {fmt}")
 
+    # ── Auto-import from drop folder ────────────��
+    def scan_import_folder(self, import_dir: str | None = None) -> dict:
+        """Scan the import folder for new JSONL/JSON files and auto-load them.
+
+        Files are imported into a dataset named after the file.
+        After successful import, files are moved to import/processed/.
+
+        Returns: {"imported": int, "files": int, "errors": list[str]}
+        """
+        if import_dir:
+            folder = Path(import_dir)
+        else:
+            # Default: datasets/import/ next to the datasets dir
+            folder = self.datasets_dir.parent / "datasets" / "import"
+            if not folder.exists():
+                # Also check project root
+                folder = Path(self.datasets_dir).parent.parent / "datasets" / "import"
+
+        if not folder.exists():
+            folder.mkdir(parents=True, exist_ok=True)
+            return {"imported": 0, "files": 0, "errors": []}
+
+        processed_dir = folder / "processed"
+        processed_dir.mkdir(parents=True, exist_ok=True)
+
+        total_imported = 0
+        total_files = 0
+        errors = []
+
+        for fp in sorted(folder.iterdir()):
+            if fp.is_dir():
+                continue
+            if fp.suffix.lower() not in (".jsonl", ".json"):
+                continue
+
+            total_files += 1
+            ds_name = fp.stem.replace(" ", "-").lower()
+
+            try:
+                # Create dataset if needed
+                try:
+                    self.create_dataset(ds_name, f"Auto-imported from {fp.name}")
+                except ValueError:
+                    pass  # Already exists — append to it
+
+                count = self.import_from_file(ds_name, str(fp))
+                total_imported += count
+
+                # Move to processed
+                dest = processed_dir / fp.name
+                if dest.exists():
+                    # Add timestamp to avoid overwrite
+                    ts = datetime.now().strftime("%Y%m%d%H%M%S")
+                    dest = processed_dir / f"{fp.stem}-{ts}{fp.suffix}"
+                import shutil
+                shutil.move(str(fp), str(dest))
+
+            except Exception as e:
+                errors.append(f"{fp.name}: {e}")
+
+        return {"imported": total_imported, "files": total_files, "errors": errors}
+
     # ── Helpers ─────────────────────────────────────
     def _update_meta(self, name: str, tags: list[str]) -> None:
         mf = self.datasets_dir / name / "meta.json"

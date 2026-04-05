@@ -386,6 +386,30 @@ class RemoteHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(_state).encode("utf-8"))
 
+        elif self.path == "/api/iterate":
+            # Generate next iteration with optional user instructions
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            project = _state.get("project", "")
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length).decode("utf-8") if length else "{}"
+                data = json.loads(body)
+                instructions = data.get("instructions", "")
+                focus = data.get("focus", "features")
+                from ..core.iteration import IterationEngine
+                ie = IterationEngine(project, str(Path(project) / ".memory"))
+                tasks = ie.generate_iteration_tasks(instructions, focus)
+                ie.write_iteration(tasks, instructions)
+                _state["pending_tasks"] = tasks
+                push_log(f"Iteration generated: {len(tasks)} tasks")
+                self.wfile.write(json.dumps({"ok": True, "tasks": tasks}).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"ok": False, "error": str(e)}).encode("utf-8"))
+            return
+
         elif self.path == "/api/tasks":
             self.send_response(200)
             self.send_header("Content-Type", "application/json")

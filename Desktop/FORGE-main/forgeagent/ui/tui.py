@@ -1643,14 +1643,23 @@ class ForgeAgentApp(App):
             pass
 
         from ..deploy.agent_instructions import get_pending_tasks, complete_task, write_agent_instructions
+        from ..core.iteration import IterationEngine
         from pathlib import Path as P
 
         project_path = self.config.cwd
         agent_md = P(project_path) / ".forgeagent" / "AGENT.md"
+        iteration = IterationEngine(project_path, self.config.memory_dir)
 
-        # Generate AGENT.md if missing
-        if not agent_md.exists():
-            write_agent_instructions(project_path, model_name=self.config.model)
+        # If no AGENT.md or no pending tasks, auto-generate next iteration
+        if not agent_md.exists() or not get_pending_tasks(project_path):
+            chat.write(f"  [#7c4dff]Generating next iteration tasks...[/]")
+            iter_num = iteration.get_iteration_count() + 1
+            tasks = iteration.generate_iteration_tasks()
+            if tasks:
+                iteration.write_iteration(tasks)
+                chat.write(f"  [#00e676]Iteration #{iter_num}: {len(tasks)} tasks generated[/]")
+            else:
+                write_agent_instructions(project_path, model_name=self.config.model)
 
         tasks = get_pending_tasks(project_path)
         if not tasks:
@@ -1833,6 +1842,20 @@ class ForgeAgentApp(App):
         if failed:
             chat.write(f"  [#ff1744]Failed: {failed}[/]")
         chat.write("")
+
+        # ── Harvest learning from this iteration ──
+        chat.write(f"  [#7c4dff]Harvesting learning...[/]")
+        try:
+            dm = self.ctx["dataset_manager"]
+            harvest = iteration.harvest_iteration(dm)
+            chat.write(f"  [#00e676]Learned from {harvest['harvested']} tasks (iteration #{harvest['iteration']})[/]")
+            try:
+                from ..remote.server import push_log
+                push_log(f"Harvested {harvest['harvested']} training examples from iteration #{harvest['iteration']}")
+            except Exception:
+                pass
+        except Exception as ex:
+            chat.write(f"  [#5c6b7a]Harvest skipped: {ex}[/]")
 
         # ── Zip the project to Outputs/ ──
         chat.write(f"  [#5c6b7a]Packaging build...[/]")

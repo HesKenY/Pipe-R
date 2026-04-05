@@ -161,4 +161,14 @@ class QueryEngine:
             except Exception:
                 pass
 
+        # Inject persistent agent memory (what was learned in prior iterations)
+        agent_memory = Path(self.config.cwd) / ".forgeagent" / "agent_memory.md"
+        if agent_memory.exists():
+            try:
+                memory = agent_memory.read_text(encoding="utf-8")
+                if len(memory) > 100:
+                    prompt += "\n\n## Agent Memory (from prior sessions)\n" + memory[-2000:]
+            except Exception:
+                pass
+
         return prompt

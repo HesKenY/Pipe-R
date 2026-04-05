@@ -203,18 +203,37 @@ body {
   </div>
 </div>
 
-<!-- Task Editor -->
+<!-- Instruction Input — tell agents what to build -->
 <div class="card">
-  <div class="card-title">SET TODO LIST</div>
-  <div style="font-size:11px;color:var(--dim);margin-bottom:6px">One task per line. Replaces current pending tasks.</div>
-  <textarea id="task-editor" style="width:100%;min-height:120px;background:var(--bg);color:var(--text);border:1px solid var(--dim);border-radius:6px;padding:10px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Add error handling to all API endpoints
-Write unit tests for the main module
-Fix the login page CSS on mobile
-Optimize database queries in user service"></textarea>
+  <div class="card-title">BUILD INSTRUCTIONS</div>
+  <div style="font-size:11px;color:var(--dim);margin-bottom:6px">Tell the agents what to add to the program. They'll generate tasks and execute them.</div>
+  <textarea id="instruct-input" style="width:100%;min-height:100px;background:var(--bg);color:var(--text);border:1px solid var(--dim);border-radius:6px;padding:10px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Add a settings page with dark mode toggle
+Fix the search feature to handle special characters
+Add export to PDF for reports"></textarea>
+  <div style="display:flex;gap:6px;margin-top:6px">
+    <select id="focus-select" style="flex:1;padding:8px;background:var(--bg);color:var(--text);border:1px solid var(--dim);border-radius:6px;font-family:inherit;font-size:12px">
+      <option value="features">Features</option>
+      <option value="bugs">Bug Fixes</option>
+      <option value="tests">Tests</option>
+      <option value="polish">Polish</option>
+      <option value="refactor">Refactor</option>
+    </select>
+  </div>
   <div class="btn-row" style="margin-top:8px">
-    <button class="btn green" onclick="setTasks()">SET TASKS</button>
-    <button class="btn" onclick="send('complete_todo')">RUN TODO</button>
+    <button class="btn green" onclick="generateAndRun()">BUILD IT</button>
+    <button class="btn" onclick="generateTasks()">GENERATE TASKS</button>
     <button class="btn danger" onclick="send('restart')">RESTART</button>
+  </div>
+</div>
+
+<!-- Manual Task Editor (advanced) -->
+<div class="card">
+  <div class="card-title">MANUAL TASKS</div>
+  <div style="font-size:11px;color:var(--dim);margin-bottom:6px">One task per line. Direct control over agent task list.</div>
+  <textarea id="task-editor" style="width:100%;min-height:80px;background:var(--bg);color:var(--text);border:1px solid var(--dim);border-radius:6px;padding:10px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Specific tasks for agents..."></textarea>
+  <div class="btn-row" style="margin-top:8px">
+    <button class="btn" onclick="setTasks()">SET TASKS</button>
+    <button class="btn purple" onclick="send('complete_todo')">RUN TODO</button>
   </div>
 </div>
 
@@ -350,6 +369,50 @@ function sendChat() {
   if (!msg) return;
   send('chat:' + msg);
   input.value = '';
+}
+
+async function generateTasks() {
+  const instructions = document.getElementById('instruct-input').value.trim();
+  const focus = document.getElementById('focus-select').value;
+  try {
+    const r = await fetch(BASE + '/api/iterate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({instructions, focus})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      alert('Generated ' + d.tasks.length + ' tasks!');
+      document.getElementById('instruct-input').value = '';
+    } else {
+      alert('Error: ' + (d.error || 'unknown'));
+    }
+  } catch(e) { alert('Failed to connect'); }
+}
+
+async function generateAndRun() {
+  const instructions = document.getElementById('instruct-input').value.trim();
+  const focus = document.getElementById('focus-select').value;
+  try {
+    const r = await fetch(BASE + '/api/iterate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({instructions, focus})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('instruct-input').value = '';
+      // Now trigger complete_todo
+      await fetch(BASE + '/api/command', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({command: 'complete_todo'})
+      });
+      alert('Building ' + d.tasks.length + ' tasks! Watch progress above.');
+    } else {
+      alert('Error: ' + (d.error || 'unknown'));
+    }
+  } catch(e) { alert('Failed to connect'); }
 }
 
 async function setTasks() {

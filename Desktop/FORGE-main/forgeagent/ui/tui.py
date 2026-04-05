@@ -516,24 +516,10 @@ class ForgeAgentApp(App):
             na = 0
 
         chat.write("")
-        chat.write(f"  [bold #00e5ff]╔═══════════════════════════════════════════╗[/]")
-        chat.write(f"  [bold #00e5ff]║[/]    [bold #00e5ff]F O R G E   A G E N T[/]   [#5c6b7a]v3.0[/]    [bold #00e5ff]║[/]")
-        chat.write(f"  [bold #00e5ff]╚═══════════════════════════════════════════╝[/]")
-        chat.write(f"  [#5c6b7a]Local AI Coding Agent Hub — 100% Offline[/]")
-        chat.write("")
-        chat.write(f"  [#5c6b7a]BUDDY[/]  [#ffd740]{b.name} Lv.{b.level}[/]    "
-                    f"[#5c6b7a]AGENTS[/]  [#00e5ff]{na}[/]    "
-                    f"[#5c6b7a]MODEL[/]  [#00e5ff]{self.config.model}[/]")
-        chat.write(f"  [italic #5c6b7a]{self.buddy.get_quip()}[/]")
-        chat.write("")
-        chat.write(f"  [bold #e0e0e0]Get started:[/]")
-        chat.write(f"  [#00e676]AUTO TRAIN[/]     Build your own AI model in one click")
-        chat.write(f"  [#7c4dff]IMPROVE[/]        Make your model smarter with more data")
-        chat.write(f"  [#00e5ff]LAUNCH AGENTS[/]  Deploy models as terminal coding agents")
-        chat.write("")
-        chat.write(f"  [#5c6b7a]Or type a message below to chat.[/]")
+        chat.write(f"  [bold #00e5ff]FORGE[/]  [#5c6b7a]v3.0[/]")
+        chat.write(f"  [#5c6b7a]{self.config.model} · {na} agents · {b.name} Lv.{b.level}[/]")
         if self._remote_url:
-            chat.write(f"  [#7c4dff]Remote:[/]  [bold #00e5ff]{self._remote_url}[/]  [#5c6b7a](open on phone)[/]")
+            chat.write(f"  [#5c6b7a]Remote:[/] [#00e5ff]{self._remote_url}[/]")
         chat.write("")
 
         self._refresh_agent_slots()
@@ -815,9 +801,13 @@ class ForgeAgentApp(App):
                 chat.write(f"  [red]Slot {slot}: {ex}[/]")
             return
 
-        # ── Normal chat ───────────────────────────
-        chat.write(f"\n  [bold cyan]You[/]")
-        chat.write(f"  {text}")
+        # ── Normal chat — iMessage style ─────────
+        chat.write("")
+        chat.write(f"  [bold #00e5ff]{'':>50}You[/]")
+        # User bubble — right-aligned, cyan
+        for line in text.split("\n"):
+            chat.write(f"  [#00e5ff on #0d3040]  {line}  [/]")
+        chat.write("")
         self.turn += 1
         self.buddy.on_interaction()
 
@@ -827,13 +817,15 @@ class ForgeAgentApp(App):
 
             if result.tool_calls:
                 names = ", ".join(tc.tool_name for tc in result.tool_calls)
-                chat.write(f"  [dim]tools: {names}[/]")
+                chat.write(f"  [#5c6b7a]  {names}[/]")
                 for _ in result.tool_calls:
                     self.buddy.on_tool_use()
 
             self._face("talking")
-            chat.write(f"\n  [bold green]ForgeAgent[/]")
-            chat.write(f"  {result.assistant_message.content}")
+            # Agent bubble — left-aligned, green
+            chat.write(f"  [bold #00e676]ForgeAgent[/]")
+            for line in result.assistant_message.content.split("\n"):
+                chat.write(f"  [#e0e0e0 on #1a2332]  {line}  [/]")
             chat.write("")
             self._face("idle")
 

@@ -1,7 +1,7 @@
 # Agent Instructions — FORGE-main
 
-Generated: 2026-04-05 14:02
-Agent: forge-dev
+Generated: 2026-04-05 14:31
+Agent: forge-team
 Model: forgeagent
 Project: C:\Users\Ken\Desktop\FORGE-main
 
@@ -23,8 +23,8 @@ Project: C:\Users\Ken\Desktop\FORGE-main
 - Dependencies: rich, textual, httpx, click, python-dotenv, pydantic.
 
 ## Project Structure
-- Total files: 125
-- Directories: -p, commands, datasets, forgeagent, Outputs, public, tools
+- Total files: 136
+- Directories: -p, commands, datasets, forgeagent, forgeagent.egg-info, Outputs, public, tests, tools
 - Config: .env.example, pyproject.toml, requirements.txt
 
 ## Rules
@@ -45,21 +45,21 @@ When ALL tasks above are completed:
 
 ## Tasks
 
-- [ ] Create forgeagent/core/coordinator.py — a Coordinator class that manages multiple agents working on the same project. It should: assign tasks from AGENT.md to different models based on their strengths, track which agent is working on what, prevent file conflicts by locking files being edited, merge results when agents finish. Use the existing InstanceManager 6-slot system.
-- [ ] Add a SWARM MODE button to the TUI sidebar Launch section — when clicked, it reads AGENT.md tasks, splits them across all installed models (up to 6), launches each in a terminal with its assigned subset of tasks. Each agent only sees its tasks in a filtered AGENT.md.
-- [ ] Update forgeagent/deploy/agent_instructions.py — add split_tasks(tasks, n_agents) that divides tasks intelligently: group related tasks (same file mentions stay together), balance workload evenly, return list of task lists.
-- [ ] Add conflict detection to the Coordinator — after all agents finish, scan their file changes for overlapping edits. Show conflicts in the TUI chat with file paths and line ranges. Offer a Merge button.
-- [ ] Wire the Coordinator into the remote dashboard — show each agent slot with its assigned tasks, current progress, and status. Mobile can see all 6 agents working in parallel.
-- [ ] Create forgeagent/core/pipeline.py — an AutoPipeline class that chains: train model -> run tasks -> evaluate -> retrain on failures -> repeat. Config: max_iterations, target_score, auto_improve=True. It reads AGENT.md, runs COMPLETE TODO, evaluates results, harvests failures as training data, rebuilds the model, and loops.
-- [ ] Add a PIPELINE button to the TUI sidebar Build section (hero-alt style) — opens a PipelineWizard where user picks: model, max iterations (1-10), target eval score (0-100), auto-improve toggle. Returns config dict.
-- [ ] Build PipelineWizard in forgeagent/ui/wizards.py — fields: model select, iteration count (Select 1-10), target score (Select 50-100 in steps of 10), auto-improve toggle (Switch). Styled with sci-fi theme colors.
-- [ ] Add iteration tracking to the remote dashboard — show current iteration number, eval score trend (list of scores per iteration), estimated time remaining. Push updates from pipeline to remote state.
-- [ ] Add failure harvesting to the pipeline — when a task fails or eval score drops, capture the prompt+error as a training example tagged "failure-recovery". Feed these back into the dataset before next retrain.
-- [ ] Create forgeagent/tools/code_gen.py — a CodeGenTool that generates entire project scaffolds. Input: project_type (flask-api, react-app, cli-tool, python-package, fastapi-service), name, description. Outputs: full directory structure with boilerplate files. Register in tools/registry.py.
-- [ ] Add a NEW PROJECT button to the TUI sidebar (hero-accent style) — opens a NewProjectWizard: project name input, project type select (Flask API, React App, CLI Tool, Python Package, FastAPI Service, Express API), output path with folder picker. On confirm, runs CodeGenTool then auto-deploys agents to the new project.
-- [ ] Build the Flask API scaffold in code_gen.py — generates: app.py, requirements.txt, .env.example, tests/test_app.py, README.md, Dockerfile, .gitignore. All files should be production-quality with proper error handling, CORS, health endpoint.
-- [ ] Build the Python Package scaffold in code_gen.py — generates: pyproject.toml, src/package_name/__init__.py, src/package_name/main.py, tests/test_main.py, README.md, .gitignore, LICENSE. Follows modern Python packaging standards.
-- [ ] Add project templates to the remote dashboard — a CREATE PROJECT card with type dropdown and name input. Posts to /api/command with create_project:TYPE:NAME:PATH format. Wire into TUI command handler.
-- [ ] After completing all tasks: run python -c "from forgeagent.ui.tui import ForgeAgentApp" to verify no import errors, then zip project to Outputs/build-TIMESTAMP.zip
+- [ ] Rewrite the WORK ON PROJECT flow in forgeagent/ui/tui.py — when user clicks the button and picks a folder, it should: 1) scan all files recursively 2) detect language/framework 3) read key files (README, config, entry points) 4) generate a full analysis report saved to .claude/analysis.md 5) auto-generate 10-15 development tasks based on what it found 6) write tasks to .forgeagent/AGENT.md 7) launch team terminal. Use read_file tool to actually read the project files.
+- [ ] Create forgeagent/core/project_worker.py — a ProjectWorker class that manages the full work cycle on any project folder. Methods: analyze(path) -> reads files and returns analysis dict, plan(analysis) -> generates task list, execute(tasks) -> runs COMPLETE TODO, iterate() -> harvest learning then generate next batch. This is the main engine agents use.
+- [ ] Add auto-iteration to ProjectWorker — after completing one batch of tasks, automatically: harvest training data, update agent memory, generate next task batch, start working again. Config: max_iterations (default 3), stop_on_error (default False). Each iteration gets smarter because agent memory carries forward.
+- [ ] Build the file analysis system in project_worker.py — analyze() should: count files by type (.py, .js, .ts, etc), read the first 100 lines of each entry point, extract function/class names from Python files, find TODO/FIXME/HACK comments, check for missing tests, check for missing docs. Return structured dict.
+- [ ] Upgrade forgeagent/ui/team_cli.py — add automatic task distribution. When team receives a task list, the first agent (coordinator) reads the tasks and assigns each to the best-suited model. Use /assign command or auto-assign on startup. Track which agent owns which task.
+- [ ] Add inter-agent communication to team_cli.py — after each agent completes a task, broadcast a summary to all other agents: "A1 completed: added error handling to client.py, modified 3 functions". Other agents incorporate this into their context automatically.
+- [ ] Add a /iterate command to team_cli.py — triggers: run all remaining tasks, harvest results, generate next batch, continue working. Agents keep going through iterations until all work is done or user types /stop.
+- [ ] Upgrade agent memory in forgeagent/core/iteration.py — after each task completion, save: what file was changed, what tool was used, whether it succeeded, how long it took. Build a skills profile per model: "qwen2.5-coder is good at Python refactoring, jefferyjefferferson is good at writing tests". Use this to assign tasks to the right model.
+- [ ] Add a learning database to forgeagent/deploy/agent_instructions.py — track every task ever completed across all projects. Store in .memory/task_history.json: task description, model used, success/fail, project path, timestamp. Use this history to generate better tasks in future iterations.
+- [ ] Create forgeagent/core/skills.py — a SkillTracker that builds model skill profiles from task_history.json. Methods: rate_model(model, category) -> score 0-100, best_model_for(task) -> model name, get_profile(model) -> dict of scores by category. Categories: code-gen, debugging, testing, refactoring, docs, devops.
+- [ ] Upgrade the zip output in tui.py COMPLETE TODO — after zipping, also generate a CHANGELOG.md in the zip listing what changed this iteration. Read git diff or agent memory to build the changelog automatically.
+- [ ] Add a BUILD & DEPLOY button to the TUI — runs COMPLETE TODO then: 1) zips to Outputs/ 2) git add + commit + push 3) logs the deployment to .claude/deploy_log.md 4) restarts the program. One click does everything.
+- [ ] Create a project dashboard in the remote mobile UI (public/index.html) — show: current project being worked on, files changed this session, iteration count, model skill ratings, and a WORK ON FOLDER button with a path input field.
+- [ ] Add /status command to team_cli.py that shows: each agent name+model, tasks assigned, tasks completed, tools used count, current activity. Formatted as a clean table.
+- [ ] Update README.md with complete documentation: what ForgeAgent is, how to install (pip install -e .), how to run (python -m forgeagent), all buttons explained, mobile remote setup, team mode, WORK ON PROJECT flow, the iteration learning loop.
+- [ ] After completing all tasks: run python -c "from forgeagent.ui.tui import ForgeAgentApp" to verify, then zip to Outputs/build-TIMESTAMP.zip
 
 <!-- Add new tasks above this line. Agents check this section on each prompt. -->

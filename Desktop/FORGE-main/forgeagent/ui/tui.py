@@ -2129,6 +2129,22 @@ class ForgeAgentApp(App):
                     push_log("Restart requested from remote")
                     self._do_restart()
 
+                elif cmd == "team_mode":
+                    import sys as _sys2
+                    import subprocess as _sp3
+                    pp = self.config.cwd
+                    if _sys2.platform == "win32":
+                        _sp3.Popen(f'start "ForgeAgent Team" cmd /c "python -m forgeagent --team --project \\"{pp}\\" & pause"', shell=True, cwd=pp)
+                    chat.write(f"  [#00e676]Team terminal launched (remote)[/]")
+                    push_log("Team mode launched from remote")
+
+                elif cmd.startswith("work_project:"):
+                    wp = cmd[13:].strip()
+                    if wp:
+                        chat.write(f"  [#7c4dff]Deploying to: {wp} (remote)[/]")
+                        push_log(f"Work on project: {wp}")
+                        self._on_work_project(wp)
+
                 elif cmd.startswith("set_tasks:"):
                     # Bulk set tasks from remote JSON
                     tasks_json = cmd[10:]

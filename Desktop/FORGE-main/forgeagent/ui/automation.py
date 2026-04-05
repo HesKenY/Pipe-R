@@ -157,16 +157,22 @@ async def run_improve(ctx: dict, config: dict, on_step) -> dict:
     engine = ctx["engine"]
 
     model_name = config["model_name"]
+    safe_name = mb.normalize_model_name(model_name)
     total = 8
 
-    # Find existing profile and dataset
+    # Find or auto-create profile
     profile = mb.get_profile(model_name)
     if not profile:
-        return {"success": False, "error": f"Profile '{model_name}' not found"}
+        # Auto-create profile for existing installed model
+        profile = mb.create_profile(
+            safe_name, model_name,
+            dataset_name=f"{safe_name}-data",
+            description=f"Auto-created profile for {model_name}",
+        )
 
-    ds = profile.get("datasetName") or f"{model_name}-data"
+    ds = profile.get("datasetName") or f"{safe_name}-data"
     try:
-        dm.create_dataset(ds, f"Data for {model_name}")
+        dm.create_dataset(ds, f"Data for {safe_name}")
     except ValueError:
         pass
 
@@ -267,22 +273,27 @@ async def run_retrain(ctx: dict, config: dict, on_step) -> dict:
     ev = ctx["evaluator"]
 
     model_name = config["model_name"]
+    safe_name = mb.normalize_model_name(model_name)
     focus_info = FOCUS_MAP.get(config.get("focus", "general"), FOCUS_MAP["general"])
     topic = focus_info["topic"]
     total = 7
 
-    # Find existing profile
+    # Find or auto-create profile
     profile = mb.get_profile(model_name)
     if not profile:
-        return {"success": False, "error": f"Profile '{model_name}' not found"}
+        profile = mb.create_profile(
+            safe_name, model_name,
+            dataset_name=f"{safe_name}-data",
+            description=f"Auto-created profile for {model_name}",
+        )
 
     base_model = profile["baseModel"]
-    ds = profile.get("datasetName") or f"{model_name}-data"
+    ds = profile.get("datasetName") or f"{safe_name}-data"
 
     # Step 1: Wipe old dataset and recreate
     on_step(1, total, f"Wiping dataset '{ds}' and starting fresh...")
     dm.delete_dataset(ds)
-    dm.create_dataset(ds, f"Retrained data for {model_name}")
+    dm.create_dataset(ds, f"Retrained data for {safe_name}")
 
     # Step 2: Generate synthetic examples
     on_step(2, total, "Generating fresh synthetic examples...")
@@ -346,15 +357,20 @@ async def run_continue_train(ctx: dict, config: dict, on_step) -> dict:
     engine = ctx["engine"]
 
     model_name = config["model_name"]
+    safe_name = mb.normalize_model_name(model_name)
     total = 7
 
     profile = mb.get_profile(model_name)
     if not profile:
-        return {"success": False, "error": f"Profile '{model_name}' not found"}
+        profile = mb.create_profile(
+            safe_name, model_name,
+            dataset_name=f"{safe_name}-data",
+            description=f"Auto-created profile for {model_name}",
+        )
 
-    ds = profile.get("datasetName") or f"{model_name}-data"
+    ds = profile.get("datasetName") or f"{safe_name}-data"
     try:
-        dm.create_dataset(ds, f"Data for {model_name}")
+        dm.create_dataset(ds, f"Data for {safe_name}")
     except ValueError:
         pass  # Already exists
 

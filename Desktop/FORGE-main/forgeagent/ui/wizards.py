@@ -601,12 +601,11 @@ class ModelSelectWizard(ModalScreen[dict | None]):
         super().__init__()
         self._models = models
         self._current = current_model
-        self._profile_names = {p["name"] for p in profiles}
 
     def compose(self) -> ComposeResult:
         with Vertical(id="msw"):
             yield Static("Models", classes="title")
-            yield Static("Select a model to use, or continue training it.", classes="subtitle")
+            yield Static("Select a model to use, train, or benchmark.", classes="subtitle")
             yield Rule()
             with VerticalScroll(id="msw-scroll"):
                 if not self._models:
@@ -615,15 +614,13 @@ class ModelSelectWizard(ModalScreen[dict | None]):
                     name = m["name"]
                     size = m.get("size", "?")
                     is_active = name == self._current
-                    has_profile = name in self._profile_names
                     with Horizontal(classes="model-row"):
                         if is_active:
                             yield Static("[green]ACTIVE[/]", classes="model-active")
                         yield Static(f"[bold]{name}[/]  [dim]{size}[/]", classes="model-name")
                         yield Button("Use", id=f"msw-use-{i}", variant="success")
-                        if has_profile:
-                            yield Button("Train", id=f"msw-train-{i}", variant="primary")
-                            yield Button("Retrain", id=f"msw-retrain-{i}", variant="warning")
+                        yield Button("Train", id=f"msw-train-{i}", variant="primary")
+                        yield Button("Retrain", id=f"msw-retrain-{i}", variant="warning")
                         yield Button("Bench", id=f"msw-bench-{i}")
             with Horizontal(id="msw-actions"):
                 yield Button("Close", id="msw-close")

@@ -59,9 +59,32 @@ class ModelBuilder:
         (self.profiles_dir / f"{name}.json").write_text(json.dumps(profile, indent=2), encoding="utf-8")
         return profile
 
+    @staticmethod
+    def normalize_model_name(name: str) -> str:
+        """Strip :latest and sanitize for filesystem use."""
+        # Remove :latest tag (ollama default)
+        if name.endswith(":latest"):
+            name = name[:-7]
+        # Replace colons with dashes for filesystem safety
+        return name.replace(":", "-")
+
     def get_profile(self, name: str) -> dict | None:
+        """Look up profile by name, handles :latest and :tag variants."""
+        # Try exact name first
         p = self.profiles_dir / f"{name}.json"
-        return json.loads(p.read_text()) if p.exists() else None
+        if p.exists():
+            return json.loads(p.read_text())
+        # Try normalized name (strip :latest, replace colons)
+        norm = self.normalize_model_name(name)
+        p = self.profiles_dir / f"{norm}.json"
+        if p.exists():
+            return json.loads(p.read_text())
+        # Try base name without any tag
+        base = name.split(":")[0] if ":" in name else name
+        p = self.profiles_dir / f"{base}.json"
+        if p.exists():
+            return json.loads(p.read_text())
+        return None
 
     def list_profiles(self) -> list[dict]:
         results = []
@@ -73,10 +96,11 @@ class ModelBuilder:
         return sorted(results, key=lambda x: x.get("created", ""), reverse=True)
 
     def delete_profile(self, name: str) -> bool:
-        p = self.profiles_dir / f"{name}.json"
-        if p.exists():
-            p.unlink()
-            return True
+        for variant in [name, self.normalize_model_name(name), name.split(":")[0]]:
+            p = self.profiles_dir / f"{variant}.json"
+            if p.exists():
+                p.unlink()
+                return True
         return False
 
     def generate_modelfile(self, profile: dict, examples: list[dict] | None = None) -> str:

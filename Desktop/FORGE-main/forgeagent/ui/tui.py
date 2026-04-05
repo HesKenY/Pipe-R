@@ -8,8 +8,8 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.binding import Binding
 from textual import work
 
-from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ToolInputModal, InfoModal, ModelSelectWizard
-from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test
+from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ShadowLearnWizard, ToolInputModal, InfoModal, ModelSelectWizard
+from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test, run_shadow_learn, SHADOW_TASKS
 
 # ── Logging ───────────────────────────────────────────────────
 _LD = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
@@ -366,6 +366,7 @@ class ForgeAgentApp(App):
                     yield Static("Build", classes="section-header")
                     yield Button("AUTO TRAIN", id="btn-auto-train", classes="hero")
                     yield Button("IMPROVE MODEL", id="btn-improve", classes="hero-alt")
+                    yield Button("Shadow Learn", id="btn-shadow-learn")
                     yield Button("Continue Training", id="btn-continue-train")
                     yield Button("Retrain from Scratch", id="btn-retrain")
 
@@ -567,6 +568,14 @@ class ForgeAgentApp(App):
             self.push_screen(DeployWizard(self.config.model), callback=self._on_deploy)
 
         # ── Training buttons ──────────────────────
+        elif bid == "btn-shadow-learn":
+            if self._training_active:
+                self.notify("Training in progress", severity="warning", timeout=3)
+                return
+            self.push_screen(
+                ShadowLearnWizard(self.config.model),
+                callback=self._on_shadow_learn,
+            )
         elif bid == "btn-continue-train":
             if self._training_active:
                 self.notify("Training already in progress", severity="warning", timeout=3)
@@ -1340,6 +1349,87 @@ class ForgeAgentApp(App):
         except Exception as ex:
             chat.write(f"\n  [red]Code test error: {ex}[/]")
             log.error(f"code_test: {ex}", exc_info=True)
+        finally:
+            self._training_active = False
+            status_bar.set_training("idle")
+            self._hide_progress()
+            self._face("idle")
+
+    # ── Shadow Learning: watch Claude Code work ────
+    async def _on_shadow_learn(self, r: dict | None):
+        if not r:
+            return
+        self._do_shadow_learn(r)
+
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_shadow_learn(self, config: dict) -> None:
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        self._face("training")
+        status_bar.set_training("shadow learning...")
+
+        path = config["path"]
+        task_set = config.get("task_set", "full")
+
+        # Select tasks based on task set
+        if task_set == "quick":
+            tasks = [
+                "Review this codebase for bugs and code quality issues.",
+                "Suggest 3 improvements to the code architecture.",
+                "Find security vulnerabilities in this project.",
+            ]
+        elif task_set == "arch":
+            tasks = [
+                "Read the project structure and explain the architecture.",
+                "Identify the main entry points and data flow.",
+                "Suggest how to restructure this project for better maintainability.",
+            ]
+        elif task_set == "test":
+            tasks = [
+                "Write unit tests for the core functionality.",
+                "Write integration tests for the main workflows.",
+                "Create test fixtures and mock data for testing.",
+            ]
+        else:
+            tasks = list(SHADOW_TASKS)
+
+        chat.write(f"\n  [bold yellow]{'━'*50}[/]")
+        chat.write(f"  [bold yellow]  SHADOW LEARNING[/]")
+        chat.write(f"  [bold yellow]{'━'*50}[/]")
+        chat.write(f"  [dim]Model: {self.config.model}[/]")
+        chat.write(f"  [dim]Project: {path}[/]")
+        chat.write(f"  [dim]Tasks: {len(tasks)} ({task_set})[/]")
+        chat.write(f"  [dim]Claude Code will work on the project. Your model watches and learns.[/]")
+        chat.write("")
+
+        def on_step(step, total, message):
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"shadow {step}/{total}")
+                self._show_progress(message[:30], step, total)
+            except Exception:
+                pass
+
+        try:
+            result = await run_shadow_learn(
+                self.ctx, self.config.model, path, tasks, on_step
+            )
+
+            chat.write("")
+            if result["success"]:
+                chat.write(f"  [bold green]Shadow learning complete![/]")
+                chat.write(f"  [dim]Tasks demonstrated: {result['tasks_sent']}[/]")
+                chat.write(f"  [dim]Lessons captured: {result['lessons_learned']}[/]")
+                chat.write(f"  [green]Model rebuilt with Claude's knowledge.[/]")
+                chat.write("")
+                await self._show_training_level(self.config.model, "After Shadow Learning")
+                self.notify(f"Learned {result['lessons_learned']} lessons from Claude!", timeout=8)
+            else:
+                chat.write(f"  [red]Shadow learning failed: {result.get('build_message', 'unknown')}[/]")
+        except Exception as ex:
+            chat.write(f"\n  [red]Shadow learning error: {ex}[/]")
+            log.error(f"shadow_learn: {ex}", exc_info=True)
         finally:
             self._training_active = False
             status_bar.set_training("idle")

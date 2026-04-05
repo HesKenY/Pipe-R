@@ -1169,6 +1169,76 @@ async def run_competition(ctx: dict, model_name: str, project_path: str, on_step
     }
 
 
+# ── Shadow Learning: watch Claude Code and learn ─────────────
+async def run_shadow_learn(ctx: dict, model_name: str, project_path: str, tasks: list[str], on_step) -> dict:
+    """
+    Shadow learning: give Claude Code real tasks in a project folder,
+    capture its responses, and train the local model on them.
+
+    The local model watches Claude work and learns its patterns.
+    """
+    import asyncio
+    dm = ctx["dataset_manager"]
+    mb = ctx["model_builder"]
+    ev = ctx["evaluator"]
+    from ..training.dataset_manager import TrainingExample, _uid
+
+    safe_name = mb.normalize_model_name(model_name)
+    profile = mb.get_profile(model_name)
+    if not profile:
+        profile = mb.create_profile(safe_name, model_name, dataset_name=f"{safe_name}-data")
+    ds = profile.get("datasetName") or f"{safe_name}-data"
+    try:
+        dm.create_dataset(ds, f"Shadow learning data for {safe_name}")
+    except ValueError:
+        pass
+
+    total = len(tasks) + 2  # tasks + build + assess
+    learned = 0
+
+    # Phase 1: Send each task to Claude Code, capture response
+    for i, task in enumerate(tasks):
+        on_step(i + 1, total, f"Claude working: {task[:45]}...")
+        response, latency = await _run_claude_cli(task, project_path)
+        if response and not response.startswith("ERROR"):
+            dm.add_example(ds, TrainingExample(
+                id=_uid(), prompt=task, completion=response[:3000],
+                tags=["shadow-learning", "claude-response"],
+                source="shadow",
+            ))
+            learned += 1
+
+    # Phase 2: Rebuild model with new data
+    on_step(len(tasks) + 1, total, f"Rebuilding model with {learned} new lessons...")
+    build_result = await mb.build_model(safe_name if safe_name != model_name else model_name, dm)
+
+    # Phase 3: Assess
+    on_step(len(tasks) + 2, total, "Assessing updated model...")
+
+    return {
+        "success": build_result.success if build_result else False,
+        "model_name": model_name,
+        "tasks_sent": len(tasks),
+        "lessons_learned": learned,
+        "build_message": build_result.message if build_result else "No build",
+    }
+
+
+# Default shadow learning tasks — real-world coding tasks for Claude to demonstrate
+SHADOW_TASKS = [
+    "Read the project structure and explain the architecture in detail.",
+    "Find all TODO comments and suggest fixes for each one.",
+    "Write unit tests for the main module in this project.",
+    "Review the code for security vulnerabilities and suggest fixes.",
+    "Refactor any duplicate code you find into reusable functions.",
+    "Add error handling to functions that are missing it.",
+    "Write a README.md that explains how to set up and use this project.",
+    "Find performance bottlenecks and suggest optimizations.",
+    "Add type hints to all functions that are missing them.",
+    "Create a .gitignore file appropriate for this project type.",
+]
+
+
 # ── IQ Test Benchmark ────────────────────────────────────────
 # Tests pattern recognition, logic, math reasoning, abstraction,
 # spatial reasoning, and language comprehension — maps to IQ-style score.

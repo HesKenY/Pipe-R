@@ -243,6 +243,81 @@ class CompetitionWizard(ModalScreen[dict | None]):
 
 
 # ══════════════════════════════════════════════════════════════
+#  SHADOW LEARN WIZARD — watch Claude Code and learn
+# ══════════════════════════════════════════════════════════════
+class ShadowLearnWizard(ModalScreen[dict | None]):
+    """Deploy Claude Code into a project folder and learn from its work."""
+
+    CSS = """
+    ShadowLearnWizard { align: center middle; }
+    #slw {
+        width: 62; height: 28;
+        border: round $warning; background: $surface;
+        padding: 1 2;
+    }
+    #slw Static.title { text-style: bold; color: $warning; margin: 0 0 1 0; }
+    #slw Static.subtitle { color: $text-muted; margin: 0 0 1 0; }
+    #slw-scroll { height: 1fr; }
+    #slw-scroll Static.field-label { color: $text-muted; margin: 1 0 0 0; }
+    #slw-scroll Input { margin: 0; }
+    #slw-scroll Select { margin: 0; }
+    #slw-path-row { height: 3; }
+    #slw-path-row Input { width: 1fr; }
+    #slw-browse { width: 10; height: 3; margin: 0 0 0 1; }
+    #slw-actions { height: auto; dock: bottom; margin: 1 0 0 0; }
+    #slw-actions Button { min-width: 18; margin: 0 1 0 0; height: 3; }
+    """
+
+    TASK_SETS = [
+        ("Full Review (10 tasks — recommended)", "full"),
+        ("Quick (3 tasks — code review only)", "quick"),
+        ("Architecture (3 tasks — structure focused)", "arch"),
+        ("Testing (3 tasks — write tests)", "test"),
+    ]
+
+    def __init__(self, model_name: str = "forgeagent"):
+        super().__init__()
+        self._model = model_name
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="slw"):
+            yield Static("Shadow Learning", classes="title")
+            yield Static(f"Claude Code works on a project. {self._model} learns.", classes="subtitle")
+            yield Rule()
+            with VerticalScroll(id="slw-scroll"):
+                yield Static("Project folder", classes="field-label")
+                with Horizontal(id="slw-path-row"):
+                    yield Input(placeholder="C:/Projects/myapp", id="slw-path")
+                    yield Button("Browse", id="slw-browse")
+                yield Static("What should Claude demonstrate?", classes="field-label")
+                yield Select(self.TASK_SETS, value="full", id="slw-tasks")
+            with Horizontal(id="slw-actions"):
+                yield Button("Start Learning", variant="warning", id="slw-go")
+                yield Button("Cancel", id="slw-no")
+
+    def on_mount(self):
+        self.query_one("#slw-path", Input).focus()
+
+    def _on_folder_picked(self, path: str | None):
+        if path:
+            self.query_one("#slw-path", Input).value = path
+
+    def on_button_pressed(self, e: Button.Pressed):
+        if e.button.id == "slw-browse":
+            self.app.push_screen(FolderPicker(), callback=self._on_folder_picked)
+            return
+        if e.button.id == "slw-no":
+            self.dismiss(None)
+        elif e.button.id == "slw-go":
+            path = self.query_one("#slw-path", Input).value.strip()
+            task_sel = self.query_one("#slw-tasks", Select)
+            task_set = str(task_sel.value) if task_sel.value != Select.BLANK else "full"
+            if not path:
+                return
+            self.dismiss({"path": path, "task_set": task_set})
+
+
+# ══════════════════════════════════════════════════════════════
 #  RETRAIN WIZARD — rebuild model from scratch with fresh data
 # ══════════════════════════════════════════════════════════════
 class RetrainWizard(ModalScreen[dict | None]):

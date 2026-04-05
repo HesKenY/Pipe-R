@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.memory/
+__pycache__/
+*.pyc
+*.egg-info/
+*.egg
+.eggs/
+*.whl
+*.spec
+.env
+.venv/
+venv/
+.pytest_cache/
+.installed

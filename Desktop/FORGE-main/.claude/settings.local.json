@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsx:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(pip install:*)",
+      "Bash(pip show:*)",
+      "Bash(rm -rf forgeagent.egg-info __pycache__ .memory/scrape-cache .memory/instances/state.json .memory/deployed/registry.json)",
+      "Bash(find . -name \"__pycache__\" -type d -exec rm -rf {} +)",
+      "Bash(find . -name \"*.pyc\" -delete)"
+    ]
+  }
+}

@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.binding import Binding
 from textual import work
 
-from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal, ModelSelectWizard
+from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ToolInputModal, InfoModal, ModelSelectWizard
 from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test
 
 # ── Logging ───────────────────────────────────────────────────
@@ -605,8 +605,8 @@ class ForgeAgentApp(App):
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
                 return
             self.push_screen(
-                ToolInputModal("VS Claude Code", "Project folder (or . for current)", ".", "COMPETITION:{value}"),
-                callback=self._on_competition_input,
+                CompetitionWizard(self.config.model),
+                callback=self._on_competition_wizard,
             )
         elif bid == "btn-iqtest":
             if self._training_active:
@@ -1347,11 +1347,10 @@ class ForgeAgentApp(App):
             self._face("idle")
 
     # ── Competition: local model vs Claude Code CLI ─
-    async def _on_competition_input(self, message: str | None):
-        if not message or not message.startswith("COMPETITION:"):
+    async def _on_competition_wizard(self, r: dict | None):
+        if not r:
             return
-        path = message.replace("COMPETITION:", "").strip() or "."
-        self._do_competition(path)
+        self._do_competition(r.get("path", "."))
 
     @work(thread=False, exclusive=True, group="training")
     async def _do_competition(self, project_path: str) -> None:

@@ -182,6 +182,67 @@ class ImproveWizard(ModalScreen[dict | None]):
 
 
 # ══════════════════════════════════════════════════════════════
+#  COMPETITION WIZARD — VS Claude Code with folder picker
+# ══════════════════════════════════════════════════════════════
+class CompetitionWizard(ModalScreen[dict | None]):
+    """Pick a project folder to run head-to-head competition with Claude Code."""
+
+    CSS = """
+    CompetitionWizard { align: center middle; }
+    #cmpw {
+        width: 62; height: 24;
+        border: round $accent; background: $surface;
+        padding: 1 2;
+    }
+    #cmpw Static.title { text-style: bold; color: $accent; margin: 0 0 1 0; }
+    #cmpw Static.subtitle { color: $text-muted; margin: 0 0 1 0; }
+    #cmpw-scroll { height: 1fr; }
+    #cmpw-scroll Static.field-label { color: $text-muted; margin: 1 0 0 0; }
+    #cmpw-scroll Input { margin: 0; }
+    #cmpw-path-row { height: 3; }
+    #cmpw-path-row Input { width: 1fr; }
+    #cmpw-browse { width: 10; height: 3; margin: 0 0 0 1; }
+    #cmpw-actions { height: auto; dock: bottom; margin: 1 0 0 0; }
+    #cmpw-actions Button { min-width: 18; margin: 0 1 0 0; height: 3; }
+    """
+
+    def __init__(self, model_name: str = "forgeagent"):
+        super().__init__()
+        self._model = model_name
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="cmpw"):
+            yield Static("VS Claude Code", classes="title")
+            yield Static(f"Run {self._model} head-to-head against Claude Code CLI.", classes="subtitle")
+            yield Rule()
+            with VerticalScroll(id="cmpw-scroll"):
+                yield Static("Project folder for competition", classes="field-label")
+                with Horizontal(id="cmpw-path-row"):
+                    yield Input(placeholder="C:/Projects/myapp  (or . for current)", id="cmpw-path", value=".")
+                    yield Button("Browse", id="cmpw-browse")
+            with Horizontal(id="cmpw-actions"):
+                yield Button("Start Competition", variant="success", id="cmpw-go")
+                yield Button("Cancel", id="cmpw-no")
+
+    def on_mount(self):
+        self.query_one("#cmpw-path", Input).focus()
+
+    def _on_folder_picked(self, path: str | None):
+        if path:
+            self.query_one("#cmpw-path", Input).value = path
+
+    def on_button_pressed(self, e: Button.Pressed):
+        if e.button.id == "cmpw-browse":
+            self.app.push_screen(FolderPicker(), callback=self._on_folder_picked)
+            return
+        if e.button.id == "cmpw-no":
+            self.dismiss(None)
+        elif e.button.id == "cmpw-go":
+            path = self.query_one("#cmpw-path", Input).value.strip() or "."
+            self.dismiss({"path": path})
+
+
+# ══════════════════════════════════════════════════════════════
 #  RETRAIN WIZARD — rebuild model from scratch with fresh data
 # ══════════════════════════════════════════════════════════════
 class RetrainWizard(ModalScreen[dict | None]):

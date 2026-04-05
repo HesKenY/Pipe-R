@@ -9,7 +9,7 @@ from textual.binding import Binding
 from textual import work
 
 from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal, ModelSelectWizard
-from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test
+from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level
 
 # ── Logging ───────────────────────────────────────────────────
 _LD = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
@@ -521,6 +521,18 @@ class ForgeAgentApp(App):
         if model_name:
             face.set_model_name(model_name)
 
+    # ── Training level display ────────────────────
+    async def _show_training_level(self, model_name: str, label: str = ""):
+        """Run assessment and display training level vs Claude Code."""
+        chat = self.query_one("#chatlog", RichLog)
+        chat.write(f"  [dim]Assessing training level vs Claude Code...[/]")
+        try:
+            assessment = await assess_training_level(self.ctx, model_name)
+            for line in assessment["lines"]:
+                chat.write(line)
+        except Exception as ex:
+            chat.write(f"  [dim]Could not assess: {ex}[/]")
+
     # ── Button clicks ─────────────────────────────
     async def on_button_pressed(self, e: Button.Pressed):
         bid = e.button.id or ""
@@ -786,6 +798,7 @@ class ForgeAgentApp(App):
                 self._face("idle", result["model_name"])
                 chat.write(f"  [bold green]Switched to model: {result['model_name']}[/]")
                 chat.write("")
+                await self._show_training_level(result["model_name"], "After Refinement")
                 self.notify(f"Model refined!", severity="information", timeout=8)
             else:
                 chat.write(f"\n  [red]Refinement failed: {result.get('error', 'unknown')}[/]")
@@ -850,6 +863,8 @@ class ForgeAgentApp(App):
                     status_bar.set_datasets(nd)
                 except Exception:
                     pass
+
+                await self._show_training_level(result["model_name"], "After Auto Train")
             else:
                 chat.write(f"\n  [red]Training failed at step '{result.get('step', '?')}': {result.get('error', 'unknown')}[/]")
                 self.notify("Training failed", severity="error", timeout=8)
@@ -902,6 +917,7 @@ class ForgeAgentApp(App):
                     color = "green" if diff > 0 else ("red" if diff < 0 else "yellow")
                     chat.write(f"  Score: {before}% -> [{color}]{after}%[/]  ({'+' if diff >= 0 else ''}{diff}%)")
                 chat.write("")
+                await self._show_training_level(config["model_name"], "After Improvement")
                 self.notify("Model improved!", severity="information", timeout=5)
             else:
                 chat.write(f"\n  [red]Improvement failed: {result.get('error', 'unknown')}[/]")
@@ -950,6 +966,7 @@ class ForgeAgentApp(App):
                     chat.write(f"  [green]Smoke test: PASSED[/]")
                 chat.write(f"  [dim]Build time: {result['duration']:.1f}s[/]")
                 chat.write("")
+                await self._show_training_level(result["model_name"], "After Retrain")
                 self.notify(f"Model retrained!", severity="information", timeout=8)
             else:
                 chat.write(f"\n  [red]Retrain failed: {result.get('error', 'unknown')}[/]")
@@ -1001,6 +1018,7 @@ class ForgeAgentApp(App):
                     chat.write(f"  Score: {before}% -> [{color}]{after}%[/]  ({'+' if diff >= 0 else ''}{diff}%)")
                 chat.write(f"  [dim]Build time: {result['duration']:.1f}s[/]")
                 chat.write("")
+                await self._show_training_level(config["model_name"], "After Continue Training")
                 self.notify("Training continued!", severity="information", timeout=5)
             else:
                 chat.write(f"\n  [red]Continue training failed: {result.get('error', 'unknown')}[/]")

@@ -450,6 +450,153 @@ async def run_continue_train(ctx: dict, config: dict, on_step) -> dict:
     }
 
 
+# ── Training Level Assessment — Claude Code as the bar ───────
+# Claude Code baseline scores (estimated from Claude Haiku-level performance)
+# These represent what a top-tier cloud AI coding agent scores on each category.
+CLAUDE_BASELINE = {
+    "tool-use":           95,   # near-perfect tool calling
+    "code-gen":           92,   # strong code generation
+    "reasoning":          90,   # solid reasoning
+    "instruction-follow": 98,   # excellent instruction following
+    "multi-step":         88,   # good multi-step planning
+    "overall":            92,   # overall Claude Code benchmark
+}
+
+LEVEL_THRESHOLDS = [
+    (0,   "Beginner",      "[red]"),
+    (20,  "Novice",        "[red]"),
+    (35,  "Apprentice",    "[yellow]"),
+    (50,  "Competent",     "[yellow]"),
+    (65,  "Proficient",    "[green]"),
+    (78,  "Advanced",      "[green]"),
+    (88,  "Expert",        "[cyan]"),
+    (95,  "Master",        "[bold cyan]"),
+    (100, "Claude-Level",  "[bold magenta]"),
+]
+
+
+def get_training_level(score: int) -> tuple[str, str, int]:
+    """Return (level_name, color, next_threshold) for a given score."""
+    level_name, color = "Beginner", "[red]"
+    next_thresh = 20
+    for thresh, name, c in LEVEL_THRESHOLDS:
+        if score >= thresh:
+            level_name, color = name, c
+        else:
+            next_thresh = thresh
+            break
+    else:
+        next_thresh = 100
+    return level_name, color, next_thresh
+
+
+def format_training_report(model_name: str, eval_report: dict, label: str = "") -> list[str]:
+    """
+    Generate a visual training level report comparing model to Claude Code.
+    Returns list of Rich-markup lines for display.
+    """
+    lines = []
+    score = eval_report.get("avgScore", 0)
+    claude_score = CLAUDE_BASELINE["overall"]
+    level_name, color, next_thresh = get_training_level(score)
+    gap = claude_score - score
+
+    # Header
+    header = f"  TRAINING LEVEL{f' — {label}' if label else ''}"
+    lines.append(f"  [bold]{'━'*56}[/]")
+    lines.append(f"  [bold]{header}[/]")
+    lines.append(f"  [bold]{'━'*56}[/]")
+    lines.append("")
+
+    # Overall score bar
+    bar_width = 40
+    filled = round(score / 100 * bar_width)
+    claude_pos = round(claude_score / 100 * bar_width)
+    bar = ""
+    for i in range(bar_width):
+        if i < filled:
+            bar += "█"
+        elif i == claude_pos:
+            bar += "│"
+        else:
+            bar += "░"
+    lines.append(f"  {color}{model_name}[/]")
+    lines.append(f"  {color}{bar}[/]  [bold]{score}%[/]")
+    lines.append(f"  {'':>{claude_pos * 1 + 2}}[dim magenta]▲ Claude Code {claude_score}%[/]")
+    lines.append("")
+
+    # Level badge
+    lines.append(f"  Level: {color}{level_name}[/]")
+    if score < claude_score:
+        lines.append(f"  [dim]Gap to Claude Code: {gap}% | Next level at {next_thresh}%[/]")
+    else:
+        lines.append(f"  [bold magenta]Matching Claude Code performance![/]")
+    lines.append("")
+
+    # Per-category breakdown vs Claude
+    by_cat = eval_report.get("byCategory", {})
+    if by_cat:
+        lines.append(f"  [bold]{'Category':<22} {'You':<8} {'Claude':<8} {'Gap':<8} Bar[/]")
+        lines.append(f"  {'─'*56}")
+        for cat, data in sorted(by_cat.items()):
+            cat_score = round(data["score"]) if data.get("score") else (round(data["passed"] / data["total"] * 100) if data["total"] else 0)
+            claude_cat = CLAUDE_BASELINE.get(cat, claude_score)
+            cat_gap = claude_cat - cat_score
+            # Mini bar (20 chars)
+            mini_w = 20
+            mini_filled = round(cat_score / 100 * mini_w)
+            mini_claude = round(claude_cat / 100 * mini_w)
+            mini_bar = ""
+            for i in range(mini_w):
+                if i < mini_filled:
+                    mini_bar += "█"
+                elif i == mini_claude:
+                    mini_bar += "│"
+                else:
+                    mini_bar += "░"
+            gap_str = f"-{cat_gap}" if cat_gap > 0 else f"+{abs(cat_gap)}"
+            cat_color = "[green]" if cat_gap <= 5 else ("[yellow]" if cat_gap <= 20 else "[red]")
+            lines.append(f"  {cat:<22} {cat_color}{cat_score}%[/]{'':>4} {claude_cat}%{'':>4} {cat_color}{gap_str}%[/]{'':>3} {mini_bar}")
+        lines.append("")
+
+    # Recommendation
+    if score < 35:
+        lines.append(f"  [yellow]Tip: Run IMPROVE or CONTINUE TRAINING to add more data.[/]")
+        lines.append(f"  [dim]More training data = better performance. Try scraping web docs.[/]")
+    elif score < 65:
+        lines.append(f"  [yellow]Tip: Getting there! Continue training with conversations + codebase.[/]")
+    elif score < 88:
+        lines.append(f"  [green]Strong model. Fine-tune with domain-specific data to close the gap.[/]")
+    else:
+        lines.append(f"  [cyan]Excellent! Your model is approaching Claude Code performance.[/]")
+    lines.append("")
+
+    return lines
+
+
+async def assess_training_level(ctx: dict, model_name: str, on_step=None) -> dict:
+    """Run eval and return training level assessment."""
+    ev = ctx["evaluator"]
+    if on_step:
+        on_step(-1, -1, "Assessing training level...")
+    try:
+        report = await ev.evaluate(model_name)
+    except Exception:
+        report = {"avgScore": 0, "byCategory": {}}
+
+    score = report.get("avgScore", 0)
+    level_name, color, next_thresh = get_training_level(score)
+
+    return {
+        "report": report,
+        "score": score,
+        "level": level_name,
+        "claude_baseline": CLAUDE_BASELINE["overall"],
+        "gap": CLAUDE_BASELINE["overall"] - score,
+        "lines": format_training_report(model_name, report),
+    }
+
+
 # ── Coding Challenges — auto-graded test system ──────────────
 CODING_CHALLENGES = [
     {

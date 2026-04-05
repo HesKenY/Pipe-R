@@ -53,7 +53,8 @@ async def run_auto_train(ctx: dict, config: dict, on_step) -> dict:
     base_key = SIZE_MAP.get(config["size"], "base_14b")
     base_model = focus_info[base_key]
     topic = focus_info["topic"]
-    name = config.get("name") or f"forge-{config['focus']}"
+    raw_name = config.get("name") or f"forge-{config['focus']}"
+    name = mb.normalize_model_name(raw_name)
     ds = f"{name}-data"
     total = 9
 

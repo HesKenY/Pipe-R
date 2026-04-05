@@ -10,12 +10,12 @@ from textual.app import ComposeResult
 #  AUTO TRAIN WIZARD
 # ══════════════════════════════════════════════════════════════
 class AutoTrainWizard(ModalScreen[dict | None]):
-    """One-click model training — user picks focus and size, everything else is automated."""
+    """One-click model training — build new or refine existing model."""
 
     CSS = """
     AutoTrainWizard { align: center middle; }
     #atw {
-        width: 60; height: 32;
+        width: 62; height: 38;
         border: round $success; background: $surface;
         padding: 1 2;
     }
@@ -44,15 +44,28 @@ class AutoTrainWizard(ModalScreen[dict | None]):
         ("Powerful  (32B — best quality, slower)", "powerful"),
     ]
 
+    def __init__(self, installed_models: list[dict] | None = None):
+        super().__init__()
+        self._installed = installed_models or []
+
     def compose(self) -> ComposeResult:
+        # Build existing model options
+        model_options = [("Build New Model", "__new__")]
+        for m in self._installed:
+            name = m["name"]
+            size = m.get("size", "")
+            model_options.append((f"Refine: {name}  ({size})", name))
+
         with Vertical(id="atw"):
             yield Static("Auto Train", classes="title")
-            yield Static("Pick a focus and size. Everything else is automatic.", classes="subtitle")
+            yield Static("Build a new model or refine an existing one.", classes="subtitle")
             yield Rule()
             with VerticalScroll(id="atw-scroll"):
+                yield Static("Start from", classes="field-label")
+                yield Select(model_options, value="__new__", id="atw-existing")
                 yield Static("What kind of coding?", classes="field-label")
                 yield Select(self.FOCUS_OPTIONS, value="python", id="atw-focus")
-                yield Static("Model size", classes="field-label")
+                yield Static("Model size (for new models)", classes="field-label")
                 yield Select(self.SIZE_OPTIONS, value="balanced", id="atw-size")
                 yield Static("Model name (optional)", classes="field-label")
                 yield Input(placeholder="auto-generated if blank", id="atw-name")
@@ -61,7 +74,7 @@ class AutoTrainWizard(ModalScreen[dict | None]):
                 yield Button("Cancel", id="atw-no")
 
     def on_mount(self):
-        self.query_one("#atw-focus", Select).focus()
+        self.query_one("#atw-existing", Select).focus()
 
     def on_button_pressed(self, e: Button.Pressed):
         if e.button.id == "atw-no":
@@ -69,10 +82,13 @@ class AutoTrainWizard(ModalScreen[dict | None]):
         elif e.button.id == "atw-go":
             focus_sel = self.query_one("#atw-focus", Select)
             size_sel = self.query_one("#atw-size", Select)
+            existing_sel = self.query_one("#atw-existing", Select)
+            existing = str(existing_sel.value) if existing_sel.value != Select.BLANK else "__new__"
             self.dismiss({
                 "focus": str(focus_sel.value) if focus_sel.value != Select.BLANK else "general",
                 "size": str(size_sel.value) if size_sel.value != Select.BLANK else "balanced",
                 "name": self.query_one("#atw-name", Input).value.strip() or "",
+                "existing_model": existing if existing != "__new__" else None,
             })
 
 
@@ -85,7 +101,7 @@ class ImproveWizard(ModalScreen[dict | None]):
     CSS = """
     ImproveWizard { align: center middle; }
     #imw {
-        width: 60; height: 30;
+        width: 60; height: 34;
         border: round $primary; background: $surface;
         padding: 1 2;
     }
@@ -110,16 +126,28 @@ class ImproveWizard(ModalScreen[dict | None]):
         ("DevOps", "devops"),
     ]
 
-    def __init__(self, model_name: str = "forgeagent"):
+    def __init__(self, model_name: str = "forgeagent", installed_models: list[dict] | None = None):
         super().__init__()
         self._model = model_name
+        self._installed = installed_models or []
 
     def compose(self) -> ComposeResult:
+        # Build model dropdown
+        model_options = []
+        for m in self._installed:
+            name = m["name"]
+            size = m.get("size", "")
+            model_options.append((f"{name}  ({size})", name))
+        if not model_options:
+            model_options.append((self._model, self._model))
+
         with Vertical(id="imw"):
             yield Static("Improve Model", classes="title")
-            yield Static(f"Add more training data to: {self._model}", classes="subtitle")
+            yield Static("Select a model and add more training data.", classes="subtitle")
             yield Rule()
             with VerticalScroll(id="imw-scroll"):
+                yield Static("Which model to improve?", classes="field-label")
+                yield Select(model_options, value=self._model, id="imw-model")
                 yield Static("Learn from your conversations?", classes="field-label")
                 with Horizontal(classes="toggle-row"):
                     yield Switch(value=True, id="imw-harvest")
@@ -134,10 +162,12 @@ class ImproveWizard(ModalScreen[dict | None]):
         if e.button.id == "imw-no":
             self.dismiss(None)
         elif e.button.id == "imw-go":
+            model_sel = self.query_one("#imw-model", Select)
             topic_sel = self.query_one("#imw-topic", Select)
+            model_val = str(model_sel.value) if model_sel.value != Select.BLANK else self._model
             topic_val = str(topic_sel.value) if topic_sel.value != Select.BLANK else ""
             self.dismiss({
-                "model_name": self._model,
+                "model_name": model_val,
                 "harvest_conversations": self.query_one("#imw-harvest", Switch).value,
                 "scrape_topic": topic_val or None,
             })

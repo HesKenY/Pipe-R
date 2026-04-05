@@ -381,12 +381,14 @@ class ForgeAgentApp(App):
             if self._training_active:
                 self.notify("Training already in progress", severity="warning", timeout=3)
                 return
-            self.push_screen(AutoTrainWizard(), callback=self._on_auto_train)
+            models = self.ctx["model_builder"].list_local_models()
+            self.push_screen(AutoTrainWizard(installed_models=models), callback=self._on_auto_train)
         elif bid == "btn-improve":
             if self._training_active:
                 self.notify("Training already in progress", severity="warning", timeout=3)
                 return
-            self.push_screen(ImproveWizard(self.config.model), callback=self._on_improve)
+            models = self.ctx["model_builder"].list_local_models()
+            self.push_screen(ImproveWizard(self.config.model, installed_models=models), callback=self._on_improve)
         elif bid == "btn-deploy":
             self.push_screen(DeployWizard(self.config.model), callback=self._on_deploy)
 
@@ -554,7 +556,90 @@ class ForgeAgentApp(App):
     async def _on_auto_train(self, r: dict | None):
         if not r:
             return
-        self._do_auto_train(r)
+        # If user selected an existing model, run it through refined training
+        if r.get("existing_model"):
+            self._do_refine_existing(r)
+        else:
+            self._do_auto_train(r)
+
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_refine_existing(self, config: dict) -> None:
+        """Refine an existing model — create/update profile, add data, rebuild."""
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        status_bar.set_training("refining...")
+
+        existing = config["existing_model"]
+        focus = config.get("focus", "general")
+        name = config.get("name") or existing
+
+        chat.write(f"\n  [bold green]Refining existing model: {existing}[/]")
+        chat.write(f"  [dim]Focus: {focus} | Output model: {name}[/]")
+        chat.write("")
+
+        from .automation import FOCUS_MAP, run_auto_train
+
+        # If name differs from existing, we're creating a variant
+        # Set the config to use the existing model's base
+        mb = self.ctx["model_builder"]
+        profile = mb.get_profile(existing)
+
+        if profile:
+            # Use existing profile's base model
+            base = profile["baseModel"]
+            size_key = "balanced"
+            for sk, bk in [("fast", "base_7b"), ("balanced", "base_14b"), ("powerful", "base_32b")]:
+                focus_info = FOCUS_MAP.get(focus, FOCUS_MAP["general"])
+                if focus_info[bk] == base:
+                    size_key = sk
+                    break
+            config["size"] = size_key
+            if name != existing:
+                config["name"] = name
+        else:
+            # No profile — treat as continue training with full data collection
+            pass
+
+        config["name"] = name
+
+        def on_step(step, total, message):
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"step {step}/{total}")
+                self._show_progress(message[:30], step, total)
+            except Exception:
+                pass
+
+        try:
+            result = await run_auto_train(self.ctx, config, on_step)
+
+            if result["success"]:
+                chat.write("")
+                chat.write(f"  [bold green]Model '{result['model_name']}' refined![/]")
+                ex = result["examples"]
+                chat.write(f"  [dim]Training data: {ex['synthetic']} synthetic + {ex['scraped']} scraped + {ex['codebase']} codebase[/]")
+                smoke = result["smoke"]
+                if smoke.get("alive"):
+                    chat.write(f"  [green]Smoke test: PASSED[/]")
+                chat.write(f"  [dim]Build time: {result['duration']:.1f}s[/]")
+                chat.write("")
+
+                self.engine.set_model(result["model_name"])
+                self.config.model = result["model_name"]
+                status_bar.set_model(result["model_name"])
+                chat.write(f"  [bold green]Switched to model: {result['model_name']}[/]")
+                chat.write("")
+                self.notify(f"Model refined!", severity="information", timeout=8)
+            else:
+                chat.write(f"\n  [red]Refinement failed: {result.get('error', 'unknown')}[/]")
+        except Exception as ex:
+            chat.write(f"\n  [red]Refinement error: {ex}[/]")
+            log.error(f"refine: {ex}", exc_info=True)
+        finally:
+            self._training_active = False
+            status_bar.set_training("idle")
+            self._hide_progress()
 
     @work(thread=False, exclusive=True, group="training")
     async def _do_auto_train(self, config: dict) -> None:

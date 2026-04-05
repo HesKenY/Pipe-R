@@ -357,6 +357,8 @@ class ForgeAgentApp(App):
         self.setup_status = ctx.get("setup_status", {})
         self.turn = 0
         self._training_active = False
+        self._todo_paused = False
+        self._todo_running = False
         log.info(f"init model={self.config.model}")
 
     # ── Layout ────────────────────────────────────
@@ -624,10 +626,28 @@ class ForgeAgentApp(App):
         elif bid == "btn-agents":
             await self._show_agents()
         elif bid == "btn-complete-todo":
-            if self._training_active:
+            if self._todo_running and not self._todo_paused:
+                # Currently running — pause it
+                self._todo_paused = True
+                e.button.label = "RESUME TODO"
+                e.button.remove_class("hero")
+                e.button.add_class("hero-alt")
+                self.notify("Pausing after current task...", timeout=3)
+                return
+            elif self._todo_running and self._todo_paused:
+                # Currently paused — resume it
+                self._todo_paused = False
+                e.button.label = "PAUSE"
+                e.button.remove_class("hero-alt")
+                e.button.add_class("hero")
+                self.notify("Resuming...", timeout=2)
+                return
+            elif self._training_active:
                 self.notify("Agent already working", severity="warning", timeout=3)
                 return
-            self._do_complete_todo()
+            else:
+                # Start fresh
+                self._do_complete_todo()
         elif bid == "btn-add-task":
             self.push_screen(
                 ToolInputModal("Add Task", "Task for agents to complete", "Add error handling to all API endpoints", "ADDTASK:{value}"),
@@ -1497,19 +1517,57 @@ class ForgeAgentApp(App):
             push_result = pp.git_push()
             chat.write(f"  [dim]Auto-push: {push_result['message']}[/]")
 
-    # ── COMPLETE TODO — auto-run all AGENT.md tasks ─
+    # ── COMPLETE TODO — auto-run all AGENT.md tasks with pause/resume ─
+    def _save_todo_log(self, project_path: str, completed: int, total: int,
+                       task_results: list[dict], status: str = "paused"):
+        """Save progress log so work is never lost."""
+        from pathlib import Path as P
+        import json
+        from datetime import datetime
+        log_dir = P(project_path) / ".forgeagent"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "todo_progress.json"
+        log_file.write_text(json.dumps({
+            "status": status,
+            "completed": completed,
+            "total": total,
+            "model": self.config.model,
+            "timestamp": datetime.now().isoformat(),
+            "results": task_results,
+        }, indent=2), encoding="utf-8")
+
+    def _load_todo_log(self, project_path: str) -> dict | None:
+        """Load previous progress log."""
+        from pathlib import Path as P
+        import json
+        log_file = P(project_path) / ".forgeagent" / "todo_progress.json"
+        if log_file.exists():
+            try:
+                return json.loads(log_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        return None
+
     @work(thread=False, exclusive=True, group="training")
     async def _do_complete_todo(self) -> None:
-        """Read AGENT.md tasks, deploy an agent to complete each one, show progress."""
+        """Read AGENT.md tasks, run each with the model, pause/resume, save progress."""
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._todo_running = True
+        self._todo_paused = False
         self._face("training")
         status_bar.set_training("working...")
 
+        # Swap button to PAUSE
+        try:
+            btn = self.query_one("#btn-complete-todo", Button)
+            btn.label = "PAUSE"
+        except Exception:
+            pass
+
         from ..deploy.agent_instructions import get_pending_tasks, complete_task, write_agent_instructions
         from pathlib import Path as P
-        import shutil
 
         project_path = self.config.cwd
         agent_md = P(project_path) / ".forgeagent" / "AGENT.md"
@@ -1523,30 +1581,69 @@ class ForgeAgentApp(App):
             chat.write(f"\n  [#ffd740]No pending tasks in AGENT.md[/]")
             chat.write(f"  [#5c6b7a]Click 'Add Task' to create tasks, or I'll write them for you.[/]")
             self._training_active = False
+            self._todo_running = False
             self._face("idle")
             status_bar.set_training("idle")
+            self._reset_todo_button()
             return
 
         total = len(tasks)
+        task_results: list[dict] = []
+
+        # Check for previous progress to resume from
+        prev_log = self._load_todo_log(project_path)
+        resume_from = 0
+        if prev_log and prev_log.get("status") == "paused":
+            resume_from = prev_log.get("completed", 0)
+            task_results = prev_log.get("results", [])
+            if resume_from > 0 and resume_from < total:
+                chat.write(f"\n  [#ffd740]Resuming from task {resume_from + 1}/{total}[/]")
+                chat.write(f"  [#5c6b7a]{resume_from} task(s) already completed.[/]")
+                chat.write("")
+
         chat.write(f"\n  [bold #00e5ff]{'━' * 56}[/]")
         chat.write(f"  [bold #00e5ff]  COMPLETE TODO — {total} task(s)[/]")
         chat.write(f"  [bold #00e5ff]{'━' * 56}[/]")
         chat.write(f"  [#5c6b7a]Model: {self.config.model}[/]")
         chat.write(f"  [#5c6b7a]Project: {project_path}[/]")
+        chat.write(f"  [#5c6b7a]Press PAUSE to stop after the current task.[/]")
         chat.write("")
 
-        completed = 0
+        completed = resume_from
         failed = 0
 
         for i, task in enumerate(tasks):
+            # Skip already-completed tasks from previous run
+            if i < resume_from:
+                continue
+
+            # ── Check for pause ──
+            if self._todo_paused:
+                self._save_todo_log(project_path, completed, total, task_results, "paused")
+                pct = round((completed / total) * 100)
+                chat.write(f"  [bold #ffd740]{'━' * 56}[/]")
+                chat.write(f"  [bold #ffd740]  PAUSED at {pct}% — {completed}/{total} done[/]")
+                chat.write(f"  [bold #ffd740]{'━' * 56}[/]")
+                chat.write(f"  [#5c6b7a]Progress saved. Click RESUME TODO to continue.[/]")
+                chat.write(f"  [#5c6b7a]You can close the app — progress will be restored.[/]")
+                chat.write("")
+                self.notify(f"Paused at {pct}%. Progress saved.", timeout=5)
+                self._training_active = False
+                self._todo_running = False
+                self._face("idle")
+                status_bar.set_training(f"paused {pct}%")
+                self._hide_progress()
+                self._reset_todo_button()
+                return
+
             pct = round((i / total) * 100)
-            remaining = total - i
             chat.write(f"  [bold #00e5ff][{pct}%][/]  [#ffd740]Task {i+1}/{total}:[/]  {task}")
             status_bar.set_training(f"{pct}% task {i+1}/{total}")
             self._show_progress(f"Task {i+1}/{total}", i, total)
 
+            task_record = {"task": task, "status": "running", "tools": [], "summary": ""}
+
             try:
-                # Send task to the model as a user message
                 result = await self.engine.submit_user_message(
                     f"Complete this task in the project:\n\n{task}\n\n"
                     f"Use your tools (read_file, write_file, edit_file, bash, search_files, etc.) "
@@ -1555,32 +1652,40 @@ class ForgeAgentApp(App):
 
                 # Show tool usage
                 if result.tool_calls:
-                    tools_used = ", ".join(tc.tool_name for tc in result.tool_calls)
-                    chat.write(f"    [#7c4dff]Tools: {tools_used}[/]")
+                    tools_used = [tc.tool_name for tc in result.tool_calls]
+                    chat.write(f"    [#7c4dff]Tools: {', '.join(tools_used)}[/]")
+                    task_record["tools"] = tools_used
                     for tc in result.tool_calls:
                         self.buddy.on_tool_use()
 
-                # Show response summary (first 200 chars)
+                # Show response summary
                 response = result.assistant_message.content
                 summary = response[:200].replace("\n", " ")
                 if len(response) > 200:
                     summary += "..."
                 chat.write(f"    [#5c6b7a]{summary}[/]")
+                task_record["summary"] = summary
+                task_record["status"] = "done"
 
-                # Mark task complete
+                # Mark task complete in AGENT.md
                 complete_task(project_path, task[:40])
                 completed += 1
                 chat.write(f"    [#00e676]Done[/]")
 
             except Exception as ex:
                 failed += 1
+                task_record["status"] = "failed"
+                task_record["summary"] = str(ex)
                 chat.write(f"    [#ff1744]Error: {ex}[/]")
                 log.error(f"complete_todo task {i+1}: {ex}", exc_info=True)
 
+            task_results.append(task_record)
             chat.write("")
 
-        # ── Final percentage ──
-        pct = 100
+            # Save progress after every task (crash-safe)
+            self._save_todo_log(project_path, completed, total, task_results, "running")
+
+        # ── 100% Complete ──
         self._show_progress("Complete", total, total)
         status_bar.set_training(f"100% done")
 
@@ -1602,7 +1707,6 @@ class ForgeAgentApp(App):
             zip_name = f"build-{timestamp}"
             zip_path = outputs_dir / zip_name
 
-            # Create zip excluding heavy dirs
             import zipfile
             with zipfile.ZipFile(str(zip_path) + ".zip", "w", zipfile.ZIP_DEFLATED) as zf:
                 skip = {".git", "node_modules", "__pycache__", ".next", "dist",
@@ -1624,13 +1728,28 @@ class ForgeAgentApp(App):
             chat.write(f"  [#ff1744]Zip failed: {ex}[/]")
             log.error(f"zip: {ex}", exc_info=True)
 
+        # Save final log
+        self._save_todo_log(project_path, completed, total, task_results, "complete")
+
         chat.write(f"  [#5c6b7a]Ready for next iteration. Add new tasks and click COMPLETE TODO again.[/]")
         chat.write("")
 
         self._training_active = False
+        self._todo_running = False
         self._face("idle")
         status_bar.set_training("idle")
         self._hide_progress()
+        self._reset_todo_button()
+
+    def _reset_todo_button(self):
+        """Reset the COMPLETE TODO button to default state."""
+        try:
+            btn = self.query_one("#btn-complete-todo", Button)
+            btn.label = "COMPLETE TODO"
+            btn.remove_class("hero-alt")
+            btn.add_class("hero")
+        except Exception:
+            pass
 
     @work(thread=False, exclusive=True, group="training")
     async def _do_evaluate(self) -> None:

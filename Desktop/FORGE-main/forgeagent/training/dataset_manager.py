@@ -203,6 +203,103 @@ class DatasetManager:
             self.add_example(dataset_name, TrainingExample(id=_uid(), prompt=p, completion=c, tags=tags, source="synthetic"))
         return actual
 
+    # ── Import from file ───────────────────────────
+    def import_from_file(self, dataset_name: str, file_path: str) -> int:
+        """Import training examples from a JSONL or JSON file.
+
+        Supports formats:
+        - JSONL with {"messages": [...]} (OpenAI/ChatML format)
+        - JSONL with {"prompt": "...", "completion": "..."} (Alpaca-like)
+        - JSONL with {"instruction": "...", "output": "..."} (Alpaca format)
+        - JSON array of any of the above
+        - Plain JSONL with {"role": "user/assistant", ...} pairs
+        """
+        fp = Path(file_path)
+        if not fp.exists():
+            raise FileNotFoundError(f"File not found: {fp}")
+
+        content = fp.read_text(encoding="utf-8", errors="replace").strip()
+        count = 0
+
+        # Try JSON array first
+        records = []
+        if content.startswith("["):
+            try:
+                records = json.loads(content)
+            except json.JSONDecodeError:
+                pass
+
+        # Otherwise treat as JSONL
+        if not records:
+            for line in content.split("\n"):
+                line = line.strip()
+                if line:
+                    try:
+                        records.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+
+        for record in records:
+            prompt = ""
+            completion = ""
+            tags = ["imported"]
+
+            # Format: {"messages": [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]}
+            if "messages" in record:
+                msgs = record["messages"]
+                user_parts = []
+                assistant_parts = []
+                for m in msgs:
+                    role = m.get("role", "")
+                    content_text = m.get("content", "")
+                    if role == "user":
+                        user_parts.append(content_text)
+                    elif role == "assistant":
+                        assistant_parts.append(content_text)
+                prompt = "\n".join(user_parts)
+                completion = "\n".join(assistant_parts)
+
+            # Format: {"conversations": [...]} (ChatML/ShareGPT)
+            elif "conversations" in record:
+                msgs = record["conversations"]
+                user_parts = []
+                assistant_parts = []
+                for m in msgs:
+                    role = m.get("role", m.get("from", ""))
+                    content_text = m.get("content", m.get("value", ""))
+                    if role in ("user", "human"):
+                        user_parts.append(content_text)
+                    elif role in ("assistant", "gpt"):
+                        assistant_parts.append(content_text)
+                prompt = "\n".join(user_parts)
+                completion = "\n".join(assistant_parts)
+
+            # Format: {"prompt": "...", "completion": "..."}
+            elif "prompt" in record and "completion" in record:
+                prompt = record["prompt"]
+                completion = record["completion"]
+
+            # Format: {"instruction": "...", "output": "..."} (Alpaca)
+            elif "instruction" in record and "output" in record:
+                prompt = record["instruction"]
+                if record.get("input"):
+                    prompt += "\n" + record["input"]
+                completion = record["output"]
+
+            # Format: {"question": "...", "answer": "..."}
+            elif "question" in record and "answer" in record:
+                prompt = record["question"]
+                completion = record["answer"]
+
+            if prompt and completion and len(prompt) > 3 and len(completion) > 3:
+                self.add_example(dataset_name, TrainingExample(
+                    id=_uid(), prompt=prompt[:4000], completion=completion[:4000],
+                    tags=tags, source="imported",
+                ))
+                count += 1
+
+        return count
+
     # ── Export ──────────────────────────────────────
     def export_dataset(self, name: str, fmt: str = "jsonl") -> str:
         ds = self.get_dataset(name)

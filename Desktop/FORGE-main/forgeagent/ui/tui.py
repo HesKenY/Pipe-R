@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.binding import Binding
 from textual import work
 
-from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ShadowLearnWizard, ProjectWizard, ToolInputModal, InfoModal, ModelSelectWizard
+from .wizards import AutoTrainWizard, ImproveWizard, LaunchAgentsWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ShadowLearnWizard, ProjectWizard, ToolInputModal, InfoModal, ModelSelectWizard
 from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test, run_shadow_learn, SHADOW_TASKS, SHADOW_TASKS_DEEP
 
 # ── Logging ───────────────────────────────────────────────────
@@ -38,70 +38,70 @@ TOOL_BUTTONS = [
 #  MODEL FACE — animated ASCII avatar for the active model
 # ══════════════════════════════════════════════════════════════
 FACE_IDLE = [
-    r"  [cyan]  ╭───────╮  [/]",
-    r"  [cyan]  │ [bold]•   •[/][cyan] │  [/]",
-    r"  [cyan]  │  [bold] ‿ [/][cyan]  │  [/]",
-    r"  [cyan]  ╰───────╯  [/]",
+    r"  [#00e5ff]  ╔═══════╗  [/]",
+    r"  [#00e5ff]  ║ [bold]◉   ◉[/][#00e5ff] ║  [/]",
+    r"  [#00e5ff]  ║  [bold] ‿ [/][#00e5ff]  ║  [/]",
+    r"  [#00e5ff]  ╚═══════╝  [/]",
 ]
 FACE_IDLE_BLINK = [
-    r"  [cyan]  ╭───────╮  [/]",
-    r"  [cyan]  │ [bold]─   ─[/][cyan] │  [/]",
-    r"  [cyan]  │  [bold] ‿ [/][cyan]  │  [/]",
-    r"  [cyan]  ╰───────╯  [/]",
+    r"  [#00e5ff]  ╔═══════╗  [/]",
+    r"  [#00e5ff]  ║ [bold]━   ━[/][#00e5ff] ║  [/]",
+    r"  [#00e5ff]  ║  [bold] ‿ [/][#00e5ff]  ║  [/]",
+    r"  [#00e5ff]  ╚═══════╝  [/]",
 ]
 FACE_THINKING = [
     [
-        r"  [yellow]  ╭───────╮  [/]",
-        r"  [yellow]  │ [bold]•   •[/][yellow] │  [/]",
-        r"  [yellow]  │  [bold] ○ [/][yellow]  │ [dim].[/][/]",
-        r"  [yellow]  ╰───────╯  [/]",
+        r"  [#ffd740]  ╔═══════╗  [/]",
+        r"  [#ffd740]  ║ [bold]◉   ◉[/][#ffd740] ║  [/]",
+        r"  [#ffd740]  ║  [bold] ○ [/][#ffd740]  ║ [dim]·[/][/]",
+        r"  [#ffd740]  ╚═══════╝  [/]",
     ],
     [
-        r"  [yellow]  ╭───────╮  [/]",
-        r"  [yellow]  │ [bold]◦   •[/][yellow] │  [/]",
-        r"  [yellow]  │  [bold] ○ [/][yellow]  │ [dim]..[/][/]",
-        r"  [yellow]  ╰───────╯  [/]",
+        r"  [#ffd740]  ╔═══════╗  [/]",
+        r"  [#ffd740]  ║ [bold]◎   ◉[/][#ffd740] ║  [/]",
+        r"  [#ffd740]  ║  [bold] ○ [/][#ffd740]  ║ [dim]··[/][/]",
+        r"  [#ffd740]  ╚═══════╝  [/]",
     ],
     [
-        r"  [yellow]  ╭───────╮  [/]",
-        r"  [yellow]  │ [bold]•   ◦[/][yellow] │  [/]",
-        r"  [yellow]  │  [bold] ○ [/][yellow]  │ [dim]...[/][/]",
-        r"  [yellow]  ╰───────╯  [/]",
+        r"  [#ffd740]  ╔═══════╗  [/]",
+        r"  [#ffd740]  ║ [bold]◉   ◎[/][#ffd740] ║  [/]",
+        r"  [#ffd740]  ║  [bold] ○ [/][#ffd740]  ║ [dim]···[/][/]",
+        r"  [#ffd740]  ╚═══════╝  [/]",
     ],
 ]
 FACE_TALKING = [
     [
-        r"  [green]  ╭───────╮  [/]",
-        r"  [green]  │ [bold]•   •[/][green] │  [/]",
-        r"  [green]  │  [bold] ▽ [/][green]  │  [/]",
-        r"  [green]  ╰───────╯  [/]",
+        r"  [#00e676]  ╔═══════╗  [/]",
+        r"  [#00e676]  ║ [bold]◉   ◉[/][#00e676] ║  [/]",
+        r"  [#00e676]  ║  [bold] ▽ [/][#00e676]  ║  [/]",
+        r"  [#00e676]  ╚═══════╝  [/]",
     ],
     [
-        r"  [green]  ╭───────╮  [/]",
-        r"  [green]  │ [bold]•   •[/][green] │  [/]",
-        r"  [green]  │  [bold] △ [/][green]  │  [/]",
-        r"  [green]  ╰───────╯  [/]",
+        r"  [#00e676]  ╔═══════╗  [/]",
+        r"  [#00e676]  ║ [bold]◉   ◉[/][#00e676] ║  [/]",
+        r"  [#00e676]  ║  [bold] △ [/][#00e676]  ║  [/]",
+        r"  [#00e676]  ╚═══════╝  [/]",
     ],
 ]
 FACE_TRAINING = [
     [
-        r"  [magenta]  ╭───────╮  [/]",
-        r"  [magenta]  │ [bold]◈   ◈[/][magenta] │  [/]",
-        r"  [magenta]  │  [bold] ═ [/][magenta]  │ [bold]⚡[/][/]",
-        r"  [magenta]  ╰───────╯  [/]",
+        r"  [#7c4dff]  ╔═══════╗  [/]",
+        r"  [#7c4dff]  ║ [bold]◈   ◈[/][#7c4dff] ║  [/]",
+        r"  [#7c4dff]  ║  [bold] ═ [/][#7c4dff]  ║ [bold #00e5ff]⚡[/][/]",
+        r"  [#7c4dff]  ╚═══════╝  [/]",
     ],
     [
-        r"  [magenta]  ╭───────╮  [/]",
-        r"  [magenta]  │ [bold]◇   ◇[/][magenta] │  [/]",
-        r"  [magenta]  │  [bold] ═ [/][magenta]  │ [bold] ⚡[/][/]",
-        r"  [magenta]  ╰───────╯  [/]",
+        r"  [#7c4dff]  ╔═══════╗  [/]",
+        r"  [#7c4dff]  ║ [bold]◇   ◇[/][#7c4dff] ║  [/]",
+        r"  [#7c4dff]  ║  [bold] ═ [/][#7c4dff]  ║ [bold #00e5ff] ⚡[/][/]",
+        r"  [#7c4dff]  ╚═══════╝  [/]",
     ],
 ]
 FACE_ERROR = [
-    r"  [red]  ╭───────╮  [/]",
-    r"  [red]  │ [bold]×   ×[/][red] │  [/]",
-    r"  [red]  │  [bold] ▁ [/][red]  │  [/]",
-    r"  [red]  ╰───────╯  [/]",
+    r"  [#ff1744]  ╔═══════╗  [/]",
+    r"  [#ff1744]  ║ [bold]×   ×[/][#ff1744] ║  [/]",
+    r"  [#ff1744]  ║  [bold] ▁ [/][#ff1744]  ║  [/]",
+    r"  [#ff1744]  ╚═══════╝  [/]",
 ]
 
 
@@ -172,14 +172,14 @@ class ModelFace(Static):
 #  STATUS BAR
 # ══════════════════════════════════════════════════════════════
 class StatusBar(Static):
-    """Thin bar showing system state."""
+    """Thin bar showing system state — sci-fi style."""
 
     DEFAULT_CSS = """
     StatusBar {
         height: 1;
         dock: top;
-        background: $primary-background;
-        color: $text-muted;
+        background: #111822;
+        color: #5c6b7a;
         padding: 0 2;
     }
     """
@@ -208,11 +208,13 @@ class StatusBar(Static):
         self._refresh()
 
     def _refresh(self):
-        oc = "[green]Connected[/]" if self._ollama else "[red]Disconnected[/]"
-        tc = "[yellow]" + self._training + "[/]" if self._training != "idle" else "[dim]idle[/]"
+        oc = "[#00e676]ONLINE[/]" if self._ollama else "[#ff1744]OFFLINE[/]"
+        tc = "[#ffd740]" + self._training + "[/]" if self._training != "idle" else "[#5c6b7a]idle[/]"
         self.update(
-            f"  Ollama: {oc}  |  Model: [cyan]{self._model}[/]  |"
-            f"  Datasets: {self._datasets}  |  Training: {tc}"
+            f"  [#5c6b7a]OLLAMA[/] {oc}  [#2a3444]·[/]  "
+            f"[#5c6b7a]MODEL[/] [#00e5ff]{self._model}[/]  [#2a3444]·[/]  "
+            f"[#5c6b7a]DATA[/] {self._datasets}  [#2a3444]·[/]  "
+            f"[#5c6b7a]STATUS[/] {tc}"
         )
 
 
@@ -224,71 +226,71 @@ class ForgeAgentApp(App):
     SUB_TITLE = "Local AI Coding Agent"
 
     CSS = """
-    /* ── Layout ─────────────────────────────────── */
-    Screen { background: $surface; }
+    /* ── Sci-Fi Theme ───────────────────────────── */
+    Screen { background: #0a0e14; }
     #shell { height: 100%; }
 
     /* ── Sidebar ────────────────────────────────── */
     #sidebar {
         width: 28; height: 100%;
-        background: $panel;
-        border-right: tall $primary-background-lighten-1;
+        background: #111822;
+        border-right: tall #00e5ff 25%;
         padding: 0;
     }
     #sidebar-scroll { height: 1fr; padding: 0; }
 
     /* Section headers */
     .section-header {
-        color: $accent; text-style: bold;
+        color: #00e5ff; text-style: bold;
         padding: 1 1 0 1; height: 2;
     }
     .section-divider {
-        color: $primary-background-lighten-1;
+        color: #1a2332;
         margin: 0 1;
     }
 
-    /* Regular buttons */
+    /* Regular buttons — neon hover */
     #sidebar Button {
         width: 100%; height: 1;
-        background: transparent; color: $text-muted;
+        background: transparent; color: #5c6b7a;
         border: none; padding: 0 2; margin: 0;
     }
     #sidebar Button:hover {
-        background: $primary-background-lighten-1;
-        color: $text;
+        background: #00e5ff 12%;
+        color: #e0e0e0;
     }
     #sidebar Button:focus {
-        background: $accent;
-        color: $text; text-style: bold;
+        background: #00e5ff 20%;
+        color: #00e5ff; text-style: bold;
     }
 
-    /* Hero buttons */
+    /* Hero buttons — neon glow */
     .hero {
-        background: $success-darken-2; color: white;
+        background: #00e676 15%; color: #00e676;
         text-style: bold; height: 3; margin: 0 1 0 1;
-        border: round $success-darken-1;
+        border: round #00e676 40%;
     }
-    .hero:hover { background: $success; }
-    .hero:focus { background: $success; }
+    .hero:hover { background: #00e676 28%; }
+    .hero:focus { background: #00e676 28%; }
     .hero-alt {
-        background: $primary-darken-2; color: white;
+        background: #7c4dff 15%; color: #7c4dff;
         text-style: bold; height: 3; margin: 0 1 0 1;
-        border: round $primary-darken-1;
+        border: round #7c4dff 40%;
     }
-    .hero-alt:hover { background: $primary; }
-    .hero-alt:focus { background: $primary; }
+    .hero-alt:hover { background: #7c4dff 28%; }
+    .hero-alt:focus { background: #7c4dff 28%; }
     .hero-accent {
-        background: $accent 25%; color: white;
+        background: #00e5ff 15%; color: #00e5ff;
         text-style: bold; height: 3; margin: 0 1 0 1;
-        border: round $accent 40%;
+        border: round #00e5ff 40%;
     }
-    .hero-accent:hover { background: $accent 45%; }
-    .hero-accent:focus { background: $accent 45%; }
+    .hero-accent:hover { background: #00e5ff 28%; }
+    .hero-accent:focus { background: #00e5ff 28%; }
 
     /* ── Model face ──────────────────────────────── */
     #face-panel {
         height: 6; width: 100%;
-        background: $surface;
+        background: #0a0e14;
         content-align: center middle;
     }
 
@@ -298,28 +300,30 @@ class ForgeAgentApp(App):
         height: 1fr;
         padding: 1 2;
         scrollbar-size: 1 1;
-        background: $surface;
+        background: #0a0e14;
     }
     #input-row {
         height: 3;
         padding: 0 1;
-        background: $surface;
+        background: #0d1117;
     }
     #userinput {
         width: 1fr;
-        border: round $primary-background-lighten-2;
+        border: round #2a3444;
         padding: 0 1;
+        background: #0a0e14;
+        color: #e0e0e0;
     }
     #userinput:focus {
-        border: round $accent;
+        border: round #00e5ff;
     }
     #send-btn {
         width: 8; height: 3;
-        background: $accent; color: $text;
+        background: #7c4dff; color: white;
         text-style: bold; border: none;
         margin: 0 0 0 1;
     }
-    #send-btn:hover { background: $accent 80%; }
+    #send-btn:hover { background: #9c7cff; }
 
     /* ���─ Progress panel ─────────────────────────── */
     #progress-panel {
@@ -328,7 +332,7 @@ class ForgeAgentApp(App):
     }
     #progress-panel.visible { display: block; }
     #progress-label {
-        color: $text-muted; height: 1; padding: 0;
+        color: #5c6b7a; height: 1; padding: 0;
     }
     #progress-bar {
         margin: 0; padding: 0;
@@ -387,12 +391,16 @@ class ForgeAgentApp(App):
 
                     yield Rule(classes="section-divider")
 
-                    # ── Deploy ──
-                    yield Static("Deploy", classes="section-header")
-                    yield Button("DEPLOY AGENT", id="btn-deploy", classes="hero-accent")
+                    # ── Launch ──
+                    yield Static("Launch", classes="section-header")
+                    yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
                     yield Button("Manage Projects", id="btn-agents")
                     yield Button("Models", id="btn-models")
                     yield Button("Datasets", id="btn-datasets")
+                    yield Button("Upload Dataset", id="btn-upload-dataset")
+
+                    # Active agents display
+                    yield Static("", id="agent-slots")
 
                     yield Rule(classes="section-divider")
 
@@ -484,22 +492,25 @@ class ForgeAgentApp(App):
             na = 0
 
         chat.write("")
-        chat.write(f"  [bold cyan]ForgeAgent[/]")
-        chat.write(f"  [dim]Local AI Coding Agent — 100% Offline[/]")
+        chat.write(f"  [bold #00e5ff]╔═══════════════════════════════════════════╗[/]")
+        chat.write(f"  [bold #00e5ff]║[/]    [bold #00e5ff]F O R G E   A G E N T[/]   [#5c6b7a]v3.0[/]    [bold #00e5ff]║[/]")
+        chat.write(f"  [bold #00e5ff]╚═══════════════════════════════════════════╝[/]")
+        chat.write(f"  [#5c6b7a]Local AI Coding Agent Hub — 100% Offline[/]")
         chat.write("")
-        chat.write(f"  [dim]Buddy:[/]  [yellow]{b.name} Lv.{b.level}[/]    "
-                    f"[dim]Agents:[/]  {na}    "
-                    f"[dim]Model:[/]  [cyan]{self.config.model}[/]")
-        chat.write(f"  [dim italic]{self.buddy.get_quip()}[/]")
+        chat.write(f"  [#5c6b7a]BUDDY[/]  [#ffd740]{b.name} Lv.{b.level}[/]    "
+                    f"[#5c6b7a]AGENTS[/]  [#00e5ff]{na}[/]    "
+                    f"[#5c6b7a]MODEL[/]  [#00e5ff]{self.config.model}[/]")
+        chat.write(f"  [italic #5c6b7a]{self.buddy.get_quip()}[/]")
         chat.write("")
-        chat.write(f"  [bold]Click a button to get started:[/]")
-        chat.write(f"  [green]AUTO TRAIN[/]  — Build your own AI model in one click")
-        chat.write(f"  [blue]IMPROVE[/]     — Make your model smarter with more data")
-        chat.write(f"  [cyan]DEPLOY[/]      — Set up an agent in your project folder")
+        chat.write(f"  [bold #e0e0e0]Get started:[/]")
+        chat.write(f"  [#00e676]AUTO TRAIN[/]     Build your own AI model in one click")
+        chat.write(f"  [#7c4dff]IMPROVE[/]        Make your model smarter with more data")
+        chat.write(f"  [#00e5ff]LAUNCH AGENTS[/]  Deploy models as terminal coding agents")
         chat.write("")
-        chat.write(f"  [dim]Or just type a message to start chatting.[/]")
+        chat.write(f"  [#5c6b7a]Or type a message below to chat.[/]")
         chat.write("")
 
+        self._refresh_agent_slots()
         self.query_one("#userinput", Input).focus()
         log.info("mount complete")
 
@@ -565,7 +576,8 @@ class ForgeAgentApp(App):
             models = self.ctx["model_builder"].list_local_models()
             self.push_screen(ImproveWizard(self.config.model, installed_models=models), callback=self._on_improve)
         elif bid == "btn-deploy":
-            self.push_screen(DeployWizard(self.config.model), callback=self._on_deploy)
+            models = self.ctx["model_builder"].list_local_models()
+            self.push_screen(LaunchAgentsWizard(installed_models=models), callback=self._on_deploy)
 
         # ── Training buttons ──────────────────────
         elif bid == "btn-shadow-learn":
@@ -604,6 +616,11 @@ class ForgeAgentApp(App):
             await self._show_datasets()
         elif bid == "btn-agents":
             await self._show_agents()
+        elif bid == "btn-upload-dataset":
+            self.push_screen(
+                ToolInputModal("Upload Dataset", "Path to JSONL/JSON file", "C:/datasets/training.jsonl", "UPLOAD:{value}"),
+                callback=self._on_upload_dataset,
+            )
         elif bid == "btn-evaluate":
             if self._training_active:
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
@@ -1065,38 +1082,131 @@ class ForgeAgentApp(App):
             self._hide_progress()
             self._face("idle")
 
-    # ── Deploy callback ───────────────────────────
+    # ── Deploy / Launch callback ────────────────────
     async def _on_deploy(self, r: dict | None):
         if not r:
             return
         chat = self.query_one("#chatlog", RichLog)
+
+        # New multi-model launch format
+        if r.get("models"):
+            path = r["path"]
+            models = r["models"]
+            template = r.get("template", "fullstack")
+            if not path:
+                self.notify("No path provided", severity="warning", timeout=3)
+                return
+            log.info(f"launch_multi: path={path} models={models}")
+            try:
+                deployer = self.ctx["deployer"]
+                agents = deployer.deploy_multi(path, models, template)
+
+                chat.write(f"\n  [bold #00e5ff]{'━' * 50}[/]")
+                chat.write(f"  [bold #00e5ff]  LAUNCHING {len(agents)} AGENT(S)[/]")
+                chat.write(f"  [bold #00e5ff]{'━' * 50}[/]")
+                chat.write(f"  [#5c6b7a]Project: {path}[/]")
+                chat.write("")
+
+                results = deployer.launch_multi(path, models)
+                for result in results:
+                    if result["success"]:
+                        chat.write(f"  [#00e676]LAUNCHED[/]  {result['model']}")
+                    else:
+                        chat.write(f"  [#ff1744]FAILED[/]   {result['model']}: {result['message']}")
+
+                chat.write("")
+                chat.write(f"  [#5c6b7a]Each agent opens in its own terminal window.[/]")
+                chat.write(f"  [#5c6b7a]Type tasks in the terminal — agents use tools to complete them.[/]")
+                chat.write("")
+                self._refresh_agent_slots()
+                self.notify(f"Launched {len(agents)} agent(s)!", timeout=5)
+
+            except Exception as ex:
+                chat.write(f"  [#ff1744]Launch failed: {ex}[/]")
+                log.error(f"launch_multi: {ex}", exc_info=True)
+            return
+
+        # Legacy single-agent deploy format
         if not r.get("path"):
             self.notify("No path provided", severity="warning", timeout=3)
             return
         log.info(f"deploy: {r}")
         try:
-            agent = self.ctx["deployer"].deploy(r["name"], r["path"], r["model"], r["template"])
+            agent = self.ctx["deployer"].deploy(r.get("name", "agent"), r["path"], r.get("model", self.config.model), r.get("template"))
 
-            # Create project profile
             from ..deploy.project_profile import ProjectProfile
             pp = ProjectProfile(r["path"])
-            pp.create(r["name"], r["model"], r.get("template", "fullstack"))
-            pp.append_log(f"Agent deployed: {r['name']} ({r['model']})")
+            pp.create(r.get("name", "agent"), r.get("model", self.config.model), r.get("template", "fullstack"))
 
-            chat.write(f"\n  [bold green]Deployed: {agent['name']}[/]")
-            chat.write(f"  [dim]Path: {agent['projectPath']}[/]")
-            chat.write(f"  [dim]Template: {r['template']} | Model: {r['model']}[/]")
+            chat.write(f"\n  [bold #00e676]Deployed: {agent['name']}[/]")
+            chat.write(f"  [#5c6b7a]Path: {agent['projectPath']}[/]")
             chat.write("")
-            chat.write(f"  [bold]Click 'Manage Projects' to start/stop and configure git.[/]")
-            chat.write("")
+            self._refresh_agent_slots()
             self.notify(f"Agent '{agent['name']}' deployed!", timeout=5)
-
-            # Open project wizard immediately
             await self._open_project_wizard(agent)
 
         except Exception as ex:
-            chat.write(f"  [red]Deploy failed: {ex}[/]")
+            chat.write(f"  [#ff1744]Deploy failed: {ex}[/]")
             log.error(f"deploy: {ex}", exc_info=True)
+
+    # ── Upload dataset callback ────────────────────
+    async def _on_upload_dataset(self, message: str | None):
+        if not message or not message.startswith("UPLOAD:"):
+            return
+        file_path = message.replace("UPLOAD:", "").strip()
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+
+        chat.write(f"\n  [#5c6b7a]Importing dataset from: {file_path}[/]")
+
+        try:
+            dm = self.ctx["dataset_manager"]
+            # Auto-create dataset from filename
+            from pathlib import Path as P
+            ds_name = P(file_path).stem.replace(" ", "-").lower()
+            try:
+                dm.create_dataset(ds_name, f"Imported from {P(file_path).name}")
+            except ValueError:
+                pass  # Already exists
+
+            count = dm.import_from_file(ds_name, file_path)
+
+            if count > 0:
+                chat.write(f"  [#00e676]Imported {count} examples into dataset '{ds_name}'[/]")
+                chat.write(f"  [#5c6b7a]Use IMPROVE MODEL to train on this data.[/]")
+                status_bar.set_datasets(len(dm.list_datasets()))
+                self.notify(f"Imported {count} examples!", timeout=5)
+            else:
+                chat.write(f"  [#ffd740]No valid examples found in file.[/]")
+                chat.write(f"  [#5c6b7a]Supported formats: JSONL with messages/prompt+completion/instruction+output[/]")
+        except FileNotFoundError:
+            chat.write(f"  [#ff1744]File not found: {file_path}[/]")
+        except Exception as ex:
+            chat.write(f"  [#ff1744]Import error: {ex}[/]")
+            log.error(f"upload_dataset: {ex}", exc_info=True)
+        chat.write("")
+
+    # ── Active agent slots display ─────────────────
+    def _refresh_agent_slots(self):
+        """Update the sidebar agent slots display."""
+        try:
+            agents = self.ctx["deployer"].list_agents()
+            slot_widget = self.query_one("#agent-slots", Static)
+            if not agents:
+                slot_widget.update("")
+                return
+            lines = []
+            for a in agents[:6]:
+                name = a.get("name", "?")[:14]
+                status = a.get("status", "ready")
+                if status == "running":
+                    icon = "[#00e676]●[/]"
+                else:
+                    icon = "[#5c6b7a]○[/]"
+                lines.append(f"  {icon} [#5c6b7a]{name}[/]")
+            slot_widget.update("\n".join(lines))
+        except Exception:
+            pass
 
     # ── Management info modals ────────────────────
     async def _show_models(self):

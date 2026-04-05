@@ -1,6 +1,7 @@
 """ForgeAgent entry point — python -m forgeagent"""
 from __future__ import annotations
 import asyncio
+import json
 import shutil
 import subprocess
 import sys
@@ -24,7 +25,6 @@ def _auto_setup() -> dict:
     if not env_file.exists() and env_example.exists():
         shutil.copy2(env_example, env_file)
         status["env_created"] = True
-        # Reload so dotenv picks up the new file
         from dotenv import load_dotenv
         load_dotenv(env_file, override=True)
 
@@ -47,7 +47,6 @@ def _auto_setup() -> dict:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
                 status["ollama_auto_started"] = True
-                # Wait for Ollama to become ready
                 for _ in range(10):
                     time.sleep(1)
                     try:
@@ -64,6 +63,17 @@ def _auto_setup() -> dict:
     return status
 
 
+def _load_agent_config(project_path: str) -> dict | None:
+    """Load agent config from .forgeagent/agent.json in the project."""
+    agent_file = Path(project_path) / ".forgeagent" / "agent.json"
+    if agent_file.exists():
+        try:
+            return json.loads(agent_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return None
+
+
 def main():
     """ForgeAgent — Local AI coding agent hub."""
     import click
@@ -71,13 +81,18 @@ def main():
     @click.command()
     @click.option("-m", "--model", default=None, help="Override Ollama model")
     @click.option("--cli", is_flag=True, help="Plain text REPL (no TUI)")
-    def run(model: str | None, cli: bool):
+    @click.option("--agent", is_flag=True, help="Agent mode — terminal coding agent")
+    @click.option("--project", default=None, help="Project path for agent mode")
+    def run(model: str | None, cli: bool, agent: bool, project: str | None):
         setup_status = _auto_setup()
 
         from .config import load_config
         config = load_config()
         if model:
             config.model = model
+        if project:
+            config.cwd = str(Path(project).resolve())
+
         _ensure_dirs(config)
 
         # Core (always needed)
@@ -88,13 +103,30 @@ def main():
         from .buddy.buddy import Buddy
 
         tools = create_tool_registry()
+
+        # Agent mode — load agent-specific config and filter tools
+        agent_config = None
+        if agent:
+            agent_config = _load_agent_config(config.cwd)
+            if agent_config:
+                if not model and agent_config.get("modelName"):
+                    config.model = agent_config["modelName"]
+                if agent_config.get("systemPrompt"):
+                    config.system_prompt = agent_config["systemPrompt"]
+                if agent_config.get("temperature"):
+                    config.temperature = agent_config["temperature"]
+                # Filter tools to only what agent is allowed
+                allowed = agent_config.get("tools")
+                if allowed:
+                    tools = {k: v for k, v in tools.items() if k in allowed}
+
         engine = QueryEngine(config, tools)
         commands = create_commands()
         memory = MemoryStore(config.memory_dir, config.dreams_dir)
         session_store = SessionStore(config.sessions_dir)
         buddy = Buddy(config.buddy_dir)
 
-        # Training + deploy (lazy — only imported here, not at module top)
+        # Training + deploy (lazy)
         from .training.dataset_manager import DatasetManager
         from .training.model_builder import ModelBuilder
         from .training.evaluator import Evaluator
@@ -115,9 +147,9 @@ def main():
         }
 
         try:
-            if cli:
-                from .ui.cli import start_cli
-                asyncio.run(start_cli(ctx))
+            if agent or cli:
+                from .ui.cli import start_agent_cli
+                asyncio.run(start_agent_cli(ctx, agent_config))
             else:
                 from .ui.tui import start_tui
                 asyncio.run(start_tui(ctx))

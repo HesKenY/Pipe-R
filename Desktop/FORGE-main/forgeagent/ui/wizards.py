@@ -531,30 +531,38 @@ class FolderPicker(ModalScreen[str | None]):
 
 
 # ══════════════════════════════════════════════════════════════
-#  DEPLOY WIZARD
+#  LAUNCH AGENTS WIZARD — select 1-6 models to launch as terminal agents
 # ══════════════════════════════════════════════════════════════
-class DeployWizard(ModalScreen[dict | None]):
-    """Deploy an agent to a project folder."""
+class LaunchAgentsWizard(ModalScreen[dict | None]):
+    """Select trained models and launch them as terminal coding agents."""
 
     CSS = """
-    DeployWizard { align: center middle; }
-    #dw {
-        width: 64; height: 32;
-        border: round $accent; background: $surface;
+    LaunchAgentsWizard { align: center middle; }
+    #law {
+        width: 68; height: 38;
+        border: round #00e5ff; background: #111822;
         padding: 1 2;
     }
-    #dw Static.title { text-style: bold; color: $accent; margin: 0 0 1 0; }
-    #dw Static.subtitle { color: $text-muted; margin: 0 0 1 0; }
-    #dw-scroll { height: 1fr; }
-    #dw-scroll Static.field-label { color: $text-muted; margin: 1 0 0 0; }
-    #dw-scroll Input { margin: 0; }
-    #dw-scroll Select { margin: 0; }
-    #dw-path-row { height: 3; }
-    #dw-path-row Input { width: 1fr; }
-    #dw-browse { width: 10; height: 3; margin: 0 0 0 1; }
-    #dw-detected { color: $success; margin: 0 0 0 1; }
-    #dw-actions { height: auto; dock: bottom; margin: 1 0 0 0; }
-    #dw-actions Button { min-width: 18; margin: 0 1 0 0; height: 3; }
+    #law Static.title { text-style: bold; color: #00e5ff; margin: 0 0 1 0; }
+    #law Static.subtitle { color: #5c6b7a; margin: 0 0 1 0; }
+    #law-scroll { height: 1fr; }
+    #law-scroll Static.field-label { color: #5c6b7a; margin: 1 0 0 0; }
+    #law-scroll Input { margin: 0; }
+    #law-scroll Select { margin: 0; }
+    #law-path-row { height: 3; }
+    #law-path-row Input { width: 1fr; }
+    #law-browse { width: 10; height: 3; margin: 0 0 0 1; }
+    #law-detected { color: #00e676; margin: 0 0 0 1; }
+    #law-count { color: #00e5ff; text-style: bold; margin: 1 0 0 0; height: 1; }
+    .model-check-row {
+        height: 2; padding: 0 1; margin: 0;
+    }
+    .model-check-row Switch { width: 8; }
+    .model-check-row Static {
+        padding: 0 0 0 1; width: 1fr;
+    }
+    #law-actions { height: auto; dock: bottom; margin: 1 0 0 0; }
+    #law-actions Button { min-width: 18; margin: 0 1 0 0; height: 3; }
     """
 
     TEMPLATES = [
@@ -568,71 +576,120 @@ class DeployWizard(ModalScreen[dict | None]):
         ("Docs (documentation)", "docs"),
     ]
 
-    def __init__(self, model: str = "forgeagent"):
+    def __init__(self, installed_models: list[dict] | None = None):
         super().__init__()
-        self._model = model
+        self._installed = installed_models or []
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="dw"):
-            yield Static("Deploy Agent", classes="title")
-            yield Static("Set up a coding agent in your project folder.", classes="subtitle")
+        with Vertical(id="law"):
+            yield Static("LAUNCH AGENTS", classes="title")
+            yield Static("Select 1-6 trained models to deploy as terminal coding agents.", classes="subtitle")
             yield Rule()
-            with VerticalScroll(id="dw-scroll"):
-                yield Static("Project folder path", classes="field-label")
-                with Horizontal(id="dw-path-row"):
-                    yield Input(placeholder="C:/Projects/myapp", id="dw-path")
-                    yield Button("Browse", id="dw-browse")
-                yield Static("", id="dw-detected")
+            with VerticalScroll(id="law-scroll"):
+                yield Static("Project folder", classes="field-label")
+                with Horizontal(id="law-path-row"):
+                    yield Input(placeholder="C:/Projects/myapp", id="law-path")
+                    yield Button("Browse", id="law-browse")
+                yield Static("", id="law-detected")
                 yield Static("Template", classes="field-label")
-                yield Select(self.TEMPLATES, value="fullstack", id="dw-tpl")
-                yield Static("Agent name (optional)", classes="field-label")
-                yield Input(placeholder="auto-generated from folder name", id="dw-name")
-                yield Static("Model", classes="field-label")
-                yield Input(value=self._model, id="dw-model")
-            with Horizontal(id="dw-actions"):
-                yield Button("Deploy", variant="success", id="dw-go")
-                yield Button("Cancel", id="dw-no")
+                yield Select(self.TEMPLATES, value="fullstack", id="law-tpl")
+                yield Rule()
+                yield Static("Select models to launch (1-6)", classes="field-label")
+                yield Static("Selected: 0/6", id="law-count")
+                if not self._installed:
+                    yield Static("[dim]No models installed. Train one first with AUTO TRAIN.[/]")
+                for i, m in enumerate(self._installed[:12]):
+                    name = m["name"]
+                    size = m.get("size", "")
+                    with Horizontal(classes="model-check-row"):
+                        yield Switch(value=(i == 0), id=f"law-sw-{i}")
+                        yield Static(f"[bold]{name}[/]  [dim]{size}[/]", id=f"law-label-{i}")
+            with Horizontal(id="law-actions"):
+                yield Button("LAUNCH", variant="success", id="law-go")
+                yield Button("Cancel", id="law-no")
 
     def on_mount(self):
-        self.query_one("#dw-path", Input).focus()
+        self.query_one("#law-path", Input).focus()
+        self._update_count()
+
+    def on_switch_changed(self, e: Switch.Changed):
+        if str(e.switch.id or "").startswith("law-sw-"):
+            self._update_count()
+
+    def _update_count(self):
+        count = self._count_selected()
+        label = self.query_one("#law-count", Static)
+        if count > 6:
+            label.update(f"[red]Selected: {count}/6 (max 6!)[/]")
+        elif count == 0:
+            label.update(f"[#ffd740]Selected: 0/6 (select at least 1)[/]")
+        else:
+            label.update(f"[#00e5ff]Selected: {count}/6[/]")
+
+    def _count_selected(self) -> int:
+        count = 0
+        for i in range(len(self._installed[:12])):
+            try:
+                sw = self.query_one(f"#law-sw-{i}", Switch)
+                if sw.value:
+                    count += 1
+            except Exception:
+                pass
+        return count
+
+    def _get_selected_models(self) -> list[str]:
+        selected = []
+        for i, m in enumerate(self._installed[:12]):
+            try:
+                sw = self.query_one(f"#law-sw-{i}", Switch)
+                if sw.value:
+                    selected.append(m["name"])
+            except Exception:
+                pass
+        return selected[:6]
 
     def on_input_changed(self, e: Input.Changed):
-        if e.input.id == "dw-path":
+        if e.input.id == "law-path":
             path = e.value.strip()
             if path:
                 from .automation import detect_project_type
                 detected = detect_project_type(path)
-                self.query_one("#dw-detected", Static).update(f"  Detected: {detected}")
-                # Auto-select template
-                tpl_select = self.query_one("#dw-tpl", Select)
-                tpl_select.value = detected
+                self.query_one("#law-detected", Static).update(f"  [#00e676]Detected: {detected}[/]")
+                try:
+                    tpl_select = self.query_one("#law-tpl", Select)
+                    tpl_select.value = detected
+                except Exception:
+                    pass
             else:
-                self.query_one("#dw-detected", Static).update("")
+                self.query_one("#law-detected", Static).update("")
 
     def _on_folder_picked(self, path: str | None):
         if path:
-            inp = self.query_one("#dw-path", Input)
-            inp.value = path
+            self.query_one("#law-path", Input).value = path
 
     def on_button_pressed(self, e: Button.Pressed):
-        if e.button.id == "dw-browse":
+        if e.button.id == "law-browse":
             self.app.push_screen(FolderPicker(), callback=self._on_folder_picked)
             return
-        if e.button.id == "dw-no":
+        if e.button.id == "law-no":
             self.dismiss(None)
-        elif e.button.id == "dw-go":
-            from pathlib import Path as P
-            path = self.query_one("#dw-path", Input).value.strip()
-            tpl_sel = self.query_one("#dw-tpl", Select)
-            name = self.query_one("#dw-name", Input).value.strip()
-            if not name and path:
-                name = P(path).name.lower().replace(" ", "-") or "agent"
+        elif e.button.id == "law-go":
+            path = self.query_one("#law-path", Input).value.strip()
+            models = self._get_selected_models()
+            if not path:
+                return
+            if not models:
+                return
+            tpl_sel = self.query_one("#law-tpl", Select)
             self.dismiss({
-                "name": name or "agent",
                 "path": path,
+                "models": models,
                 "template": str(tpl_sel.value) if tpl_sel.value != Select.BLANK else "fullstack",
-                "model": self.query_one("#dw-model", Input).value.strip() or self._model,
             })
+
+
+# Keep DeployWizard as alias for backward compatibility
+DeployWizard = LaunchAgentsWizard
 
 
 # ══════════════════════════════════════════════════════════════

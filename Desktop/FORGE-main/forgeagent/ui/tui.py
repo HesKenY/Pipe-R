@@ -1641,6 +1641,32 @@ class ForgeAgentApp(App):
             self._reset_todo_button()
             return
 
+        # ── Auto-deploy helper models in parallel terminals ──
+        try:
+            mb = self.ctx["model_builder"]
+            deployer = self.ctx["deployer"]
+            all_models = [m["name"] for m in mb.list_local_models()]
+            # Pick up to 3 additional models (not the primary)
+            primary = self.config.model
+            helpers = [m for m in all_models if m != primary][:3]
+            if helpers:
+                # Deploy helpers to work on the same project
+                deployer.deploy_multi(project_path, helpers)
+                results = deployer.launch_multi(project_path, helpers)
+                launched = sum(1 for r in results if r["success"])
+                chat.write(f"  [#7c4dff]Launched {launched} helper agent(s): {', '.join(helpers[:launched])}[/]")
+                chat.write(f"  [#5c6b7a]They will work on the project in parallel terminals.[/]")
+                chat.write("")
+                self._refresh_agent_slots()
+                try:
+                    from ..remote.server import push_log
+                    push_log(f"Launched {launched} helper agents")
+                except Exception:
+                    pass
+        except Exception as ex:
+            chat.write(f"  [#5c6b7a]Helper launch skipped: {ex}[/]")
+            log.error(f"helper launch: {ex}")
+
         total = len(tasks)
         task_results: list[dict] = []
 

@@ -1,6 +1,6 @@
 # Agent Instructions — FORGE-main
 
-Generated: 2026-04-05 13:34
+Generated: 2026-04-05 13:58
 Agent: forge-dev
 Model: forgeagent
 Project: C:\Users\Ken\Desktop\FORGE-main
@@ -23,8 +23,8 @@ Project: C:\Users\Ken\Desktop\FORGE-main
 - Dependencies: rich, textual, httpx, click, python-dotenv, pydantic.
 
 ## Project Structure
-- Total files: 61
-- Directories: datasets, forgeagent, forgeagent.egg-info, Outputs
+- Total files: 64
+- Directories: -p, commands, datasets, forgeagent, Outputs, public, tools
 - Config: .env.example, pyproject.toml, requirements.txt
 
 ## Rules
@@ -45,15 +45,26 @@ When ALL tasks above are completed:
 
 ## Tasks
 
-- [x] Read all files in forgeagent/ and understand the full architecture
-- [ ] Add comprehensive error handling to forgeagent/providers/ollama/client.py — retry on timeout, graceful disconnect messages
-- [ ] Add input validation to all tool run() methods in forgeagent/tools/registry.py — validate required params, check path safety
-- [ ] Write unit tests in a new tests/ directory — test DatasetManager create/import/export, test ModelBuilder profile CRUD, test tool_protocol parse_tool_calls
-- [ ] Add a /tasks command to commands/registry.py that reads and displays AGENT.md pending tasks
-- [ ] Fix the edit_file tool in tools/registry.py — str.replace() does not accept encoding kwarg on line 86
-- [ ] Add connection retry logic to OllamaClient — if first request fails, retry 3 times with 2s delay
-- [ ] Create Outputs/ folder if missing when zip step runs
-- [ ] After completing all tasks above, run pytest to verify, then zip the project to Outputs/build-TIMESTAMP.zip
+- [ ] Fix edit_file tool bug in forgeagent/tools/registry.py line 86 — str.replace() does not accept encoding kwarg. Remove encoding param from replace call.
+- [ ] Add connection retry logic to forgeagent/providers/ollama/client.py — wrap chat() and chat_stream() in retry loop: 3 attempts, 2s delay between, log each retry.
+- [ ] Add input validation to all 12 tool run() methods in forgeagent/tools/registry.py — check required params exist, validate file paths dont escape cwd, return clear error messages.
+- [ ] Fix the query_engine.py compact() method — handle edge case where messages list has fewer than 4 entries without crashing.
+- [ ] Add try/except around all file I/O in memory/session_store.py — handle corrupted JSON files gracefully instead of crashing.
+- [ ] Create tests/ directory with __init__.py and conftest.py. Add pytest to requirements.txt.
+- [ ] Write tests/test_dataset_manager.py — test create_dataset, add_example, import_from_file with JSONL and JSON array formats, export_dataset in all 4 formats. Use tmp_path fixture.
+- [ ] Write tests/test_tool_protocol.py — test parse_tool_calls with: tool block format, raw JSON format, no tools, malformed JSON, single tool shorthand. Test build_tool_instructions output.
+- [ ] Write tests/test_tools.py — test BashTool (echo command), ReadFileTool (read existing file, missing file), WriteFileTool (create file), ListDirTool (list test dir), SearchFilesTool (find pattern).
+- [ ] Write tests/test_agent_instructions.py — test detect_frameworks (Python project, Node project, empty dir), generate_agent_instructions, add_task, complete_task, get_pending_tasks.
+- [ ] Add /tasks slash command to forgeagent/commands/registry.py — reads .forgeagent/AGENT.md and displays pending/completed tasks with checkboxes. Register it in create_commands().
+- [ ] Add a History button to the TUI sidebar Session section — shows list of previous sessions from session_store with date and preview. Clicking one restores that session.
+- [ ] Add auto-save to the COMPLETE TODO pipeline — after each task completes, auto-save the session so nothing is lost if the process crashes.
+- [ ] Add a model download progress indicator — when AUTO TRAIN pulls a base model, show download percentage in the progress bar instead of just text updates.
+- [ ] Add an Export Build button to the TUI sidebar — zips the project to Outputs/ on demand without running tasks. Useful for manual checkpoints.
+- [ ] Add session history to the remote dashboard /api/state — include last 5 sessions with date and message count. Show in mobile UI.
+- [ ] Add model list to remote dashboard — show installed models with size. Allow switching active model from phone via /api/command model:NAME.
+- [ ] Add a notification sound/vibration trigger to the mobile dashboard when TODO completes — use navigator.vibrate() and a brief audio beep.
+- [ ] Add dark/light theme toggle to the mobile dashboard with localStorage persistence.
+- [ ] Update the README.md with current features: training, deploy, COMPLETE TODO, remote control, dataset import, mobile companion. Include screenshot placeholder sections and quick start steps.
+- [ ] After completing all tasks: run pytest to verify tests pass, then zip project to Outputs/build-TIMESTAMP.zip
 
-- [ ] New task from hub: optimize startup time
 <!-- Add new tasks above this line. Agents check this section on each prompt. -->

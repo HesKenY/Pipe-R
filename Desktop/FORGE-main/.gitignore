@@ -17,3 +17,10 @@ venv/
 .installed
 *.log
 .claude/
+Outputs/
+datasets/import/processed/
+.forgeagent/todo_progress.json
+.forgeagent/memory/
+.forgeagent/sessions/
+.forgeagent/dreams/
+.forgeagent/buddy/

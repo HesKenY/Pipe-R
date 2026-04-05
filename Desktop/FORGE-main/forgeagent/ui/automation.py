@@ -1,9 +1,17 @@
 """Background automation pipelines for training, improvement, and deployment."""
 from __future__ import annotations
+import logging
 import os
 import re
 import time
 from pathlib import Path
+
+log = logging.getLogger("forgeagent.automation")
+if not log.handlers:
+    _log_dir = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
+    _log_dir.mkdir(parents=True, exist_ok=True)
+    log.addHandler(logging.FileHandler(_log_dir / "forgeagent.log", encoding="utf-8"))
+    log.setLevel(logging.DEBUG)
 
 
 # ── Topic-to-template mapping ────────────────────────────────
@@ -1024,18 +1032,23 @@ async def _run_claude_cli(prompt: str, cwd: str = ".") -> tuple[str, float]:
     start = time.time()
 
     def _call():
+        log.info(f"claude cli: cwd={cwd} prompt={prompt[:60]}")
         result = sp.run(
-            ["claude", "-p", prompt, "--no-input"],
-            capture_output=True, text=True, timeout=120,
+            ["claude", "-p", prompt],
+            capture_output=True, text=True, timeout=180,
             cwd=cwd,
         )
+        if result.returncode != 0:
+            log.warning(f"claude cli exit {result.returncode}: {result.stderr[:200]}")
         return result.stdout.strip()
 
     try:
         response = await asyncio.to_thread(_call)
         latency = int((time.time() - start) * 1000)
+        log.info(f"claude cli done: {latency}ms, {len(response)} chars")
         return response, latency
     except Exception as e:
+        log.error(f"claude cli error: {e}")
         return f"ERROR: {e}", int((time.time() - start) * 1000)
 
 
@@ -1051,6 +1064,7 @@ async def run_competition(ctx: dict, model_name: str, project_path: str, on_step
     from ..utils.helpers import make_id
     from datetime import datetime
 
+    log.info(f"competition start: model={model_name} path={project_path}")
     client = OllamaClient(ctx["config"].ollama_base_url)
     dm = ctx["dataset_manager"]
     mb = ctx["model_builder"]
@@ -1066,18 +1080,24 @@ async def run_competition(ctx: dict, model_name: str, project_path: str, on_step
     for case in cases:
         step += 1
         on_step(step, total, f"[Local] {case['difficulty']}: {case['prompt'][:40]}...")
-        start = time.time()
         try:
-            response = await client.chat(
-                model=model_name,
-                messages=[ChatMessage(make_id(), "user", case["prompt"], datetime.now().isoformat())],
-                temperature=0.2,
-            )
+            start = time.time()
+            try:
+                response = await client.chat(
+                    model=model_name,
+                    messages=[ChatMessage(make_id(), "user", case["prompt"], datetime.now().isoformat())],
+                    temperature=0.2,
+                )
+            except Exception as e:
+                log.error(f"competition local chat error: {e}")
+                response = f"ERROR: {e}"
+            latency = int((time.time() - start) * 1000)
+            code = _extract_python_code(response)
+            passed, output = await asyncio.to_thread(_run_code_test, code, case["test_code"])
+            log.info(f"competition local [{case['id']}]: {'PASS' if passed else 'FAIL'} {latency}ms")
         except Exception as e:
-            response = f"ERROR: {e}"
-        latency = int((time.time() - start) * 1000)
-        code = _extract_python_code(response)
-        passed, output = await asyncio.to_thread(_run_code_test, code, case["test_code"])
+            log.error(f"competition local [{case['id']}] error: {e}", exc_info=True)
+            passed, output, latency, code, response = False, str(e), 0, "", str(e)
         local_results.append({
             "id": case["id"], "difficulty": case["difficulty"],
             "prompt": case["prompt"], "passed": passed,
@@ -1089,9 +1109,14 @@ async def run_competition(ctx: dict, model_name: str, project_path: str, on_step
     for case in cases:
         step += 1
         on_step(step, total, f"[Claude] {case['difficulty']}: {case['prompt'][:40]}...")
-        response, latency = await _run_claude_cli(case["prompt"], project_path)
-        code = _extract_python_code(response)
-        passed, output = await asyncio.to_thread(_run_code_test, code, case["test_code"])
+        try:
+            response, latency = await _run_claude_cli(case["prompt"], project_path)
+            code = _extract_python_code(response)
+            passed, output = await asyncio.to_thread(_run_code_test, code, case["test_code"])
+            log.info(f"competition claude [{case['id']}]: {'PASS' if passed else 'FAIL'} {latency}ms")
+        except Exception as e:
+            log.error(f"competition claude [{case['id']}] error: {e}", exc_info=True)
+            passed, output, latency, code, response = False, str(e), 0, "", str(e)
         claude_results.append({
             "id": case["id"], "difficulty": case["difficulty"],
             "prompt": case["prompt"], "passed": passed,

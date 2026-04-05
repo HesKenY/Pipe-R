@@ -83,7 +83,7 @@ class EditFileTool(Tool):
             return "Error: old_text not found in file"
         if count > 1:
             return f"Error: old_text found {count} times — must be unique"
-        fp.write_text(content.replace(old, new, 1, encoding="utf-8"), encoding="utf-8")
+        fp.write_text(content.replace(old, new, 1), encoding="utf-8")
         return f"Edited {fp} (1 replacement)"
 
 

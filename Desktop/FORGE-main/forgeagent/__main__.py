@@ -82,8 +82,9 @@ def main():
     @click.option("-m", "--model", default=None, help="Override Ollama model")
     @click.option("--cli", is_flag=True, help="Plain text REPL (no TUI)")
     @click.option("--agent", is_flag=True, help="Agent mode — terminal coding agent")
-    @click.option("--project", default=None, help="Project path for agent mode")
-    def run(model: str | None, cli: bool, agent: bool, project: str | None):
+    @click.option("--team", is_flag=True, help="Team mode — all agents in one terminal")
+    @click.option("--project", default=None, help="Project path for agent/team mode")
+    def run(model: str | None, cli: bool, agent: bool, team: bool, project: str | None):
         setup_status = _auto_setup()
 
         from .config import load_config
@@ -147,7 +148,21 @@ def main():
         }
 
         try:
-            if agent or cli:
+            if team:
+                # Team mode — all models in one terminal
+                from .ui.team_cli import start_team_cli
+                from .training.model_builder import ModelBuilder
+                mb = ModelBuilder(config.memory_dir)
+                all_models = [m["name"] for m in mb.list_local_models()]
+                if model:
+                    # If specific model given, use it plus 3 others
+                    team_models = [model] + [m for m in all_models if m != model][:3]
+                else:
+                    team_models = all_models[:4]
+                if not team_models:
+                    team_models = [config.model]
+                asyncio.run(start_team_cli(team_models, config.cwd, config.ollama_base_url))
+            elif agent or cli:
                 from .ui.cli import start_agent_cli
                 asyncio.run(start_agent_cli(ctx, agent_config))
             else:

@@ -398,6 +398,7 @@ class ForgeAgentApp(App):
                     # ── Launch ──
                     yield Static("Launch", classes="section-header")
                     yield Button("COMPLETE TODO", id="btn-complete-todo", classes="hero")
+                    yield Button("TEAM MODE", id="btn-team-mode", classes="hero")
                     yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
                     yield Button("Manage Projects", id="btn-agents")
                     yield Button("Add Task", id="btn-add-task")
@@ -645,6 +646,27 @@ class ForgeAgentApp(App):
             await self._show_datasets()
         elif bid == "btn-agents":
             await self._show_agents()
+        elif bid == "btn-team-mode":
+            chat = self.query_one("#chatlog", RichLog)
+            chat.write(f"\n  [#00e5ff]Launching Team Mode terminal...[/]")
+            try:
+                import sys, subprocess
+                project = self.config.cwd
+                if sys.platform == "win32":
+                    subprocess.Popen(
+                        f'start "ForgeAgent Team" cmd /c "python -m forgeagent --team --project \\"{project}\\" & pause"',
+                        shell=True, cwd=project,
+                    )
+                else:
+                    subprocess.Popen(
+                        ["bash", "-c", f'python -m forgeagent --team --project "{project}"'],
+                        cwd=project,
+                    )
+                chat.write(f"  [#00e676]Team terminal opened — all agents in one window[/]")
+                chat.write(f"  [#5c6b7a]Type once, all models respond and build on each other's work.[/]")
+                chat.write("")
+            except Exception as ex:
+                chat.write(f"  [#ff1744]Launch failed: {ex}[/]")
         elif bid == "btn-complete-todo":
             if self._todo_running and not self._todo_paused:
                 # Currently running — pause it
@@ -1641,31 +1663,34 @@ class ForgeAgentApp(App):
             self._reset_todo_button()
             return
 
-        # ── Auto-deploy helper models in parallel terminals ──
+        # ── Launch team terminal — all models in one window ──
         try:
+            import sys, subprocess as _sp
             mb = self.ctx["model_builder"]
-            deployer = self.ctx["deployer"]
             all_models = [m["name"] for m in mb.list_local_models()]
-            # Pick up to 3 additional models (not the primary)
-            primary = self.config.model
-            helpers = [m for m in all_models if m != primary][:3]
-            if helpers:
-                # Deploy helpers to work on the same project
-                deployer.deploy_multi(project_path, helpers)
-                results = deployer.launch_multi(project_path, helpers)
-                launched = sum(1 for r in results if r["success"])
-                chat.write(f"  [#7c4dff]Launched {launched} helper agent(s): {', '.join(helpers[:launched])}[/]")
-                chat.write(f"  [#5c6b7a]They will work on the project in parallel terminals.[/]")
+            if len(all_models) > 1:
+                if sys.platform == "win32":
+                    _sp.Popen(
+                        f'start "ForgeAgent Team" cmd /c "python -m forgeagent --team --project \\"{project_path}\\" & pause"',
+                        shell=True, cwd=project_path,
+                    )
+                else:
+                    _sp.Popen(
+                        ["bash", "-c", f'python -m forgeagent --team --project "{project_path}"'],
+                        cwd=project_path,
+                    )
+                chat.write(f"  [#7c4dff]Team terminal opened — {min(len(all_models), 4)} models in one window[/]")
+                chat.write(f"  [#5c6b7a]They share context and build on each other's work.[/]")
                 chat.write("")
                 self._refresh_agent_slots()
                 try:
                     from ..remote.server import push_log
-                    push_log(f"Launched {launched} helper agents")
+                    push_log(f"Team terminal launched with {min(len(all_models), 4)} models")
                 except Exception:
                     pass
         except Exception as ex:
-            chat.write(f"  [#5c6b7a]Helper launch skipped: {ex}[/]")
-            log.error(f"helper launch: {ex}")
+            chat.write(f"  [#5c6b7a]Team launch skipped: {ex}[/]")
+            log.error(f"team launch: {ex}")
 
         total = len(tasks)
         task_results: list[dict] = []

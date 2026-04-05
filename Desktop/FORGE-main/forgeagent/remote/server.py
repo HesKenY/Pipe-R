@@ -377,7 +377,16 @@ class RemoteHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-cache")
             self.end_headers()
-            self.wfile.write(DASHBOARD_HTML.encode("utf-8"))
+            # Serve from public/index.html if it exists, otherwise fall back to embedded
+            html = DASHBOARD_HTML
+            try:
+                from pathlib import Path as _P
+                pub = _P(__file__).resolve().parent.parent.parent / "public" / "index.html"
+                if pub.exists():
+                    html = pub.read_text(encoding="utf-8")
+            except Exception:
+                pass
+            self.wfile.write(html.encode("utf-8"))
 
         elif self.path == "/api/state":
             self.send_response(200)

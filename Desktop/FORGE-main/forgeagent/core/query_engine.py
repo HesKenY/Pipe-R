@@ -149,4 +149,16 @@ class QueryEngine:
 
     # ── System prompt ──────────────────────────────
     def _build_system_prompt(self) -> str:
-        return self.config.system_prompt + "\n\n" + build_tool_instructions(list(self.tools.values()))
+        prompt = self.config.system_prompt + "\n\n" + build_tool_instructions(list(self.tools.values()))
+
+        # Inject AGENT.md instructions if present
+        from pathlib import Path
+        agent_md = Path(self.config.cwd) / ".forgeagent" / "AGENT.md"
+        if agent_md.exists():
+            try:
+                instructions = agent_md.read_text(encoding="utf-8")
+                prompt += "\n\n## Project Instructions\n" + instructions[:4000]
+            except Exception:
+                pass
+
+        return prompt

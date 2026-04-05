@@ -207,6 +207,23 @@ async def start_agent_cli(ctx: dict, agent_config: dict | None = None) -> None:
         console.print(f"  [{DIM}]Start Ollama: ollama serve[/]")
     console.print()
 
+    # Read AGENT.md instructions if present
+    from pathlib import Path as P
+    agent_md = P(config.cwd) / ".forgeagent" / "AGENT.md"
+    if agent_md.exists():
+        from ..deploy.agent_instructions import get_pending_tasks, get_completed_tasks
+        pending = get_pending_tasks(config.cwd)
+        completed = get_completed_tasks(config.cwd)
+        if pending or completed:
+            console.print(f"  [{CYAN}]TASKS[/]  [{DIM}]{len(completed)} done, {len(pending)} pending[/]")
+            for t in pending[:8]:
+                console.print(f"  [{AMBER}][ ][/] {t}")
+            if len(pending) > 8:
+                console.print(f"  [{DIM}]  ...and {len(pending) - 8} more[/]")
+            console.print()
+            console.print(f"  [{DIM}]Say 'next task' to work on the next pending task.[/]")
+            console.print()
+
     # Auto-restore session
     last = await session_store.load_latest()
     if last and len(last) > 2:

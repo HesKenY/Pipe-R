@@ -395,6 +395,7 @@ class ForgeAgentApp(App):
                     yield Static("Launch", classes="section-header")
                     yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
                     yield Button("Manage Projects", id="btn-agents")
+                    yield Button("Add Task", id="btn-add-task")
                     yield Button("Models", id="btn-models")
                     yield Button("Datasets", id="btn-datasets")
                     yield Button("Upload Dataset", id="btn-upload-dataset")
@@ -621,6 +622,11 @@ class ForgeAgentApp(App):
             await self._show_datasets()
         elif bid == "btn-agents":
             await self._show_agents()
+        elif bid == "btn-add-task":
+            self.push_screen(
+                ToolInputModal("Add Task", "Task for agents to complete", "Add error handling to all API endpoints", "ADDTASK:{value}"),
+                callback=self._on_add_task,
+            )
         elif bid == "btn-upload-dataset":
             self.push_screen(
                 ToolInputModal("Upload Dataset", "Path to JSONL/JSON file", "C:/datasets/training.jsonl", "UPLOAD:{value}"),
@@ -1155,6 +1161,46 @@ class ForgeAgentApp(App):
         except Exception as ex:
             chat.write(f"  [#ff1744]Deploy failed: {ex}[/]")
             log.error(f"deploy: {ex}", exc_info=True)
+
+    # ── Add task to deployed agents ────────────────
+    async def _on_add_task(self, message: str | None):
+        if not message or not message.startswith("ADDTASK:"):
+            return
+        task = message.replace("ADDTASK:", "").strip()
+        if not task:
+            return
+        chat = self.query_one("#chatlog", RichLog)
+        deployer = self.ctx["deployer"]
+        agents = deployer.list_agents()
+
+        if not agents:
+            chat.write(f"  [#ffd740]No deployed agents. Launch agents first.[/]")
+            return
+
+        from ..deploy.agent_instructions import add_task, write_agent_instructions
+        added_to = []
+        for agent in agents:
+            pp = agent.get("projectPath", "")
+            if not pp:
+                continue
+            # Ensure AGENT.md exists
+            from pathlib import Path as P
+            agent_md = P(pp) / ".forgeagent" / "AGENT.md"
+            if not agent_md.exists():
+                write_agent_instructions(pp, agent.get("name", ""), agent.get("modelName", ""))
+            if add_task(pp, task):
+                added_to.append(agent.get("name", pp))
+
+        if added_to:
+            chat.write(f"\n  [#00e676]Task added to {len(added_to)} project(s):[/]")
+            chat.write(f"  [#00e5ff]{task}[/]")
+            for name in added_to:
+                chat.write(f"  [#5c6b7a]  -> {name}[/]")
+            chat.write(f"  [#5c6b7a]Running agents will pick this up on their next prompt.[/]")
+            chat.write("")
+            self.notify(f"Task added to {len(added_to)} agent(s)!", timeout=3)
+        else:
+            chat.write(f"  [#ff1744]Could not add task to any agents.[/]")
 
     # ── Scan import folder ────────────────────────
     async def _do_scan_imports(self, silent: bool = False):

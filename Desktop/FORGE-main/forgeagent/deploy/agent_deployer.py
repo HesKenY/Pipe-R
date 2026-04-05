@@ -53,6 +53,10 @@ BUDDY_DIR=.forgeagent/buddy
         (agent_dir / ".env").write_text(env, encoding="utf-8")
         self._write_launch_script(agent_dir, pp, agent["name"], agent["modelName"])
 
+        # Generate AGENT.md
+        from .agent_instructions import write_agent_instructions
+        write_agent_instructions(str(pp), agent_name=name, model_name=agent["modelName"])
+
         # Memory init
         mem = agent_dir / "memory" / "MEMORY.md"
         if not mem.exists():
@@ -112,6 +116,12 @@ BUDDY_DIR=.forgeagent/buddy
 
         # Write a launch-all script
         self._write_launch_all_script(agent_dir, pp, agents)
+
+        # Generate AGENT.md with framework-aware instructions
+        from .agent_instructions import write_agent_instructions
+        write_agent_instructions(str(pp),
+            agent_name=agents[0]["name"] if agents else "",
+            model_name=", ".join(a["modelName"] for a in agents))
 
         # Write shared .env
         primary = agents[0] if agents else {}

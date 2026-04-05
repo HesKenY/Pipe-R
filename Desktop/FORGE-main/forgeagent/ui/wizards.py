@@ -530,3 +530,81 @@ class InfoModal(ModalScreen[None]):
     def on_button_pressed(self, e: Button.Pressed):
         if e.button.id == "info-close":
             self.dismiss(None)
+
+
+# ══════════════════════════════════════════════════════════════
+#  MODEL SELECT WIZARD — switch active model or continue training
+# ══════════════════════════════════════════════════════════════
+class ModelSelectWizard(ModalScreen[dict | None]):
+    """Pick a model to activate or continue training on."""
+
+    CSS = """
+    ModelSelectWizard { align: center middle; }
+    #msw {
+        width: 72; height: 34;
+        border: round $accent; background: $surface;
+        padding: 1 2;
+    }
+    #msw Static.title { text-style: bold; color: $accent; margin: 0 0 1 0; }
+    #msw Static.subtitle { color: $text-muted; margin: 0 0 1 0; }
+    #msw-scroll { height: 1fr; }
+    .model-row {
+        height: 3; padding: 0 1; margin: 0 0 1 0;
+        background: $panel;
+    }
+    .model-row Static.model-name {
+        width: 1fr; padding: 1 0 0 0;
+    }
+    .model-row Static.model-active {
+        width: auto; padding: 1 1 0 0;
+        color: $success; text-style: bold;
+    }
+    .model-row Button {
+        width: auto; min-width: 10; height: 3;
+        margin: 0 0 0 1;
+    }
+    #msw-actions { height: auto; dock: bottom; margin: 1 0 0 0; }
+    #msw-actions Button { min-width: 14; height: 3; }
+    """
+
+    def __init__(self, models: list[dict], current_model: str, profiles: list[dict]):
+        super().__init__()
+        self._models = models
+        self._current = current_model
+        self._profile_names = {p["name"] for p in profiles}
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="msw"):
+            yield Static("Models", classes="title")
+            yield Static("Select a model to use, or continue training it.", classes="subtitle")
+            yield Rule()
+            with VerticalScroll(id="msw-scroll"):
+                if not self._models:
+                    yield Static("[dim]No models installed. Click AUTO TRAIN to build one.[/]")
+                for i, m in enumerate(self._models):
+                    name = m["name"]
+                    size = m.get("size", "?")
+                    is_active = name == self._current
+                    has_profile = name in self._profile_names
+                    with Horizontal(classes="model-row"):
+                        if is_active:
+                            yield Static("[green]ACTIVE[/]", classes="model-active")
+                        yield Static(f"[bold]{name}[/]  [dim]{size}[/]", classes="model-name")
+                        yield Button("Use", id=f"msw-use-{i}", variant="success")
+                        if has_profile:
+                            yield Button("Train", id=f"msw-train-{i}", variant="primary")
+            with Horizontal(id="msw-actions"):
+                yield Button("Close", id="msw-close")
+
+    def on_button_pressed(self, e: Button.Pressed):
+        bid = e.button.id or ""
+        if bid == "msw-close":
+            self.dismiss(None)
+        elif bid.startswith("msw-use-"):
+            idx = int(bid.split("-")[-1])
+            if idx < len(self._models):
+                self.dismiss({"action": "use", "model": self._models[idx]["name"]})
+        elif bid.startswith("msw-train-"):
+            idx = int(bid.split("-")[-1])
+            if idx < len(self._models):
+                self.dismiss({"action": "train", "model": self._models[idx]["name"]})

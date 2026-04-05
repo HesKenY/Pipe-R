@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.binding import Binding
 from textual import work
 
-from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal
+from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal, ModelSelectWizard
 from .automation import run_auto_train, run_improve, run_retrain, run_continue_train
 
 # ── Logging ───────────────────────────────────────────────────
@@ -771,14 +771,36 @@ class ForgeAgentApp(App):
     async def _show_models(self):
         mb = self.ctx["model_builder"]
         models = mb.list_local_models()
-        if not models:
-            content = "[dim]No models found. Click AUTO TRAIN to build one.[/]"
-        else:
-            lines = [f"[bold]{'Name':<30} {'Size':<10} Modified[/]", ""]
-            for m in models:
-                lines.append(f"{m['name']:<30} {m.get('size', '?'):<10} {m.get('modified', '')}")
-        content = "\n".join(lines) if models else "[dim]No models found. Click AUTO TRAIN to build one.[/]"
-        self.push_screen(InfoModal("Installed Models", content))
+        profiles = mb.list_profiles()
+        self.push_screen(
+            ModelSelectWizard(models, self.config.model, profiles),
+            callback=self._on_model_select,
+        )
+
+    async def _on_model_select(self, r: dict | None):
+        if not r:
+            return
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+
+        if r["action"] == "use":
+            model_name = r["model"]
+            self.engine.set_model(model_name)
+            self.config.model = model_name
+            status_bar.set_model(model_name)
+            chat.write(f"\n  [bold green]Switched to model: {model_name}[/]")
+            chat.write("")
+            self.notify(f"Now using: {model_name}", timeout=3)
+
+        elif r["action"] == "train":
+            model_name = r["model"]
+            if self._training_active:
+                self.notify("Training already in progress", severity="warning", timeout=3)
+                return
+            self.push_screen(
+                ContinueTrainWizard(model_name),
+                callback=self._on_continue_train,
+            )
 
     async def _show_datasets(self):
         dm = self.ctx["dataset_manager"]

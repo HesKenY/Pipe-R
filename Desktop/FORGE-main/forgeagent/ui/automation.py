@@ -1166,3 +1166,167 @@ async def run_competition(ctx: dict, model_name: str, project_path: str, on_step
         "lessons_learned": lessons_learned,
         "rebuilt": build_result.success if build_result else False,
     }
+
+
+# ── IQ Test Benchmark ────────────────────────────────────────
+# Tests pattern recognition, logic, math reasoning, abstraction,
+# spatial reasoning, and language comprehension — maps to IQ-style score.
+
+IQ_QUESTIONS = [
+    # Pattern recognition (20 pts each)
+    {"id": "pat-1", "category": "pattern", "points": 20,
+     "prompt": "What comes next in this sequence? 2, 6, 18, 54, __. Reply with just the number.",
+     "answer": "162", "check": lambda r: "162" in r},
+    {"id": "pat-2", "category": "pattern", "points": 20,
+     "prompt": "What comes next? 1, 1, 2, 3, 5, 8, 13, __. Reply with just the number.",
+     "answer": "21", "check": lambda r: "21" in r},
+    {"id": "pat-3", "category": "pattern", "points": 20,
+     "prompt": "Complete the pattern: A1, B2, C3, D4, __. Reply with just the answer.",
+     "answer": "E5", "check": lambda r: "E5" in r.upper()},
+
+    # Logic (20 pts each)
+    {"id": "log-1", "category": "logic", "points": 20,
+     "prompt": "All roses are flowers. Some flowers fade quickly. Can we conclude that some roses fade quickly? Answer: Yes, No, or Cannot determine.",
+     "answer": "Cannot determine", "check": lambda r: "cannot" in r.lower() or "not necessarily" in r.lower() or "no" == r.strip().lower()},
+    {"id": "log-2", "category": "logic", "points": 20,
+     "prompt": "If it takes 5 machines 5 minutes to make 5 widgets, how many minutes would it take 100 machines to make 100 widgets? Reply with just the number.",
+     "answer": "5", "check": lambda r: r.strip().startswith("5") or "5 min" in r},
+    {"id": "log-3", "category": "logic", "points": 20,
+     "prompt": "A bat and a ball cost $1.10 together. The bat costs $1.00 more than the ball. How much does the ball cost in cents? Reply with just the number.",
+     "answer": "5", "check": lambda r: "5" in r and "10" not in r.split("5")[0][-3:]},
+
+    # Math reasoning (20 pts each)
+    {"id": "math-1", "category": "math", "points": 20,
+     "prompt": "What is 17 * 23? Reply with just the number.",
+     "answer": "391", "check": lambda r: "391" in r},
+    {"id": "math-2", "category": "math", "points": 20,
+     "prompt": "If you have 3 red balls and 5 blue balls in a bag, what's the probability of drawing a red ball? Reply as a fraction.",
+     "answer": "3/8", "check": lambda r: "3/8" in r or "0.375" in r or "37.5" in r},
+    {"id": "math-3", "category": "math", "points": 20,
+     "prompt": "A train travels 60 mph for 2.5 hours, then 80 mph for 1.5 hours. What's the total distance in miles? Reply with just the number.",
+     "answer": "270", "check": lambda r: "270" in r},
+
+    # Abstraction (25 pts each)
+    {"id": "abs-1", "category": "abstraction", "points": 25,
+     "prompt": "What concept connects: inheritance, polymorphism, encapsulation? Reply in 1-3 words.",
+     "answer": "OOP", "check": lambda r: any(w in r.lower() for w in ["object-oriented", "oop", "object oriented", "oo programming"])},
+    {"id": "abs-2", "category": "abstraction", "points": 25,
+     "prompt": "An analogy: CPU is to computer as ___ is to human body. Reply in one word.",
+     "answer": "brain", "check": lambda r: "brain" in r.lower()},
+
+    # Comprehension (25 pts each)
+    {"id": "comp-1", "category": "comprehension", "points": 25,
+     "prompt": "In Python, what's the difference between `is` and `==`? Answer in one sentence.",
+     "answer": "identity vs equality", "check": lambda r: ("identity" in r.lower() or "object" in r.lower() or "same object" in r.lower()) and ("equal" in r.lower() or "value" in r.lower())},
+    {"id": "comp-2", "category": "comprehension", "points": 25,
+     "prompt": "What is Big O notation used for? Answer in one sentence.",
+     "answer": "algorithm complexity", "check": lambda r: any(w in r.lower() for w in ["complex", "efficien", "performance", "time", "scale", "growth"])},
+
+    # Spatial/structural reasoning (25 pts each)
+    {"id": "spa-1", "category": "spatial", "points": 25,
+     "prompt": "If you reverse a linked list, what was the tail becomes the ___. Reply in one word.",
+     "answer": "head", "check": lambda r: "head" in r.lower()},
+    {"id": "spa-2", "category": "spatial", "points": 25,
+     "prompt": "In a binary tree with 7 nodes in a complete tree, how many leaf nodes are there? Reply with just the number.",
+     "answer": "4", "check": lambda r: "4" in r},
+]
+
+# Max possible score
+_IQ_MAX = sum(q["points"] for q in IQ_QUESTIONS)
+
+# IQ score mapping: raw_pct -> estimated IQ
+# Based on normal distribution: 50% = 100 IQ, each 10% = ~15 IQ points
+def _raw_to_iq(raw_pct: float) -> int:
+    """Convert raw percentage to estimated IQ score."""
+    # Sigmoid-like mapping centered at 100 IQ = 50%
+    if raw_pct <= 0:
+        return 55
+    if raw_pct >= 100:
+        return 160
+    # Linear interpolation through key points
+    points = [(0, 55), (10, 70), (25, 85), (40, 95), (50, 100),
+              (60, 108), (75, 120), (85, 130), (92, 140), (97, 150), (100, 160)]
+    for i in range(len(points) - 1):
+        x0, y0 = points[i]
+        x1, y1 = points[i + 1]
+        if x0 <= raw_pct <= x1:
+            t = (raw_pct - x0) / (x1 - x0)
+            return round(y0 + t * (y1 - y0))
+    return 100
+
+
+def _iq_label(iq: int) -> tuple[str, str]:
+    """Return (label, color) for an IQ score."""
+    if iq >= 145: return "Genius", "[bold magenta]"
+    if iq >= 130: return "Gifted", "[bold cyan]"
+    if iq >= 120: return "Superior", "[cyan]"
+    if iq >= 110: return "Above Average", "[green]"
+    if iq >= 100: return "Average", "[yellow]"
+    if iq >= 90:  return "Below Average", "[yellow]"
+    if iq >= 80:  return "Low Average", "[red]"
+    return "Needs Training", "[red]"
+
+
+async def run_iq_test(ctx: dict, model_name: str, on_step) -> dict:
+    """Run IQ benchmark and return scored results."""
+    from ..providers.ollama.client import OllamaClient
+    from ..core.interfaces import ChatMessage
+    from ..utils.helpers import make_id
+    from datetime import datetime
+
+    client = OllamaClient(ctx["config"].ollama_base_url)
+    questions = IQ_QUESTIONS
+    results = []
+    total = len(questions)
+    earned = 0
+
+    for i, q in enumerate(questions):
+        on_step(i + 1, total, f"[{q['category']}] {q['prompt'][:45]}...")
+        start = time.time()
+        try:
+            response = await client.chat(
+                model=model_name,
+                messages=[ChatMessage(make_id(), "user", q["prompt"], datetime.now().isoformat())],
+                temperature=0.1,
+            )
+        except Exception as e:
+            response = f"ERROR: {e}"
+        latency = int((time.time() - start) * 1000)
+        passed = q["check"](response)
+        pts = q["points"] if passed else 0
+        earned += pts
+        results.append({
+            "id": q["id"], "category": q["category"], "points": q["points"],
+            "prompt": q["prompt"], "expected": q["answer"],
+            "response": response[:300], "passed": passed,
+            "earned": pts, "latency": latency,
+        })
+
+    raw_pct = round(earned / _IQ_MAX * 100) if _IQ_MAX else 0
+    iq_score = _raw_to_iq(raw_pct)
+    label, color = _iq_label(iq_score)
+
+    # Per-category breakdown
+    by_cat = {}
+    for r in results:
+        cat = r["category"]
+        if cat not in by_cat:
+            by_cat[cat] = {"earned": 0, "possible": 0, "passed": 0, "total": 0}
+        by_cat[cat]["possible"] += r["points"]
+        by_cat[cat]["earned"] += r["earned"]
+        by_cat[cat]["total"] += 1
+        if r["passed"]:
+            by_cat[cat]["passed"] += 1
+
+    return {
+        "success": True,
+        "model_name": model_name,
+        "iq_score": iq_score,
+        "iq_label": label,
+        "iq_color": color,
+        "raw_pct": raw_pct,
+        "earned": earned,
+        "max_points": _IQ_MAX,
+        "by_category": by_cat,
+        "results": results,
+    }

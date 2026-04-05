@@ -9,7 +9,7 @@ from textual.binding import Binding
 from textual import work
 
 from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal, ModelSelectWizard
-from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition
+from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test
 
 # ── Logging ───────────────────────────────────────────────────
 _LD = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
@@ -230,7 +230,7 @@ class ForgeAgentApp(App):
 
     /* ── Sidebar ────────────────────────────────── */
     #sidebar {
-        width: 26; height: 100%;
+        width: 28; height: 100%;
         background: $panel;
         border-right: tall $primary-background-lighten-1;
         padding: 0;
@@ -239,15 +239,19 @@ class ForgeAgentApp(App):
 
     /* Section headers */
     .section-header {
-        color: $text-muted; text-style: bold;
+        color: $accent; text-style: bold;
         padding: 1 1 0 1; height: 2;
+    }
+    .section-divider {
+        color: $primary-background-lighten-1;
+        margin: 0 1;
     }
 
     /* Regular buttons */
     #sidebar Button {
         width: 100%; height: 1;
         background: transparent; color: $text-muted;
-        border: none; padding: 0 1; margin: 0;
+        border: none; padding: 0 2; margin: 0;
     }
     #sidebar Button:hover {
         background: $primary-background-lighten-1;
@@ -259,29 +263,27 @@ class ForgeAgentApp(App):
     }
 
     /* Hero buttons */
-    #sidebar Button.hero-green {
+    .hero {
         background: $success-darken-2; color: white;
-        text-style: bold; height: 3; margin: 0 0 0 0;
+        text-style: bold; height: 3; margin: 0 1 0 1;
+        border: round $success-darken-1;
     }
-    #sidebar Button.hero-green:hover { background: $success; }
-    #sidebar Button.hero-green:focus { background: $success; }
-    #sidebar Button.hero-green.-disabled {
-        background: $primary-background; color: $text-muted;
-    }
-
-    #sidebar Button.hero-blue {
+    .hero:hover { background: $success; }
+    .hero:focus { background: $success; }
+    .hero-alt {
         background: $primary-darken-2; color: white;
-        text-style: bold; height: 3; margin: 0 0 0 0;
+        text-style: bold; height: 3; margin: 0 1 0 1;
+        border: round $primary-darken-1;
     }
-    #sidebar Button.hero-blue:hover { background: $primary; }
-    #sidebar Button.hero-blue:focus { background: $primary; }
-
-    #sidebar Button.hero-cyan {
-        background: $accent 30%; color: white;
-        text-style: bold; height: 3; margin: 0 0 0 0;
+    .hero-alt:hover { background: $primary; }
+    .hero-alt:focus { background: $primary; }
+    .hero-accent {
+        background: $accent 25%; color: white;
+        text-style: bold; height: 3; margin: 0 1 0 1;
+        border: round $accent 40%;
     }
-    #sidebar Button.hero-cyan:hover { background: $accent 50%; }
-    #sidebar Button.hero-cyan:focus { background: $accent 50%; }
+    .hero-accent:hover { background: $accent 45%; }
+    .hero-accent:focus { background: $accent 45%; }
 
     /* ── Model face ──────────────────────────────── */
     #face-panel {
@@ -360,14 +362,10 @@ class ForgeAgentApp(App):
         with Horizontal(id="shell"):
             with Vertical(id="sidebar"):
                 with VerticalScroll(id="sidebar-scroll"):
-                    # Hero buttons
-                    yield Static("Get Started", classes="section-header")
-                    yield Button("AUTO TRAIN", id="btn-auto-train", classes="hero-green")
-                    yield Button("IMPROVE MODEL", id="btn-improve", classes="hero-blue")
-                    yield Button("DEPLOY AGENT", id="btn-deploy", classes="hero-cyan")
-
-                    # Training buttons
-                    yield Static("Training", classes="section-header")
+                    # ── Build ──
+                    yield Static("Build", classes="section-header")
+                    yield Button("AUTO TRAIN", id="btn-auto-train", classes="hero")
+                    yield Button("IMPROVE MODEL", id="btn-improve", classes="hero-alt")
                     yield Button("Continue Training", id="btn-continue-train")
                     yield Button("Retrain from Scratch", id="btn-retrain")
 
@@ -376,22 +374,35 @@ class ForgeAgentApp(App):
                         yield Static("", id="progress-label")
                         yield ProgressBar(id="progress-bar", total=100, show_eta=False, show_percentage=True)
 
-                    # Chat tools
-                    yield Static("Chat Tools", classes="section-header")
+                    yield Rule(classes="section-divider")
+
+                    # ── Test ──
+                    yield Static("Test", classes="section-header")
+                    yield Button("VS Claude Code", id="btn-competition", classes="hero-accent")
+                    yield Button("Code Test", id="btn-codetest")
+                    yield Button("IQ Test", id="btn-iqtest")
+                    yield Button("Evaluate", id="btn-evaluate")
+                    yield Button("Benchmark", id="btn-benchmark")
+
+                    yield Rule(classes="section-divider")
+
+                    # ── Deploy ──
+                    yield Static("Deploy", classes="section-header")
+                    yield Button("DEPLOY AGENT", id="btn-deploy", classes="hero-accent")
+                    yield Button("Models", id="btn-models")
+                    yield Button("Agents", id="btn-agents")
+                    yield Button("Datasets", id="btn-datasets")
+
+                    yield Rule(classes="section-divider")
+
+                    # ── Tools ──
+                    yield Static("Tools", classes="section-header")
                     for i, (label, *_rest) in enumerate(TOOL_BUTTONS):
                         yield Button(label, id=f"btn-tool-{i}")
 
-                    # Management
-                    yield Static("Manage", classes="section-header")
-                    yield Button("Models", id="btn-models")
-                    yield Button("Datasets", id="btn-datasets")
-                    yield Button("Agents", id="btn-agents")
-                    yield Button("Evaluate", id="btn-evaluate")
-                    yield Button("Code Test", id="btn-codetest")
-                    yield Button("VS Claude Code", id="btn-competition")
-                    yield Button("Benchmark vs Claude", id="btn-benchmark")
+                    yield Rule(classes="section-divider")
 
-                    # Session
+                    # ── Session ──
                     yield Static("Session", classes="section-header")
                     yield Button("Save", id="btn-save")
                     yield Button("Clear", id="btn-clear")
@@ -597,6 +608,11 @@ class ForgeAgentApp(App):
                 ToolInputModal("VS Claude Code", "Project folder (or . for current)", ".", "COMPETITION:{value}"),
                 callback=self._on_competition_input,
             )
+        elif bid == "btn-iqtest":
+            if self._training_active:
+                self.notify("Training in progress — please wait", severity="warning", timeout=3)
+                return
+            self._do_iq_test(self.config.model)
         elif bid == "btn-codetest":
             if self._training_active:
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
@@ -1164,6 +1180,103 @@ class ForgeAgentApp(App):
         except Exception as ex:
             chat.write(f"  [red]Evaluation error: {ex}[/]")
             log.error(f"evaluate: {ex}", exc_info=True)
+        finally:
+            self._training_active = False
+            status_bar.set_training("idle")
+            self._hide_progress()
+            self._face("idle")
+
+    # ── IQ Test ───────────────────────────────────
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_iq_test(self, model_name: str) -> None:
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        self._face("training")
+        status_bar.set_training("IQ testing...")
+
+        chat.write(f"\n  [bold magenta]{'━'*50}[/]")
+        chat.write(f"  [bold magenta]  IQ TEST — {model_name}[/]")
+        chat.write(f"  [bold magenta]{'━'*50}[/]")
+        chat.write(f"  [dim]16 questions: pattern, logic, math, abstraction, comprehension, spatial[/]")
+        chat.write("")
+
+        def on_step(step, total, message):
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"IQ {step}/{total}")
+                self._show_progress("IQ Test", step, total)
+            except Exception:
+                pass
+
+        try:
+            result = await run_iq_test(self.ctx, model_name, on_step)
+
+            if result["success"]:
+                iq = result["iq_score"]
+                label = result["iq_label"]
+                color = result["iq_color"]
+                raw = result["raw_pct"]
+
+                chat.write("")
+                chat.write(f"  [bold]{'━'*50}[/]")
+                chat.write(f"  [bold]  IQ SCORE[/]")
+                chat.write(f"  [bold]{'━'*50}[/]")
+                chat.write("")
+
+                # Big IQ number
+                chat.write(f"  {color}  ██  ██████   {iq}  ██████  ██[/]")
+                chat.write(f"  {color}  {label}[/]")
+                chat.write("")
+
+                # Score bar (IQ 55-160 range)
+                bar_w = 40
+                iq_min, iq_max = 55, 160
+                pos = round((iq - iq_min) / (iq_max - iq_min) * bar_w)
+                pos = max(0, min(bar_w, pos))
+                bar = color + "█" * pos + "[/]" + "[dim]░[/]" * (bar_w - pos)
+                chat.write(f"  {bar}  {color}{iq}[/]")
+                chat.write(f"  [dim]55{'':>16}100{'':>16}160[/]")
+                chat.write(f"  [dim]Raw score: {result['earned']}/{result['max_points']} ({raw}%)[/]")
+                chat.write("")
+
+                # Per-category
+                chat.write(f"  [bold]{'Category':<18} {'Score':<12} {'Result':<20}[/]")
+                chat.write(f"  {'─'*50}")
+                for cat in ["pattern", "logic", "math", "abstraction", "comprehension", "spatial"]:
+                    data = result["by_category"].get(cat)
+                    if not data:
+                        continue
+                    pct = round(data["earned"] / data["possible"] * 100) if data["possible"] else 0
+                    cat_color = "[green]" if pct >= 75 else ("[yellow]" if pct >= 50 else "[red]")
+                    mini = cat_color + "█" * round(pct / 10) + "[/]" + "░" * (10 - round(pct / 10))
+                    chat.write(f"  {cat:<18} {data['passed']}/{data['total']}{'':>6} {mini} {cat_color}{pct}%[/]")
+                chat.write("")
+
+                # Per-question results
+                chat.write(f"  [bold]Details:[/]")
+                for r in result["results"]:
+                    icon = "[green]✓[/]" if r["passed"] else "[red]✗[/]"
+                    chat.write(f"  {icon} [dim]{r['category']:<14}[/] {r['prompt'][:40]}")
+                    if not r["passed"]:
+                        chat.write(f"    [dim]Expected: {r['expected']} | Got: {r['response'][:50]}[/]")
+                chat.write("")
+
+                # Comparison
+                if iq >= 130:
+                    chat.write(f"  {color}Gifted-level intelligence. Approaching Claude Code performance.[/]")
+                elif iq >= 110:
+                    chat.write(f"  {color}Above average. Continue training to reach genius level.[/]")
+                elif iq >= 100:
+                    chat.write(f"  {color}Average intelligence. More training data will help.[/]")
+                else:
+                    chat.write(f"  {color}Below average. Run IMPROVE or VS Claude Code to learn.[/]")
+                chat.write("")
+
+                self.notify(f"IQ: {iq} — {label}", timeout=8)
+        except Exception as ex:
+            chat.write(f"\n  [red]IQ test error: {ex}[/]")
+            log.error(f"iq_test: {ex}", exc_info=True)
         finally:
             self._training_active = False
             status_bar.set_training("idle")

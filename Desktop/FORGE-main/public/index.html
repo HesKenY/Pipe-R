@@ -114,35 +114,25 @@ select{padding:8px;background:var(--bg);color:var(--text);border:1px solid var(-
 
 <!-- Tab bar -->
 <div class="tabs">
-  <div class="tab active" data-tab="control">CONTROL</div>
-  <div class="tab" data-tab="build">BUILD</div>
+  <div class="tab active" data-tab="work">WORK</div>
   <div class="tab" data-tab="train">TRAIN</div>
   <div class="tab" data-tab="monitor">MONITOR</div>
   <div class="tab" data-tab="chat">CHAT</div>
 </div>
 
-<!-- ═══ CONTROL TAB ═══ -->
-<div class="panel active" id="tab-control">
+<!-- ═══ WORK TAB ═══ -->
+<div class="panel active" id="tab-work">
 
   <div class="card">
-    <div class="card-title">STATUS</div>
     <div class="row"><span class="label">Ollama</span><span class="val" id="s-ollama">—</span></div>
     <div class="row"><span class="label">Model</span><span class="val" id="s-model">—</span></div>
     <div class="row"><span class="label">Status</span><span class="val" id="s-status">—</span></div>
-    <div class="row"><span class="label">Datasets</span><span class="val" id="s-ds">—</span></div>
-    <div class="row"><span class="label">Buddy</span><span class="val" id="s-buddy">—</span></div>
-    <div class="row"><span class="label">Iteration</span><span class="val" id="s-iter">—</span></div>
   </div>
 
   <div class="card">
-    <div class="card-title">TODO PROGRESS</div>
     <div class="pbar"><div class="pfill" id="p-fill" style="width:0%"></div><div class="ptxt" id="p-txt">0%</div></div>
     <div class="row"><span class="label">Tasks</span><span class="val" id="p-tasks">0/0</span></div>
     <div class="current" id="p-cur"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">QUICK ACTIONS</div>
     <div class="brow">
       <button class="btn fillg big" onclick="cmd('complete_todo')">COMPLETE TODO</button>
     </div>
@@ -151,27 +141,11 @@ select{padding:8px;background:var(--bg);color:var(--text);border:1px solid var(-
       <button class="btn" onclick="cmd('resume')">RESUME</button>
       <button class="btn r" onclick="cmd('stop')">STOP</button>
     </div>
-    <div class="brow">
-      <button class="btn" onclick="cmd('save')">SAVE</button>
-      <button class="btn" onclick="cmd('compact')">COMPACT</button>
-      <button class="btn a" onclick="cmd('restart')">RESTART</button>
-    </div>
   </div>
 
   <div class="card">
-    <div class="card-title">AGENTS</div>
-    <div id="agents">—</div>
-  </div>
-
-</div>
-
-<!-- ═══ BUILD TAB ═══ -->
-<div class="panel" id="tab-build">
-
-  <div class="card">
-    <div class="card-title">BUILD INSTRUCTIONS</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:6px">Tell agents what to build. They generate tasks and execute.</div>
-    <textarea id="build-input" rows="5" placeholder="Add a settings page with dark mode&#10;Fix search to handle special chars&#10;Add export to PDF for reports"></textarea>
+    <div class="card-title">BUILD</div>
+    <textarea id="build-input" rows="4" placeholder="What to build or fix..."></textarea>
     <select id="build-focus" style="margin-top:6px">
       <option value="features">Features</option>
       <option value="bugs">Bug Fixes</option>
@@ -181,42 +155,31 @@ select{padding:8px;background:var(--bg);color:var(--text);border:1px solid var(-
     </select>
     <div class="brow">
       <button class="btn fillg big" onclick="buildIt()">BUILD IT</button>
-      <button class="btn" onclick="genTasks()">GENERATE ONLY</button>
+      <button class="btn" onclick="genTasks()">TASKS ONLY</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">MANUAL TASKS</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:6px">One per line. Direct task list for agents.</div>
-    <textarea id="task-edit" rows="4" placeholder="Specific tasks..."></textarea>
-    <div class="brow">
-      <button class="btn" onclick="setTasks()">SET TASKS</button>
-      <button class="btn p" onclick="cmd('complete_todo')">RUN TODO</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">ADD SINGLE TASK</div>
+    <div class="card-title">ADD TASK</div>
     <div class="chat-row">
-      <input type="text" id="add-task-input" placeholder="Task to add to agents...">
+      <input type="text" id="add-task-input" placeholder="Task for agents...">
       <button class="chat-send" onclick="addTask()">ADD</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">WORK ON PROJECT</div>
-    <div style="font-size:10px;color:var(--dim);margin-bottom:6px">Point agents at any folder to analyze, plan, and build.</div>
+    <div class="card-title">DEPLOY TO FOLDER</div>
     <input type="text" id="work-path" placeholder="C:/Projects/myapp">
     <div class="brow">
-      <button class="btn fillp big" onclick="workOn()">DEPLOY TO FOLDER</button>
+      <button class="btn fillp big" onclick="workOn()">DEPLOY</button>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-title">LAUNCH</div>
+    <div id="agents">—</div>
     <div class="brow">
-      <button class="btn fill" onclick="cmd('team_mode')">TEAM MODE</button>
-      <button class="btn p" onclick="cmd('launch_agents')">LAUNCH AGENTS</button>
+      <button class="btn" onclick="cmd('save')">SAVE</button>
+      <button class="btn a" onclick="cmd('restart')">RESTART</button>
     </div>
   </div>
 
@@ -354,9 +317,9 @@ function upd(d){
   ol.textContent=d.ollama?'ONLINE':'OFFLINE';ol.className='val '+(d.ollama?'on':'off');
   document.getElementById('s-model').textContent=d.model||'—';
   document.getElementById('s-status').textContent=(d.todo_status||'idle').toUpperCase();
-  document.getElementById('s-ds').textContent=d.datasets||0;
-  document.getElementById('s-buddy').textContent=(d.buddy_name||'?')+' Lv.'+(d.buddy_level||1);
-  document.getElementById('s-iter').textContent=d.iteration||'—';
+  try{document.getElementById('s-ds').textContent=d.datasets||0}catch(e){}
+  try{document.getElementById('s-buddy').textContent=(d.buddy_name||'?')+' Lv.'+(d.buddy_level||1)}catch(e){}
+  try{document.getElementById('s-iter').textContent=d.iteration||'—'}catch(e){}
 
   // Progress
   const pct=d.todo_pct||0;

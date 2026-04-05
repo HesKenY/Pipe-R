@@ -370,13 +370,13 @@ class ForgeAgentApp(App):
         with Horizontal(id="shell"):
             with Vertical(id="sidebar"):
                 with VerticalScroll(id="sidebar-scroll"):
-                    # ── Build ──
-                    yield Static("Build", classes="section-header")
-                    yield Button("AUTO TRAIN", id="btn-auto-train", classes="hero")
-                    yield Button("IMPROVE MODEL", id="btn-improve", classes="hero-alt")
-                    yield Button("Shadow Learn", id="btn-shadow-learn")
-                    yield Button("Continue Training", id="btn-continue-train")
-                    yield Button("Retrain from Scratch", id="btn-retrain")
+                    # ── Work ──
+                    yield Static("Work", classes="section-header")
+                    yield Button("COMPLETE TODO", id="btn-complete-todo", classes="hero")
+                    yield Button("DEPLOY TO PROJECT", id="btn-work-project", classes="hero-accent")
+                    yield Button("Add Task", id="btn-add-task")
+                    yield Button("Manage Projects", id="btn-agents")
+                    yield Static("", id="agent-slots")
 
                     # Progress panel (hidden by default)
                     with Vertical(id="progress-panel"):
@@ -385,9 +385,21 @@ class ForgeAgentApp(App):
 
                     yield Rule(classes="section-divider")
 
+                    # ── Train ──
+                    yield Static("Train", classes="section-header")
+                    yield Button("AUTO TRAIN", id="btn-auto-train", classes="hero-alt")
+                    yield Button("IMPROVE MODEL", id="btn-improve")
+                    yield Button("Continue Training", id="btn-continue-train")
+                    yield Button("Retrain", id="btn-retrain")
+                    yield Button("Shadow Learn", id="btn-shadow-learn")
+                    yield Button("Upload Dataset", id="btn-upload-dataset")
+                    yield Button("Scan Imports", id="btn-scan-imports")
+
+                    yield Rule(classes="section-divider")
+
                     # ── Test ──
                     yield Static("Test", classes="section-header")
-                    yield Button("VS Claude Code", id="btn-competition", classes="hero-accent")
+                    yield Button("VS Claude Code", id="btn-competition")
                     yield Button("Code Test", id="btn-codetest")
                     yield Button("IQ Test", id="btn-iqtest")
                     yield Button("Evaluate", id="btn-evaluate")
@@ -395,36 +407,14 @@ class ForgeAgentApp(App):
 
                     yield Rule(classes="section-divider")
 
-                    # ── Launch ──
-                    yield Static("Launch", classes="section-header")
-                    yield Button("COMPLETE TODO", id="btn-complete-todo", classes="hero")
-                    yield Button("DEPLOY TO PROJECT", id="btn-work-project", classes="hero")
-                    yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
-                    yield Button("Manage Projects", id="btn-agents")
-                    yield Button("Add Task", id="btn-add-task")
+                    # ── Manage ──
+                    yield Static("Manage", classes="section-header")
                     yield Button("Models", id="btn-models")
                     yield Button("Datasets", id="btn-datasets")
-                    yield Button("Upload Dataset", id="btn-upload-dataset")
-                    yield Button("Scan Imports", id="btn-scan-imports")
-
-                    # Active agents display
-                    yield Static("", id="agent-slots")
-
-                    yield Rule(classes="section-divider")
-
-                    # ── Tools ──
-                    yield Static("Tools", classes="section-header")
-                    for i, (label, *_rest) in enumerate(TOOL_BUTTONS):
-                        yield Button(label, id=f"btn-tool-{i}")
-
-                    yield Rule(classes="section-divider")
-
-                    # ── Session ──
-                    yield Static("Session", classes="section-header")
+                    yield Button("LAUNCH AGENTS", id="btn-deploy")
                     yield Button("Save", id="btn-save")
                     yield Button("Clear", id="btn-clear")
                     yield Button("Compact", id="btn-compact")
-                    yield Button("Buddy", id="btn-buddy")
 
             with Vertical(id="main"):
                 yield ModelFace()

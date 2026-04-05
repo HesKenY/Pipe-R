@@ -35,6 +35,140 @@ TOOL_BUTTONS = [
 
 
 # ══════════════════════════════════════════════════════════════
+#  MODEL FACE — animated ASCII avatar for the active model
+# ══════════════════════════════════════════════════════════════
+FACE_IDLE = [
+    r"  [cyan]  ╭───────╮  [/]",
+    r"  [cyan]  │ [bold]•   •[/][cyan] │  [/]",
+    r"  [cyan]  │  [bold] ‿ [/][cyan]  │  [/]",
+    r"  [cyan]  ╰───────╯  [/]",
+]
+FACE_IDLE_BLINK = [
+    r"  [cyan]  ╭───────╮  [/]",
+    r"  [cyan]  │ [bold]─   ─[/][cyan] │  [/]",
+    r"  [cyan]  │  [bold] ‿ [/][cyan]  │  [/]",
+    r"  [cyan]  ╰───────╯  [/]",
+]
+FACE_THINKING = [
+    [
+        r"  [yellow]  ╭───────╮  [/]",
+        r"  [yellow]  │ [bold]•   •[/][yellow] │  [/]",
+        r"  [yellow]  │  [bold] ○ [/][yellow]  │ [dim].[/][/]",
+        r"  [yellow]  ╰───────╯  [/]",
+    ],
+    [
+        r"  [yellow]  ╭───────╮  [/]",
+        r"  [yellow]  │ [bold]◦   •[/][yellow] │  [/]",
+        r"  [yellow]  │  [bold] ○ [/][yellow]  │ [dim]..[/][/]",
+        r"  [yellow]  ╰───────╯  [/]",
+    ],
+    [
+        r"  [yellow]  ╭───────╮  [/]",
+        r"  [yellow]  │ [bold]•   ◦[/][yellow] │  [/]",
+        r"  [yellow]  │  [bold] ○ [/][yellow]  │ [dim]...[/][/]",
+        r"  [yellow]  ╰───────╯  [/]",
+    ],
+]
+FACE_TALKING = [
+    [
+        r"  [green]  ╭───────╮  [/]",
+        r"  [green]  │ [bold]•   •[/][green] │  [/]",
+        r"  [green]  │  [bold] ▽ [/][green]  │  [/]",
+        r"  [green]  ╰───────╯  [/]",
+    ],
+    [
+        r"  [green]  ╭───────╮  [/]",
+        r"  [green]  │ [bold]•   •[/][green] │  [/]",
+        r"  [green]  │  [bold] △ [/][green]  │  [/]",
+        r"  [green]  ╰───────╯  [/]",
+    ],
+]
+FACE_TRAINING = [
+    [
+        r"  [magenta]  ╭───────╮  [/]",
+        r"  [magenta]  │ [bold]◈   ◈[/][magenta] │  [/]",
+        r"  [magenta]  │  [bold] ═ [/][magenta]  │ [bold]⚡[/][/]",
+        r"  [magenta]  ╰───────╯  [/]",
+    ],
+    [
+        r"  [magenta]  ╭───────╮  [/]",
+        r"  [magenta]  │ [bold]◇   ◇[/][magenta] │  [/]",
+        r"  [magenta]  │  [bold] ═ [/][magenta]  │ [bold] ⚡[/][/]",
+        r"  [magenta]  ╰───────╯  [/]",
+    ],
+]
+FACE_ERROR = [
+    r"  [red]  ╭───────╮  [/]",
+    r"  [red]  │ [bold]×   ×[/][red] │  [/]",
+    r"  [red]  │  [bold] ▁ [/][red]  │  [/]",
+    r"  [red]  ╰───────╯  [/]",
+]
+
+
+class ModelFace(Static):
+    """Animated ASCII face representing the active model's state."""
+
+    DEFAULT_CSS = """
+    ModelFace {
+        height: 5;
+        width: 100%;
+        content-align: center middle;
+        padding: 0 0;
+    }
+    #face-name {
+        height: 1;
+        text-align: center;
+        color: $text-muted;
+    }
+    """
+
+    def __init__(self):
+        super().__init__("")
+        self._state = "idle"
+        self._frame = 0
+        self._tick = 0
+        self._model_name = "forgeagent"
+        self._timer = None
+
+    def on_mount(self):
+        self._timer = self.set_interval(0.5, self._animate)
+        self._render_face()
+
+    def set_state(self, state: str):
+        """Set face state: idle, thinking, talking, training, error"""
+        self._state = state
+        self._frame = 0
+        self._render_face()
+
+    def set_model_name(self, name: str):
+        self._model_name = name
+
+    def _animate(self):
+        self._tick += 1
+        self._frame += 1
+        self._render_face()
+
+    def _render_face(self):
+        if self._state == "idle":
+            # Blink every 6 ticks
+            frames = FACE_IDLE_BLINK if self._tick % 8 == 0 else FACE_IDLE
+            lines = frames
+        elif self._state == "thinking":
+            lines = FACE_THINKING[self._frame % len(FACE_THINKING)]
+        elif self._state == "talking":
+            lines = FACE_TALKING[self._frame % len(FACE_TALKING)]
+        elif self._state == "training":
+            lines = FACE_TRAINING[self._frame % len(FACE_TRAINING)]
+        elif self._state == "error":
+            lines = FACE_ERROR
+        else:
+            lines = FACE_IDLE
+
+        name_line = f"  [dim]{self._model_name}[/]"
+        self.update("\n".join(lines) + "\n" + name_line)
+
+
+# ══════════════════════════════════════════════════════════════
 #  STATUS BAR
 # ══════════════════════════════════════════════════════════════
 class StatusBar(Static):
@@ -149,6 +283,13 @@ class ForgeAgentApp(App):
     #sidebar Button.hero-cyan:hover { background: $accent 50%; }
     #sidebar Button.hero-cyan:focus { background: $accent 50%; }
 
+    /* ── Model face ──────────────────────────────── */
+    #face-panel {
+        height: 6; width: 100%;
+        background: $surface;
+        content-align: center middle;
+    }
+
     /* ── Chat area ──────────────────────────────── */
     #main { width: 1fr; }
     #chatlog {
@@ -257,6 +398,7 @@ class ForgeAgentApp(App):
                     yield Button("Buddy", id="btn-buddy")
 
             with Vertical(id="main"):
+                yield ModelFace()
                 yield RichLog(id="chatlog", wrap=True, highlight=True, markup=True)
                 with Horizontal(id="input-row"):
                     yield Input(placeholder="Message ForgeAgent...  (or just click a button)", id="userinput")
@@ -283,8 +425,9 @@ class ForgeAgentApp(App):
             self.notify(f"Ollama error: {e}", severity="error", timeout=8)
             log.error(f"ping: {e}")
 
-        # Status bar — model and datasets
+        # Status bar and face — model and datasets
         status_bar.set_model(self.config.model)
+        self._face("idle", self.config.model)
         try:
             nd = len(self.ctx["dataset_manager"].list_datasets())
             status_bar.set_datasets(nd)
@@ -370,6 +513,13 @@ class ForgeAgentApp(App):
         panel = self.query_one("#progress-panel")
         panel.remove_class("visible")
         self.query_one("#progress-label", Static).update("")
+
+    # ── Face helpers ──────────────────────────────
+    def _face(self, state: str, model_name: str | None = None):
+        face = self.query_one(ModelFace)
+        face.set_state(state)
+        if model_name:
+            face.set_model_name(model_name)
 
     # ── Button clicks ─────────────────────────────
     async def on_button_pressed(self, e: Button.Pressed):
@@ -525,6 +675,7 @@ class ForgeAgentApp(App):
         self.buddy.on_interaction()
 
         try:
+            self._face("thinking")
             result = await self.engine.submit_user_message(text)
 
             if result.tool_calls:
@@ -533,9 +684,11 @@ class ForgeAgentApp(App):
                 for _ in result.tool_calls:
                     self.buddy.on_tool_use()
 
+            self._face("talking")
             chat.write(f"\n  [bold green]ForgeAgent[/]")
             chat.write(f"  {result.assistant_message.content}")
             chat.write("")
+            self._face("idle")
 
             # Auto-dream
             if self.turn > 0 and self.turn % self.config.dream_interval == 0:
@@ -544,6 +697,7 @@ class ForgeAgentApp(App):
                 self.buddy.on_dream()
                 log.info("auto-dream done")
         except Exception as ex:
+            self._face("error")
             chat.write(f"  [red]Error: {ex}[/]")
             log.error(f"chat: {ex}", exc_info=True)
 
@@ -568,6 +722,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("refining...")
 
         existing = config["existing_model"]
@@ -628,6 +783,7 @@ class ForgeAgentApp(App):
                 self.engine.set_model(result["model_name"])
                 self.config.model = result["model_name"]
                 status_bar.set_model(result["model_name"])
+                self._face("idle", result["model_name"])
                 chat.write(f"  [bold green]Switched to model: {result['model_name']}[/]")
                 chat.write("")
                 self.notify(f"Model refined!", severity="information", timeout=8)
@@ -640,12 +796,14 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     @work(thread=False, exclusive=True, group="training")
     async def _do_auto_train(self, config: dict) -> None:
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("training...")
 
         chat.write(f"\n  [bold green]Starting Auto Train[/]")
@@ -702,6 +860,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     # ── Improve callback ──────────────────────────
     async def _on_improve(self, r: dict | None):
@@ -714,6 +873,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("improving...")
 
         chat.write(f"\n  [bold blue]Improving model: {config['model_name']}[/]")
@@ -752,6 +912,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     # ── Retrain callback ─────────────────────────
     async def _on_retrain(self, r: dict | None):
@@ -764,6 +925,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("retraining...")
 
         chat.write(f"\n  [bold yellow]Retraining model: {config['model_name']}[/]")
@@ -799,6 +961,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     # ── Continue Training callback ────────────────
     async def _on_continue_train(self, r: dict | None):
@@ -811,6 +974,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("continuing...")
 
         chat.write(f"\n  [bold blue]Continue training: {config['model_name']}[/]")
@@ -847,6 +1011,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     # ── Deploy callback ───────────────────────────
     async def _on_deploy(self, r: dict | None):
@@ -890,6 +1055,7 @@ class ForgeAgentApp(App):
             self.engine.set_model(model_name)
             self.config.model = model_name
             status_bar.set_model(model_name)
+            self._face("idle", model_name)
             chat.write(f"\n  [bold green]Switched to model: {model_name}[/]")
             chat.write("")
             self.notify(f"Now using: {model_name}", timeout=3)
@@ -950,6 +1116,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("evaluating...")
 
         chat.write(f"\n  [bold]Evaluating model: {self.config.model}[/]")
@@ -974,6 +1141,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     # ── Code Test: auto-graded coding challenges ──
     @work(thread=False, exclusive=True, group="training")
@@ -981,6 +1149,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("code testing...")
 
         chat.write(f"\n  [bold cyan]Coding Test: {model_name}[/]")
@@ -1035,6 +1204,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
     # ── Benchmark: local model vs Claude API ──────
     @work(thread=False, exclusive=True, group="training")
@@ -1042,6 +1212,7 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
         self._training_active = True
+        self._face("training")
         status_bar.set_training("benchmarking...")
 
         chat.write(f"\n  [bold cyan]Benchmark: {model_name} vs Claude API[/]")
@@ -1142,6 +1313,7 @@ class ForgeAgentApp(App):
             self._training_active = False
             status_bar.set_training("idle")
             self._hide_progress()
+            self._face("idle")
 
 
 # ── Entry ─────────────────────────────────────────────────────

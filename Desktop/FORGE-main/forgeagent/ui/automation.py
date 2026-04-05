@@ -821,6 +821,29 @@ BENCHMARK_CASES = [
 ]
 
 
+async def _validate_claude_key(api_key: str) -> bool:
+    """Quick validation that the API key works."""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": "claude-haiku-4-5-20251001",
+                    "max_tokens": 16,
+                    "messages": [{"role": "user", "content": "hi"}],
+                },
+            )
+            return resp.status_code == 200
+    except Exception:
+        return False
+
+
 async def _run_claude_api(prompt: str, api_key: str) -> tuple[str, float]:
     """Call Claude API and return (response, latency_ms)."""
     import httpx
@@ -859,8 +882,16 @@ async def run_benchmark(ctx: dict, model_name: str, on_step) -> dict:
 
     ev_client = OllamaClient(ctx["config"].ollama_base_url)
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    has_claude = bool(api_key)
+    has_claude = False
     cases = BENCHMARK_CASES
+
+    # Validate Claude API key if present
+    if api_key:
+        on_step(0, 1, "Validating Claude API key...")
+        has_claude = await _validate_claude_key(api_key)
+        if not has_claude:
+            on_step(0, 1, "Claude API key invalid or expired — running local-only benchmark")
+
     total_steps = len(cases) * (2 if has_claude else 1) + 1
 
     local_results = []

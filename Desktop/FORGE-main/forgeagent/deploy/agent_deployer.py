@@ -35,7 +35,7 @@ class AgentDeployer:
         for sub in ("memory", "sessions", "dreams", "buddy"):
             (agent_dir / sub).mkdir(parents=True, exist_ok=True)
 
-        (agent_dir / "agent.json").write_text(json.dumps(agent, indent=2, encoding="utf-8"), encoding="utf-8")
+        (agent_dir / "agent.json").write_text(json.dumps(agent, indent=2), encoding="utf-8")
 
         # .env
         env = f"""OLLAMA_BASE_URL=http://127.0.0.1:11434
@@ -154,7 +154,7 @@ FORGEAGENT_HOME="{pp}" python -m forgeagent "$@"
             return []
 
     def _save_registry(self, agents: list[dict]) -> None:
-        self.registry_file.write_text(json.dumps(agents, indent=2, encoding="utf-8"), encoding="utf-8")
+        self.registry_file.write_text(json.dumps(agents, indent=2), encoding="utf-8")
 
     def _add_to_registry(self, agent: dict) -> None:
         agents = self._load_registry()

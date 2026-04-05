@@ -209,7 +209,7 @@ class TaskTool(Tool):
         if action == "add":
             tid = max((t["id"] for t in tasks), default=0) + 1
             tasks.append({"id": tid, "text": str(inp.get("text", "")), "done": False, "created": datetime.now().isoformat()})
-            task_file.write_text(json.dumps(tasks, indent=2, encoding="utf-8"), encoding="utf-8")
+            task_file.write_text(json.dumps(tasks, indent=2), encoding="utf-8")
             return f"Task #{tid} added."
         elif action == "done":
             num = int(inp.get("text", 0))
@@ -217,12 +217,12 @@ class TaskTool(Tool):
             if not task:
                 return f"Task #{num} not found."
             task["done"] = True
-            task_file.write_text(json.dumps(tasks, indent=2, encoding="utf-8"), encoding="utf-8")
+            task_file.write_text(json.dumps(tasks, indent=2), encoding="utf-8")
             return f"Task #{num} marked done."
         elif action == "remove":
             num = int(inp.get("text", 0))
             tasks = [t for t in tasks if t["id"] != num]
-            task_file.write_text(json.dumps(tasks, indent=2, encoding="utf-8"), encoding="utf-8")
+            task_file.write_text(json.dumps(tasks, indent=2), encoding="utf-8")
             return f"Task #{num} removed."
         else:
             if not tasks:

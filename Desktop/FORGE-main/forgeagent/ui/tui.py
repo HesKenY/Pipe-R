@@ -9,7 +9,7 @@ from textual.binding import Binding
 from textual import work
 
 from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, CompetitionWizard, ShadowLearnWizard, ProjectWizard, ToolInputModal, InfoModal, ModelSelectWizard
-from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test, run_shadow_learn, SHADOW_TASKS
+from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test, assess_training_level, run_competition, run_iq_test, run_shadow_learn, SHADOW_TASKS, SHADOW_TASKS_DEEP
 
 # ── Logging ───────────────────────────────────────────────────
 _LD = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
@@ -1500,6 +1500,7 @@ class ForgeAgentApp(App):
 
         path = config["path"]
         task_set = config.get("task_set", "full")
+        passes = config.get("passes", 1)
 
         # Select tasks based on task set
         if task_set == "quick":
@@ -1520,6 +1521,8 @@ class ForgeAgentApp(App):
                 "Write integration tests for the main workflows.",
                 "Create test fixtures and mock data for testing.",
             ]
+        elif task_set == "deep":
+            tasks = list(SHADOW_TASKS_DEEP)
         else:
             tasks = list(SHADOW_TASKS)
 
@@ -1528,7 +1531,7 @@ class ForgeAgentApp(App):
         chat.write(f"  [bold yellow]{'━'*50}[/]")
         chat.write(f"  [dim]Model: {self.config.model}[/]")
         chat.write(f"  [dim]Project: {path}[/]")
-        chat.write(f"  [dim]Tasks: {len(tasks)} ({task_set})[/]")
+        chat.write(f"  [dim]Tasks: {len(tasks)} ({task_set}) x {passes} pass{'es' if passes > 1 else ''}[/]")
         chat.write(f"  [dim]Claude Code will work on the project. Your model watches and learns.[/]")
         chat.write("")
 
@@ -1541,19 +1544,26 @@ class ForgeAgentApp(App):
                 pass
 
         try:
-            result = await run_shadow_learn(
-                self.ctx, self.config.model, path, tasks, on_step
-            )
+            total_lessons = 0
+            for p in range(passes):
+                if passes > 1:
+                    chat.write(f"\n  [bold yellow]Pass {p + 1}/{passes}[/]")
+                result = await run_shadow_learn(
+                    self.ctx, self.config.model, path, tasks, on_step
+                )
+                total_lessons += result.get("lessons_learned", 0)
+                if not result["success"]:
+                    chat.write(f"  [red]Pass {p + 1} failed: {result.get('build_message', '')}[/]")
+                    break
 
             chat.write("")
             if result["success"]:
                 chat.write(f"  [bold green]Shadow learning complete![/]")
-                chat.write(f"  [dim]Tasks demonstrated: {result['tasks_sent']}[/]")
-                chat.write(f"  [dim]Lessons captured: {result['lessons_learned']}[/]")
+                chat.write(f"  [dim]Passes: {passes} | Total lessons: {total_lessons}[/]")
                 chat.write(f"  [green]Model rebuilt with Claude's knowledge.[/]")
                 chat.write("")
                 await self._show_training_level(self.config.model, "After Shadow Learning")
-                self.notify(f"Learned {result['lessons_learned']} lessons from Claude!", timeout=8)
+                self.notify(f"Learned {total_lessons} lessons in {passes} passes!", timeout=8)
             else:
                 chat.write(f"  [red]Shadow learning failed: {result.get('build_message', 'unknown')}[/]")
         except Exception as ex:

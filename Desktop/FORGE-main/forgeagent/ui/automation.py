@@ -26,6 +26,14 @@ FOCUS_MAP = {
 
 SIZE_MAP = {"fast": "base_7b", "balanced": "base_14b", "powerful": "base_32b"}
 
+# Training intensity -> (synthetic_examples, max_codebase_files)
+INTENSITY_MAP = {
+    "light":   (20, 50),
+    "medium":  (50, 100),
+    "heavy":   (100, 200),
+    "max":     (200, 500),
+}
+
 
 def detect_project_type(path: str) -> str:
     """Detect project type from files in directory, return template name."""
@@ -64,6 +72,7 @@ async def run_auto_train(ctx: dict, config: dict, on_step) -> dict:
     raw_name = config.get("name") or f"forge-{config['focus']}"
     name = mb.normalize_model_name(raw_name)
     ds = f"{name}-data"
+    n_synth, n_files = INTENSITY_MAP.get(config.get("intensity", "medium"), (50, 100))
     total = 9
 
     # Step 1: Create dataset
@@ -74,8 +83,8 @@ async def run_auto_train(ctx: dict, config: dict, on_step) -> dict:
         pass  # Already exists — reuse it
 
     # Step 2: Generate synthetic examples
-    on_step(2, total, "Generating synthetic training examples...")
-    n = dm.generate_tool_use_examples(ds, 20)
+    on_step(2, total, f"Generating {n_synth} synthetic training examples...")
+    n = dm.generate_tool_use_examples(ds, n_synth)
 
     # Step 3: Scrape web sources
     on_step(3, total, f"Scraping {topic} documentation...")
@@ -86,10 +95,10 @@ async def run_auto_train(ctx: dict, config: dict, on_step) -> dict:
         scraped = 0
 
     # Step 4: Harvest from codebase
-    on_step(4, total, "Learning from local codebase...")
+    on_step(4, total, f"Learning from local codebase ({n_files} files max)...")
     try:
         cwd = ctx["config"].cwd
-        harvested = dm.harvest_from_codebase(ds, cwd)
+        harvested = dm.harvest_from_codebase(ds, cwd, max_files=n_files)
     except Exception:
         harvested = 0
 
@@ -167,12 +176,12 @@ async def run_improve(ctx: dict, config: dict, on_step) -> dict:
 
     model_name = config["model_name"]
     safe_name = mb.normalize_model_name(model_name)
+    n_synth, n_files = INTENSITY_MAP.get(config.get("intensity", "medium"), (50, 100))
     total = 8
 
     # Find or auto-create profile
     profile = mb.get_profile(model_name)
     if not profile:
-        # Auto-create profile for existing installed model
         profile = mb.create_profile(
             safe_name, model_name,
             dataset_name=f"{safe_name}-data",
@@ -193,9 +202,9 @@ async def run_improve(ctx: dict, config: dict, on_step) -> dict:
     except Exception:
         before_score = 0
 
-    # Step 2: Generate fresh synthetic examples (always — reinforces tool use)
-    on_step(2, total, "Generating synthetic training examples...")
-    n_synthetic = dm.generate_tool_use_examples(ds, 20)
+    # Step 2: Generate synthetic examples
+    on_step(2, total, f"Generating {n_synth} synthetic training examples...")
+    n_synthetic = dm.generate_tool_use_examples(ds, n_synth)
 
     # Step 3: Harvest conversations
     n_conversations = 0
@@ -212,7 +221,7 @@ async def run_improve(ctx: dict, config: dict, on_step) -> dict:
     on_step(4, total, "Learning from local codebase...")
     n_codebase = 0
     try:
-        n_codebase = dm.harvest_from_codebase(ds, ctx["config"].cwd)
+        n_codebase = dm.harvest_from_codebase(ds, ctx["config"].cwd, max_files=n_files)
     except Exception:
         pass
 
@@ -285,6 +294,7 @@ async def run_retrain(ctx: dict, config: dict, on_step) -> dict:
     safe_name = mb.normalize_model_name(model_name)
     focus_info = FOCUS_MAP.get(config.get("focus", "general"), FOCUS_MAP["general"])
     topic = focus_info["topic"]
+    n_synth, n_files = INTENSITY_MAP.get(config.get("intensity", "medium"), (50, 100))
     total = 7
 
     # Find or auto-create profile
@@ -305,8 +315,8 @@ async def run_retrain(ctx: dict, config: dict, on_step) -> dict:
     dm.create_dataset(ds, f"Retrained data for {safe_name}")
 
     # Step 2: Generate synthetic examples
-    on_step(2, total, "Generating fresh synthetic examples...")
-    n_synthetic = dm.generate_tool_use_examples(ds, 20)
+    on_step(2, total, f"Generating {n_synth} fresh synthetic examples...")
+    n_synthetic = dm.generate_tool_use_examples(ds, n_synth)
 
     # Step 3: Scrape web data
     on_step(3, total, f"Scraping {topic} documentation...")
@@ -317,9 +327,9 @@ async def run_retrain(ctx: dict, config: dict, on_step) -> dict:
         n_scraped = 0
 
     # Step 4: Harvest from codebase
-    on_step(4, total, "Learning from local codebase...")
+    on_step(4, total, f"Learning from local codebase ({n_files} files max)...")
     try:
-        n_codebase = dm.harvest_from_codebase(ds, ctx["config"].cwd)
+        n_codebase = dm.harvest_from_codebase(ds, ctx["config"].cwd, max_files=n_files)
     except Exception:
         n_codebase = 0
 
@@ -367,6 +377,7 @@ async def run_continue_train(ctx: dict, config: dict, on_step) -> dict:
 
     model_name = config["model_name"]
     safe_name = mb.normalize_model_name(model_name)
+    n_synth, n_files = INTENSITY_MAP.get(config.get("intensity", "medium"), (50, 100))
     total = 7
 
     profile = mb.get_profile(model_name)
@@ -394,8 +405,8 @@ async def run_continue_train(ctx: dict, config: dict, on_step) -> dict:
     # Step 2: Add synthetic examples
     n_synthetic = 0
     if config.get("add_synthetic", True):
-        on_step(2, total, "Adding more synthetic examples...")
-        n_synthetic = dm.generate_tool_use_examples(ds, 20)
+        on_step(2, total, f"Adding {n_synth} synthetic examples...")
+        n_synthetic = dm.generate_tool_use_examples(ds, n_synth)
     else:
         on_step(2, total, "Skipping synthetic examples.")
 
@@ -413,9 +424,9 @@ async def run_continue_train(ctx: dict, config: dict, on_step) -> dict:
     # Step 4: Harvest codebase
     n_codebase = 0
     if config.get("harvest_codebase", True):
-        on_step(4, total, "Learning from local codebase...")
+        on_step(4, total, f"Learning from local codebase ({n_files} files max)...")
         try:
-            n_codebase = dm.harvest_from_codebase(ds, ctx["config"].cwd)
+            n_codebase = dm.harvest_from_codebase(ds, ctx["config"].cwd, max_files=n_files)
         except Exception:
             pass
     else:
@@ -1261,6 +1272,19 @@ SHADOW_TASKS = [
     "Find performance bottlenecks and suggest optimizations.",
     "Add type hints to all functions that are missing them.",
     "Create a .gitignore file appropriate for this project type.",
+]
+
+SHADOW_TASKS_DEEP = SHADOW_TASKS + [
+    "Implement input validation for all user-facing functions.",
+    "Add logging throughout the codebase for better debugging.",
+    "Create a configuration system using environment variables.",
+    "Write integration tests for the main workflow.",
+    "Set up a CI/CD pipeline configuration (GitHub Actions).",
+    "Add API documentation using docstrings and generate docs.",
+    "Implement caching for frequently accessed data.",
+    "Create database migration scripts if applicable.",
+    "Set up linting and formatting configuration.",
+    "Write a CONTRIBUTING.md with development guidelines.",
 ]
 
 

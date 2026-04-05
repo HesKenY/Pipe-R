@@ -12,10 +12,17 @@ from textual.app import ComposeResult
 class AutoTrainWizard(ModalScreen[dict | None]):
     """One-click model training — build new or refine existing model."""
 
+    INTENSITY_OPTIONS = [
+        ("Light  (20 examples, 50 files)", "light"),
+        ("Medium  (50 examples, 100 files)", "medium"),
+        ("Heavy  (100 examples, 200 files)", "heavy"),
+        ("Maximum  (200 examples, 500 files)", "max"),
+    ]
+
     CSS = """
     AutoTrainWizard { align: center middle; }
     #atw {
-        width: 62; height: 38;
+        width: 62; height: 42;
         border: round $success; background: $surface;
         padding: 1 2;
     }
@@ -67,6 +74,8 @@ class AutoTrainWizard(ModalScreen[dict | None]):
                 yield Select(self.FOCUS_OPTIONS, value="python", id="atw-focus")
                 yield Static("Model size (for new models)", classes="field-label")
                 yield Select(self.SIZE_OPTIONS, value="balanced", id="atw-size")
+                yield Static("Training intensity", classes="field-label")
+                yield Select(self.INTENSITY_OPTIONS, value="medium", id="atw-intensity")
                 yield Static("Model name (optional)", classes="field-label")
                 yield Input(placeholder="auto-generated if blank", id="atw-name")
             with Horizontal(id="atw-actions"):
@@ -83,12 +92,14 @@ class AutoTrainWizard(ModalScreen[dict | None]):
             focus_sel = self.query_one("#atw-focus", Select)
             size_sel = self.query_one("#atw-size", Select)
             existing_sel = self.query_one("#atw-existing", Select)
+            intensity_sel = self.query_one("#atw-intensity", Select)
             existing = str(existing_sel.value) if existing_sel.value != Select.BLANK else "__new__"
             self.dismiss({
                 "focus": str(focus_sel.value) if focus_sel.value != Select.BLANK else "general",
                 "size": str(size_sel.value) if size_sel.value != Select.BLANK else "balanced",
                 "name": self.query_one("#atw-name", Input).value.strip() or "",
                 "existing_model": existing if existing != "__new__" else None,
+                "intensity": str(intensity_sel.value) if intensity_sel.value != Select.BLANK else "medium",
             })
 
 
@@ -126,13 +137,19 @@ class ImproveWizard(ModalScreen[dict | None]):
         ("DevOps", "devops"),
     ]
 
+    INTENSITY_OPTIONS = [
+        ("Light  (20 examples, 50 files)", "light"),
+        ("Medium  (50 examples, 100 files)", "medium"),
+        ("Heavy  (100 examples, 200 files)", "heavy"),
+        ("Maximum  (200 examples, 500 files)", "max"),
+    ]
+
     def __init__(self, model_name: str = "forgeagent", installed_models: list[dict] | None = None):
         super().__init__()
         self._model = model_name
         self._installed = installed_models or []
 
     def compose(self) -> ComposeResult:
-        # Build model dropdown — ensure current model is always present
         model_options = []
         option_values = set()
         for m in self._installed:
@@ -140,13 +157,11 @@ class ImproveWizard(ModalScreen[dict | None]):
             size = m.get("size", "")
             model_options.append((f"{name}  ({size})", name))
             option_values.add(name)
-        # Add current model if not in list
         if self._model not in option_values:
             model_options.insert(0, (self._model, self._model))
             option_values.add(self._model)
         if not model_options:
             model_options.append((self._model, self._model))
-        # Pick default value — prefer current model, else first option
         default = self._model if self._model in option_values else model_options[0][1]
 
         with Vertical(id="imw"):
@@ -156,6 +171,8 @@ class ImproveWizard(ModalScreen[dict | None]):
             with VerticalScroll(id="imw-scroll"):
                 yield Static("Which model to improve?", classes="field-label")
                 yield Select(model_options, value=default, id="imw-model")
+                yield Static("Training intensity", classes="field-label")
+                yield Select(self.INTENSITY_OPTIONS, value="medium", id="imw-intensity")
                 yield Static("Learn from your conversations?", classes="field-label")
                 with Horizontal(classes="toggle-row"):
                     yield Switch(value=True, id="imw-harvest")
@@ -172,12 +189,14 @@ class ImproveWizard(ModalScreen[dict | None]):
         elif e.button.id == "imw-go":
             model_sel = self.query_one("#imw-model", Select)
             topic_sel = self.query_one("#imw-topic", Select)
+            intensity_sel = self.query_one("#imw-intensity", Select)
             model_val = str(model_sel.value) if model_sel.value != Select.BLANK else self._model
             topic_val = str(topic_sel.value) if topic_sel.value != Select.BLANK else ""
             self.dismiss({
                 "model_name": model_val,
                 "harvest_conversations": self.query_one("#imw-harvest", Switch).value,
                 "scrape_topic": topic_val or None,
+                "intensity": str(intensity_sel.value) if intensity_sel.value != Select.BLANK else "medium",
             })
 
 
@@ -270,9 +289,17 @@ class ShadowLearnWizard(ModalScreen[dict | None]):
 
     TASK_SETS = [
         ("Full Review (10 tasks — recommended)", "full"),
+        ("Deep Dive (20 tasks — thorough)", "deep"),
         ("Quick (3 tasks — code review only)", "quick"),
         ("Architecture (3 tasks — structure focused)", "arch"),
         ("Testing (3 tasks — write tests)", "test"),
+    ]
+
+    PASS_OPTIONS = [
+        ("1 pass  (quick)", "1"),
+        ("3 passes  (recommended)", "3"),
+        ("5 passes  (thorough)", "5"),
+        ("10 passes  (maximum learning)", "10"),
     ]
 
     def __init__(self, model_name: str = "forgeagent"):
@@ -291,6 +318,8 @@ class ShadowLearnWizard(ModalScreen[dict | None]):
                     yield Button("Browse", id="slw-browse")
                 yield Static("What should Claude demonstrate?", classes="field-label")
                 yield Select(self.TASK_SETS, value="full", id="slw-tasks")
+                yield Static("How many learning passes?", classes="field-label")
+                yield Select(self.PASS_OPTIONS, value="1", id="slw-passes")
             with Horizontal(id="slw-actions"):
                 yield Button("Start Learning", variant="warning", id="slw-go")
                 yield Button("Cancel", id="slw-no")
@@ -311,10 +340,12 @@ class ShadowLearnWizard(ModalScreen[dict | None]):
         elif e.button.id == "slw-go":
             path = self.query_one("#slw-path", Input).value.strip()
             task_sel = self.query_one("#slw-tasks", Select)
+            pass_sel = self.query_one("#slw-passes", Select)
             task_set = str(task_sel.value) if task_sel.value != Select.BLANK else "full"
+            passes = int(str(pass_sel.value)) if pass_sel.value != Select.BLANK else 1
             if not path:
                 return
-            self.dismiss({"path": path, "task_set": task_set})
+            self.dismiss({"path": path, "task_set": task_set, "passes": passes})
 
 
 # ══════════════════════════════════════════════════════════════

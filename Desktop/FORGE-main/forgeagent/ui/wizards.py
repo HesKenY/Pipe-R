@@ -593,6 +593,8 @@ class ModelSelectWizard(ModalScreen[dict | None]):
                         yield Button("Use", id=f"msw-use-{i}", variant="success")
                         if has_profile:
                             yield Button("Train", id=f"msw-train-{i}", variant="primary")
+                            yield Button("Retrain", id=f"msw-retrain-{i}", variant="warning")
+                        yield Button("Bench", id=f"msw-bench-{i}")
             with Horizontal(id="msw-actions"):
                 yield Button("Close", id="msw-close")
 
@@ -608,3 +610,11 @@ class ModelSelectWizard(ModalScreen[dict | None]):
             idx = int(bid.split("-")[-1])
             if idx < len(self._models):
                 self.dismiss({"action": "train", "model": self._models[idx]["name"]})
+        elif bid.startswith("msw-retrain-"):
+            idx = int(bid.split("-")[-1])
+            if idx < len(self._models):
+                self.dismiss({"action": "retrain", "model": self._models[idx]["name"]})
+        elif bid.startswith("msw-bench-"):
+            idx = int(bid.split("-")[-1])
+            if idx < len(self._models):
+                self.dismiss({"action": "benchmark", "model": self._models[idx]["name"]})

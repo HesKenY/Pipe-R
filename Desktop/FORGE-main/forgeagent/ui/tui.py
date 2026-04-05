@@ -9,7 +9,7 @@ from textual.binding import Binding
 from textual import work
 
 from .wizards import AutoTrainWizard, ImproveWizard, DeployWizard, RetrainWizard, ContinueTrainWizard, ToolInputModal, InfoModal, ModelSelectWizard
-from .automation import run_auto_train, run_improve, run_retrain, run_continue_train
+from .automation import run_auto_train, run_improve, run_retrain, run_continue_train, run_benchmark, run_coding_test
 
 # ── Logging ───────────────────────────────────────────────────
 _LD = Path(os.environ.get("FORGEAGENT_HOME", ".")) / ".memory"
@@ -246,6 +246,8 @@ class ForgeAgentApp(App):
                     yield Button("Datasets", id="btn-datasets")
                     yield Button("Agents", id="btn-agents")
                     yield Button("Evaluate", id="btn-evaluate")
+                    yield Button("Code Test", id="btn-codetest")
+                    yield Button("Benchmark vs Claude", id="btn-benchmark")
 
                     # Session
                     yield Static("Session", classes="section-header")
@@ -422,6 +424,16 @@ class ForgeAgentApp(App):
                 self.notify("Training in progress — please wait", severity="warning", timeout=3)
                 return
             self._do_evaluate()
+        elif bid == "btn-codetest":
+            if self._training_active:
+                self.notify("Training in progress — please wait", severity="warning", timeout=3)
+                return
+            self._do_code_test(self.config.model)
+        elif bid == "btn-benchmark":
+            if self._training_active:
+                self.notify("Training in progress — please wait", severity="warning", timeout=3)
+                return
+            self._do_benchmark(self.config.model)
 
         # ── Session buttons ───────────────────────
         elif bid == "btn-save":
@@ -632,7 +644,12 @@ class ForgeAgentApp(App):
             if result["success"]:
                 chat.write("")
                 chat.write(f"  [bold green]Model improved![/]")
-                chat.write(f"  [dim]Added: {result['added_conversations']} conversation examples, {result['added_scraped']} scraped[/]")
+                added = result.get("added", {})
+                chat.write(f"  [dim]Data added: {added.get('synthetic', 0)} synthetic, "
+                           f"{added.get('conversations', 0)} conversation, "
+                           f"{added.get('codebase', 0)} codebase, "
+                           f"{added.get('scraped', 0)} scraped[/]")
+                chat.write(f"  [dim]Total training examples: {result.get('total_examples', '?')}[/]")
                 if result["before_score"] or result["after_score"]:
                     before = result["before_score"]
                     after = result["after_score"]
@@ -802,6 +819,23 @@ class ForgeAgentApp(App):
                 callback=self._on_continue_train,
             )
 
+        elif r["action"] == "retrain":
+            model_name = r["model"]
+            if self._training_active:
+                self.notify("Training already in progress", severity="warning", timeout=3)
+                return
+            self.push_screen(
+                RetrainWizard(model_name),
+                callback=self._on_retrain,
+            )
+
+        elif r["action"] == "benchmark":
+            model_name = r["model"]
+            if self._training_active:
+                self.notify("Training in progress — please wait", severity="warning", timeout=3)
+                return
+            self._do_benchmark(model_name)
+
     async def _show_datasets(self):
         dm = self.ctx["dataset_manager"]
         datasets = dm.list_datasets()
@@ -851,6 +885,174 @@ class ForgeAgentApp(App):
         except Exception as ex:
             chat.write(f"  [red]Evaluation error: {ex}[/]")
             log.error(f"evaluate: {ex}", exc_info=True)
+        finally:
+            self._training_active = False
+            status_bar.set_training("idle")
+            self._hide_progress()
+
+    # ── Code Test: auto-graded coding challenges ──
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_code_test(self, model_name: str) -> None:
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        status_bar.set_training("code testing...")
+
+        chat.write(f"\n  [bold cyan]Coding Test: {model_name}[/]")
+        chat.write(f"  [dim]8 challenges (easy/medium/hard) — auto-graded by running the code[/]")
+        chat.write("")
+
+        def on_step(step, total, message):
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"test {step}/{total}")
+                self._show_progress(message[:30], step, total)
+            except Exception:
+                pass
+
+        try:
+            result = await run_coding_test(self.ctx, model_name, on_step)
+
+            if result["success"]:
+                chat.write("")
+                chat.write(f"  [bold]{'='*50}[/]")
+                chat.write(f"  [bold]  CODING TEST RESULTS[/]")
+                chat.write(f"  [bold]{'='*50}[/]")
+                chat.write("")
+                chat.write(f"  [bold]Score: {result['pct']}%  ({result['passed']}/{result['total']} passed)[/]")
+                chat.write(f"  [dim]Avg latency: {result['avg_latency']}ms[/]")
+                chat.write("")
+
+                # By difficulty
+                chat.write(f"  [bold]By Difficulty:[/]")
+                for diff in ["easy", "medium", "hard"]:
+                    data = result["by_difficulty"].get(diff, {"passed": 0, "total": 0})
+                    pct = round(data["passed"] / data["total"] * 100) if data["total"] else 0
+                    bar = "[green]" + "#" * data["passed"] + "[/][red]" + "#" * (data["total"] - data["passed"]) + "[/]"
+                    chat.write(f"  {diff:<10} {data['passed']}/{data['total']}  {bar}  {pct}%")
+                chat.write("")
+
+                # Per-case results
+                chat.write(f"  [bold]Per-Challenge:[/]")
+                for r in result["results"]:
+                    icon = "[green]PASS[/]" if r["passed"] else "[red]FAIL[/]"
+                    diff_color = {"easy": "green", "medium": "yellow", "hard": "red"}.get(r["difficulty"], "white")
+                    chat.write(f"  {icon}  [{diff_color}]{r['difficulty']:<8}[/]  {r['prompt'][:50]}")
+                    if not r["passed"]:
+                        chat.write(f"         [dim red]{r['output'][:80]}[/]")
+                chat.write("")
+
+                self.notify(f"Code test: {result['pct']}% ({result['passed']}/{result['total']})", timeout=5)
+        except Exception as ex:
+            chat.write(f"\n  [red]Code test error: {ex}[/]")
+            log.error(f"code_test: {ex}", exc_info=True)
+        finally:
+            self._training_active = False
+            status_bar.set_training("idle")
+            self._hide_progress()
+
+    # ── Benchmark: local model vs Claude API ──────
+    @work(thread=False, exclusive=True, group="training")
+    async def _do_benchmark(self, model_name: str) -> None:
+        chat = self.query_one("#chatlog", RichLog)
+        status_bar = self.query_one(StatusBar)
+        self._training_active = True
+        status_bar.set_training("benchmarking...")
+
+        chat.write(f"\n  [bold cyan]Benchmark: {model_name} vs Claude API[/]")
+        chat.write("")
+
+        def on_step(step, total, message):
+            try:
+                chat.write(f"  [dim][{step}/{total}][/] {message}")
+                status_bar.set_training(f"bench {step}/{total}")
+                self._show_progress(message[:30], step, total)
+            except Exception:
+                pass
+
+        try:
+            result = await run_benchmark(self.ctx, model_name, on_step)
+
+            if result["success"]:
+                local = result["local"]
+                chat.write("")
+                chat.write(f"  [bold]{'='*58}[/]")
+                chat.write(f"  [bold]  BENCHMARK RESULTS — {result['cases']} test cases[/]")
+                chat.write(f"  [bold]{'='*58}[/]")
+                chat.write("")
+
+                # Header
+                chat.write(f"  [bold]{'Metric':<25} {'Local':<15} {'Claude API':<15}[/]")
+                chat.write(f"  {'─'*55}")
+
+                # Overall
+                local_pct = f"{local['pct']}%"
+                local_lat = f"{local['avg_latency']}ms"
+                local_pass = f"{local['passed']}/{local['total']}"
+
+                if result["has_claude"]:
+                    claude = result["claude"]
+                    claude_pct = f"{claude['pct']}%"
+                    claude_lat = f"{claude['avg_latency']}ms"
+                    claude_pass = f"{claude['passed']}/{claude['total']}"
+                else:
+                    claude_pct = claude_lat = claude_pass = "[dim]no API key[/]"
+
+                chat.write(f"  {'Score':<25} [bold]{local_pct:<15}[/] [bold]{claude_pct:<15}[/]")
+                chat.write(f"  {'Passed':<25} {local_pass:<15} {claude_pass:<15}")
+                chat.write(f"  {'Avg Latency':<25} {local_lat:<15} {claude_lat:<15}")
+                chat.write("")
+
+                # By category
+                chat.write(f"  [bold]By Category:[/]")
+                all_cats = set(local.get("by_category", {}).keys())
+                if result["has_claude"]:
+                    all_cats |= set(result["claude"].get("by_category", {}).keys())
+                for cat in sorted(all_cats):
+                    lc = local.get("by_category", {}).get(cat, {"passed": 0, "total": 0})
+                    local_cat = f"{lc['passed']}/{lc['total']}"
+                    if result["has_claude"]:
+                        cc = result["claude"].get("by_category", {}).get(cat, {"passed": 0, "total": 0})
+                        claude_cat = f"{cc['passed']}/{cc['total']}"
+                    else:
+                        claude_cat = "—"
+                    chat.write(f"  {'  ' + cat:<25} {local_cat:<15} {claude_cat:<15}")
+
+                chat.write("")
+
+                # Per-case comparison
+                chat.write(f"  [bold]Per-Case Results:[/]")
+                for i, lr in enumerate(result["local_results"]):
+                    l_icon = "[green]PASS[/]" if lr["passed"] else "[red]FAIL[/]"
+                    if result["has_claude"] and i < len(result["claude_results"]):
+                        cr = result["claude_results"][i]
+                        c_icon = "[green]PASS[/]" if cr["passed"] else "[red]FAIL[/]"
+                    else:
+                        c_icon = "—"
+                    chat.write(f"  {lr['prompt'][:40]:<42} {l_icon}  {c_icon}")
+
+                chat.write("")
+
+                # Summary
+                if result["has_claude"]:
+                    diff = local["pct"] - result["claude"]["pct"]
+                    if diff >= 0:
+                        chat.write(f"  [bold green]Your model scores {'+' if diff > 0 else ''}{diff}% vs Claude Haiku.[/]")
+                    else:
+                        chat.write(f"  [bold yellow]Your model is {abs(diff)}% behind Claude Haiku. Continue training to close the gap.[/]")
+                    speed_ratio = round(result["claude"]["avg_latency"] / max(local["avg_latency"], 1), 1) if local["avg_latency"] > 0 else 0
+                    if speed_ratio > 1:
+                        chat.write(f"  [dim]Your local model responds {speed_ratio}x faster (no network latency).[/]")
+                else:
+                    chat.write(f"  [dim]Set ANTHROPIC_API_KEY in .env to compare against Claude API.[/]")
+
+                chat.write("")
+                self.notify("Benchmark complete!", timeout=5)
+            else:
+                chat.write(f"\n  [red]Benchmark failed: {result.get('error', 'unknown')}[/]")
+        except Exception as ex:
+            chat.write(f"\n  [red]Benchmark error: {ex}[/]")
+            log.error(f"benchmark: {ex}", exc_info=True)
         finally:
             self._training_active = False
             status_bar.set_training("idle")

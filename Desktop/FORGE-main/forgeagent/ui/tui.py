@@ -398,8 +398,7 @@ class ForgeAgentApp(App):
                     # ── Launch ──
                     yield Static("Launch", classes="section-header")
                     yield Button("COMPLETE TODO", id="btn-complete-todo", classes="hero")
-                    yield Button("TEAM MODE", id="btn-team-mode", classes="hero")
-                    yield Button("WORK ON PROJECT", id="btn-work-project", classes="hero-alt")
+                    yield Button("DEPLOY TO PROJECT", id="btn-work-project", classes="hero")
                     yield Button("LAUNCH AGENTS", id="btn-deploy", classes="hero-accent")
                     yield Button("Manage Projects", id="btn-agents")
                     yield Button("Add Task", id="btn-add-task")
@@ -1627,25 +1626,36 @@ class ForgeAgentApp(App):
                 f.write(f"- [ ] {t}\n")
             f.write("\n")
 
-        # Launch team terminal pointed at this project
-        chat.write(f"  [#7c4dff]Launching team terminal...[/]")
+        # Deploy agents to the project — they work alongside Claude Code
+        chat.write(f"  [#7c4dff]Deploying agents to project...[/]")
         try:
-            import sys, subprocess as _sp
-            if sys.platform == "win32":
-                _sp.Popen(
-                    f'start "ForgeAgent — {pp.name}" cmd /k python -m forgeagent --team --project "{pp}"',
-                    shell=True, cwd=str(pp),
-                )
+            deployer = self.ctx["deployer"]
+            mb = self.ctx["model_builder"]
+            models = [m["name"] for m in mb.list_local_models()][:4]
+            if models:
+                deployer.deploy_multi(str(pp), models)
+                chat.write(f"  [#00e676]Deployed {len(models)} agents: {', '.join(models)}[/]")
             else:
-                _sp.Popen(
-                    ["bash", "-c", f'python -m forgeagent --team --project "{pp}"'],
-                    cwd=str(pp),
-                )
-            chat.write(f"  [#00e676]Team terminal opened for {pp.name}[/]")
-            chat.write(f"  [#5c6b7a]Agents will scan the project and work through tasks.[/]")
-            chat.write(f"  [#5c6b7a]Logs saved to: {claude_dir}[/]")
+                chat.write(f"  [#ffd740]No models installed. Train one first.[/]")
         except Exception as ex:
-            chat.write(f"  [#ff1744]Launch failed: {ex}[/]")
+            chat.write(f"  [#5c6b7a]Agent deploy: {ex}[/]")
+
+        # Update status
+        self._refresh_agent_slots()
+        try:
+            from ..remote.server import update_state, push_log
+            update_state(project=str(pp), todo_status="deployed")
+            push_log(f"Deployed to {pp.name}: {len(tasks)} tasks")
+        except Exception:
+            pass
+
+        chat.write("")
+        chat.write(f"  [bold #00e676]Ready![/]")
+        chat.write(f"  [#5c6b7a]Project: {pp}[/]")
+        chat.write(f"  [#5c6b7a]Tasks: {len(tasks)} pending in .forgeagent/AGENT.md[/]")
+        chat.write(f"  [#5c6b7a]Logs: {claude_dir}[/]")
+        chat.write(f"  [#5c6b7a]Click COMPLETE TODO to start agents on the task list.[/]")
+        chat.write(f"  [#5c6b7a]Or use Claude Code in the same folder — agents learn from your work.[/]")
         chat.write("")
 
     # ── Restart handler (async worker) ─────────

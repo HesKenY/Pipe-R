@@ -359,6 +359,8 @@ class ForgeAgentApp(App):
         self._training_active = False
         self._todo_paused = False
         self._todo_running = False
+        self._remote_server = None
+        self._remote_url = ""
         log.info(f"init model={self.config.model}")
 
     # ── Layout ────────────────────────────────────
@@ -437,6 +439,22 @@ class ForgeAgentApp(App):
         chat = self.query_one("#chatlog", RichLog)
         status_bar = self.query_one(StatusBar)
 
+        # Start remote monitoring server
+        try:
+            from ..remote.server import start_remote_server, update_state
+            self._remote_server, self._remote_url = start_remote_server(7777)
+            update_state(
+                model=self.config.model,
+                project=self.config.cwd,
+                status="idle",
+            )
+            log.info(f"remote server: {self._remote_url}")
+        except Exception as e:
+            log.error(f"remote server failed: {e}")
+
+        # Start polling for remote commands
+        self._remote_poll_timer = self.set_interval(2.0, self._poll_remote_commands)
+
         # Ollama check
         try:
             alive = await self.engine.client.ping()
@@ -513,6 +531,8 @@ class ForgeAgentApp(App):
         chat.write(f"  [#00e5ff]LAUNCH AGENTS[/]  Deploy models as terminal coding agents")
         chat.write("")
         chat.write(f"  [#5c6b7a]Or type a message below to chat.[/]")
+        if self._remote_url:
+            chat.write(f"  [#7c4dff]Remote:[/]  [bold #00e5ff]{self._remote_url}[/]  [#5c6b7a](open on phone)[/]")
         chat.write("")
 
         self._refresh_agent_slots()
@@ -1517,6 +1537,28 @@ class ForgeAgentApp(App):
             push_result = pp.git_push()
             chat.write(f"  [dim]Auto-push: {push_result['message']}[/]")
 
+    # ── Remote chat handler (async worker) ─────
+    @work(thread=False)
+    async def _handle_remote_chat(self, msg: str) -> None:
+        chat = self.query_one("#chatlog", RichLog)
+        try:
+            from ..remote.server import push_log
+            self._face("thinking")
+            result = await self.engine.submit_user_message(msg)
+            if result.tool_calls:
+                names = ", ".join(tc.tool_name for tc in result.tool_calls)
+                chat.write(f"  [#5c6b7a]tools: {names}[/]")
+            self._face("talking")
+            response = result.assistant_message.content
+            chat.write(f"\n  [bold #00e676]ForgeAgent[/]")
+            chat.write(f"  {response}")
+            chat.write("")
+            push_log(f"Agent: {response[:80]}")
+            self._face("idle")
+        except Exception as ex:
+            chat.write(f"  [#ff1744]Error: {ex}[/]")
+            self._face("idle")
+
     # ── COMPLETE TODO — auto-run all AGENT.md tasks with pause/resume ─
     def _save_todo_log(self, project_path: str, completed: int, total: int,
                        task_results: list[dict], status: str = "paused"):
@@ -1621,6 +1663,15 @@ class ForgeAgentApp(App):
             if self._todo_paused:
                 self._save_todo_log(project_path, completed, total, task_results, "paused")
                 pct = round((completed / total) * 100)
+                self._update_remote_state(
+                    todo_pct=pct, todo_completed=completed, todo_total=total,
+                    todo_current="", todo_status="paused",
+                )
+                try:
+                    from ..remote.server import push_log
+                    push_log(f"Paused at {pct}% — {completed}/{total} done")
+                except Exception:
+                    pass
                 chat.write(f"  [bold #ffd740]{'━' * 56}[/]")
                 chat.write(f"  [bold #ffd740]  PAUSED at {pct}% — {completed}/{total} done[/]")
                 chat.write(f"  [bold #ffd740]{'━' * 56}[/]")
@@ -1640,6 +1691,15 @@ class ForgeAgentApp(App):
             chat.write(f"  [bold #00e5ff][{pct}%][/]  [#ffd740]Task {i+1}/{total}:[/]  {task}")
             status_bar.set_training(f"{pct}% task {i+1}/{total}")
             self._show_progress(f"Task {i+1}/{total}", i, total)
+            self._update_remote_state(
+                todo_pct=pct, todo_completed=completed, todo_total=total,
+                todo_current=task[:80], todo_status="running",
+            )
+            try:
+                from ..remote.server import push_log
+                push_log(f"[{pct}%] Task {i+1}/{total}: {task[:60]}")
+            except Exception:
+                pass
 
             task_record = {"task": task, "status": "running", "tools": [], "summary": ""}
 
@@ -1688,6 +1748,15 @@ class ForgeAgentApp(App):
         # ── 100% Complete ──
         self._show_progress("Complete", total, total)
         status_bar.set_training(f"100% done")
+        self._update_remote_state(
+            todo_pct=100, todo_completed=completed, todo_total=total,
+            todo_current="", todo_status="complete",
+        )
+        try:
+            from ..remote.server import push_log
+            push_log(f"100% — {completed}/{total} tasks complete")
+        except Exception:
+            pass
 
         chat.write(f"  [bold #00e5ff]{'━' * 56}[/]")
         chat.write(f"  [bold #00e676]  100% COMPLETE[/]")
@@ -1748,6 +1817,112 @@ class ForgeAgentApp(App):
             btn.label = "COMPLETE TODO"
             btn.remove_class("hero-alt")
             btn.add_class("hero")
+        except Exception:
+            pass
+
+    # ── Remote monitoring sync ───────────────────
+    def _update_remote_state(self, **extra):
+        """Push current state to the remote monitoring server."""
+        try:
+            from ..remote.server import update_state, push_log
+            from ..deploy.agent_instructions import get_pending_tasks, get_completed_tasks
+
+            agents_raw = self.ctx["deployer"].list_agents()
+            agents = [{"name": a.get("name", "?"), "status": a.get("status", "ready"),
+                        "model": a.get("modelName", "")} for a in agents_raw[:6]]
+
+            pending = []
+            completed_tasks = []
+            try:
+                pending = get_pending_tasks(self.config.cwd)
+                completed_tasks = get_completed_tasks(self.config.cwd)
+            except Exception:
+                pass
+
+            b = self.buddy.summary
+            update_state(
+                model=self.config.model,
+                ollama=True,  # if we got here, ollama was checked on mount
+                agents=agents,
+                datasets=len(self.ctx["dataset_manager"].list_datasets()),
+                buddy_name=b.name,
+                buddy_level=b.level,
+                buddy_mood=b.mood,
+                project=self.config.cwd,
+                pending_tasks=pending[:20],
+                completed_tasks=completed_tasks[:20],
+                **extra,
+            )
+        except Exception:
+            pass
+
+    def _poll_remote_commands(self):
+        """Check for commands sent from the mobile dashboard."""
+        try:
+            from ..remote.server import get_commands, push_log
+            commands = get_commands()
+            for cmd_data in commands:
+                cmd = cmd_data.get("command", "")
+                chat = self.query_one("#chatlog", RichLog)
+
+                if cmd == "pause":
+                    if self._todo_running and not self._todo_paused:
+                        self._todo_paused = True
+                        try:
+                            btn = self.query_one("#btn-complete-todo", Button)
+                            btn.label = "RESUME TODO"
+                        except Exception:
+                            pass
+                        chat.write(f"  [#ffd740]Pausing (remote command)...[/]")
+                        push_log("Pause requested from mobile")
+
+                elif cmd == "resume":
+                    if self._todo_running and self._todo_paused:
+                        self._todo_paused = False
+                        try:
+                            btn = self.query_one("#btn-complete-todo", Button)
+                            btn.label = "PAUSE"
+                        except Exception:
+                            pass
+                        chat.write(f"  [#00e676]Resuming (remote command)...[/]")
+                        push_log("Resume requested from mobile")
+
+                elif cmd == "save":
+                    asyncio.ensure_future(self.engine.save_session())
+                    chat.write(f"  [#5c6b7a]Session saved (remote)[/]")
+                    push_log("Session saved from mobile")
+
+                elif cmd == "compact":
+                    asyncio.ensure_future(self.engine.compact())
+                    chat.write(f"  [#5c6b7a]Compacting (remote)[/]")
+                    push_log("Compact requested from mobile")
+
+                elif cmd == "stop":
+                    if self._todo_running:
+                        self._todo_paused = True
+                        chat.write(f"  [#ff1744]Stop requested from mobile[/]")
+                        push_log("Stop requested from mobile")
+
+                elif cmd.startswith("chat:"):
+                    msg = cmd[5:]
+                    if msg:
+                        chat.write(f"\n  [bold #7c4dff]Remote[/]")
+                        chat.write(f"  {msg}")
+                        push_log(f"Remote: {msg[:60]}")
+                        self._handle_remote_chat(msg)
+
+                elif cmd.startswith("add_task:"):
+                    task = cmd[9:]
+                    if task:
+                        from ..deploy.agent_instructions import add_task, write_agent_instructions
+                        from pathlib import Path as P
+                        agent_md = P(self.config.cwd) / ".forgeagent" / "AGENT.md"
+                        if not agent_md.exists():
+                            write_agent_instructions(self.config.cwd)
+                        add_task(self.config.cwd, task)
+                        chat.write(f"  [#00e676]Task added (remote):[/] {task}")
+                        push_log(f"Task added: {task}")
+
         except Exception:
             pass
 

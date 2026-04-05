@@ -658,7 +658,7 @@ class ForgeAgentApp(App):
                 project = self.config.cwd
                 if sys.platform == "win32":
                     subprocess.Popen(
-                        f'start "ForgeAgent Team" cmd /c "python -m forgeagent --team --project \\"{project}\\" & pause"',
+                        f'start "ForgeAgent Team" cmd /k python -m forgeagent --team --project "{project}"',
                         shell=True, cwd=project,
                     )
                 else:
@@ -1633,7 +1633,7 @@ class ForgeAgentApp(App):
             import sys, subprocess as _sp
             if sys.platform == "win32":
                 _sp.Popen(
-                    f'start "ForgeAgent — {pp.name}" cmd /c "python -m forgeagent --team --project \\"{pp}\\" & pause"',
+                    f'start "ForgeAgent — {pp.name}" cmd /k python -m forgeagent --team --project "{pp}"',
                     shell=True, cwd=str(pp),
                 )
             else:
@@ -1769,7 +1769,7 @@ class ForgeAgentApp(App):
             if len(all_models) > 1:
                 if sys.platform == "win32":
                     _sp.Popen(
-                        f'start "ForgeAgent Team" cmd /c "python -m forgeagent --team --project \\"{project_path}\\" & pause"',
+                        f'start "ForgeAgent Team" cmd /k python -m forgeagent --team --project "{project_path}"',
                         shell=True, cwd=project_path,
                     )
                 else:
@@ -2134,7 +2134,7 @@ class ForgeAgentApp(App):
                     import subprocess as _sp3
                     pp = self.config.cwd
                     if _sys2.platform == "win32":
-                        _sp3.Popen(f'start "ForgeAgent Team" cmd /c "python -m forgeagent --team --project \\"{pp}\\" & pause"', shell=True, cwd=pp)
+                        _sp3.Popen(f'start "ForgeAgent Team" cmd /k python -m forgeagent --team --project "{pp}"', shell=True, cwd=str(pp))
                     chat.write(f"  [#00e676]Team terminal launched (remote)[/]")
                     push_log("Team mode launched from remote")
 

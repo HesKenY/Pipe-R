@@ -203,6 +203,21 @@ body {
   </div>
 </div>
 
+<!-- Task Editor -->
+<div class="card">
+  <div class="card-title">SET TODO LIST</div>
+  <div style="font-size:11px;color:var(--dim);margin-bottom:6px">One task per line. Replaces current pending tasks.</div>
+  <textarea id="task-editor" style="width:100%;min-height:120px;background:var(--bg);color:var(--text);border:1px solid var(--dim);border-radius:6px;padding:10px;font-family:inherit;font-size:12px;resize:vertical" placeholder="Add error handling to all API endpoints
+Write unit tests for the main module
+Fix the login page CSS on mobile
+Optimize database queries in user service"></textarea>
+  <div class="btn-row" style="margin-top:8px">
+    <button class="btn green" onclick="setTasks()">SET TASKS</button>
+    <button class="btn" onclick="send('complete_todo')">RUN TODO</button>
+    <button class="btn danger" onclick="send('restart')">RESTART</button>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-title">AGENTS</div>
   <div id="agents-list"><span style="color:var(--dim)">None deployed</span></div>
@@ -335,6 +350,21 @@ function sendChat() {
   if (!msg) return;
   send('chat:' + msg);
   input.value = '';
+}
+
+async function setTasks() {
+  const editor = document.getElementById('task-editor');
+  const lines = editor.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if (!lines.length) { alert('Enter at least one task'); return; }
+  try {
+    await fetch(BASE + '/api/tasks', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({tasks: lines})
+    });
+    editor.value = '';
+    alert('Tasks set! Click RUN TODO to start.');
+  } catch(e) { alert('Failed to set tasks'); }
 }
 
 document.getElementById('chat-msg').addEventListener('keydown', function(e) {

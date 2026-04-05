@@ -1537,6 +1537,18 @@ class ForgeAgentApp(App):
             push_result = pp.git_push()
             chat.write(f"  [dim]Auto-push: {push_result['message']}[/]")
 
+    # ── Restart handler (async worker) ─────────
+    @work(thread=False)
+    async def _do_restart(self) -> None:
+        await self.engine.save_session()
+        import sys, subprocess
+        subprocess.Popen(
+            [sys.executable, "-m", "forgeagent"],
+            cwd=self.config.cwd,
+        )
+        await asyncio.sleep(1)
+        self.exit()
+
     # ── Remote chat handler (async worker) ─────
     @work(thread=False)
     async def _handle_remote_chat(self, msg: str) -> None:
@@ -1800,7 +1812,28 @@ class ForgeAgentApp(App):
         # Save final log
         self._save_todo_log(project_path, completed, total, task_results, "complete")
 
-        chat.write(f"  [#5c6b7a]Ready for next iteration. Add new tasks and click COMPLETE TODO again.[/]")
+        # Auto git commit + push the changes
+        chat.write(f"  [#5c6b7a]Committing and pushing changes...[/]")
+        try:
+            import subprocess as _sp
+            _sp.run(["git", "add", "-A"], cwd=project_path, capture_output=True, timeout=30)
+            from datetime import datetime as _dt
+            msg = f"ForgeAgent auto-build {_dt.now().strftime('%Y-%m-%d %H:%M')} — {completed}/{total} tasks"
+            _sp.run(["git", "commit", "-m", msg], cwd=project_path, capture_output=True, timeout=30)
+            push_r = _sp.run(["git", "push"], cwd=project_path, capture_output=True, text=True, timeout=60)
+            if push_r.returncode == 0:
+                chat.write(f"  [#00e676]Pushed to git — Netlify will auto-deploy[/]")
+                try:
+                    from ..remote.server import push_log as _pl
+                    _pl("Git pushed — Netlify deploying")
+                except Exception:
+                    pass
+            else:
+                chat.write(f"  [#ffd740]Git push: {push_r.stderr.strip()[:100]}[/]")
+        except Exception as ex:
+            chat.write(f"  [#5c6b7a]Git push skipped: {ex}[/]")
+
+        chat.write(f"  [#5c6b7a]Restarting to apply changes...[/]")
         chat.write("")
 
         self._training_active = False
@@ -1809,6 +1842,20 @@ class ForgeAgentApp(App):
         status_bar.set_training("idle")
         self._hide_progress()
         self._reset_todo_button()
+
+        # Auto-restart to apply changes
+        try:
+            await self.engine.save_session()
+            import sys, subprocess as _sp2
+            _sp2.Popen(
+                [sys.executable, "-m", "forgeagent"],
+                cwd=project_path,
+            )
+            await asyncio.sleep(1)
+            self.exit()
+        except Exception as ex:
+            chat.write(f"  [#ffd740]Auto-restart failed: {ex}. Restart manually.[/]")
+            log.error(f"auto-restart: {ex}")
 
     def _reset_todo_button(self):
         """Reset the COMPLETE TODO button to default state."""
@@ -1897,11 +1944,38 @@ class ForgeAgentApp(App):
                     chat.write(f"  [#5c6b7a]Compacting (remote)[/]")
                     push_log("Compact requested from mobile")
 
+                elif cmd == "complete_todo":
+                    if not self._training_active:
+                        chat.write(f"  [#00e676]Starting TODO (remote)...[/]")
+                        push_log("Complete TODO triggered from remote")
+                        self._do_complete_todo()
+
                 elif cmd == "stop":
                     if self._todo_running:
                         self._todo_paused = True
                         chat.write(f"  [#ff1744]Stop requested from mobile[/]")
                         push_log("Stop requested from mobile")
+
+                elif cmd == "restart":
+                    chat.write(f"  [#ffd740]Restarting ForgeAgent (remote)...[/]")
+                    push_log("Restart requested from remote")
+                    self._do_restart()
+
+                elif cmd.startswith("set_tasks:"):
+                    # Bulk set tasks from remote JSON
+                    tasks_json = cmd[10:]
+                    try:
+                        import json as _json
+                        tasks = _json.loads(tasks_json)
+                        if isinstance(tasks, list) and tasks:
+                            from ..deploy.agent_instructions import write_agent_instructions
+                            from pathlib import Path as P
+                            write_agent_instructions(self.config.cwd, tasks=tasks, model_name=self.config.model)
+                            chat.write(f"  [#00e676]Tasks updated from remote: {len(tasks)} tasks[/]")
+                            push_log(f"Tasks set: {len(tasks)} from remote")
+                            self._update_remote_state()
+                    except Exception as ex:
+                        chat.write(f"  [#ff1744]Task update error: {ex}[/]")
 
                 elif cmd.startswith("chat:"):
                     msg = cmd[5:]

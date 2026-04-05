@@ -74,6 +74,15 @@ def _queue_command(cmd: dict):
         _command_queue.append(cmd)
 
 
+def get_pending_tasks_from_project(project_path: str) -> list[str]:
+    """Read pending tasks from AGENT.md."""
+    try:
+        from ..deploy.agent_instructions import get_pending_tasks
+        return get_pending_tasks(project_path)
+    except Exception:
+        return []
+
+
 def get_local_ip() -> str:
     """Get the machine's local network IP."""
     try:
@@ -377,6 +386,20 @@ class RemoteHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(_state).encode("utf-8"))
 
+        elif self.path == "/api/tasks":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            project = _state.get("project", "")
+            pending = _state.get("pending_tasks", [])
+            completed = _state.get("completed_tasks", [])
+            self.wfile.write(json.dumps({
+                "pending": pending,
+                "completed": completed,
+                "project": project,
+            }).encode("utf-8"))
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -397,6 +420,30 @@ class RemoteHandler(BaseHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(b'{"ok":true}')
+
+        elif self.path == "/api/tasks":
+            # Bulk set tasks — replaces pending tasks in AGENT.md
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length).decode("utf-8") if length else "{}"
+            result = {"ok": False}
+            try:
+                data = json.loads(body)
+                tasks = data.get("tasks", [])
+                project = _state.get("project", "")
+                if project and tasks:
+                    from ..deploy.agent_instructions import write_agent_instructions
+                    write_agent_instructions(project, tasks=tasks,
+                        model_name=_state.get("model", ""))
+                    _state["pending_tasks"] = tasks
+                    push_log(f"Tasks updated: {len(tasks)} tasks set from remote")
+                    result = {"ok": True, "count": len(tasks)}
+            except Exception as e:
+                result = {"ok": False, "error": str(e)}
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode("utf-8"))
 
         else:
             self.send_response(404)

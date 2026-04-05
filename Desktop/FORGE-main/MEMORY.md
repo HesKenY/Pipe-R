@@ -1,2 +1,0 @@
-# ForgeAgent Memory
-

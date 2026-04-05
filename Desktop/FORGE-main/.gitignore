@@ -4,6 +4,7 @@ build/
 .memory/
 __pycache__/
 *.pyc
+*.pyo
 *.egg-info/
 *.egg
 .eggs/
@@ -14,3 +15,5 @@ __pycache__/
 venv/
 .pytest_cache/
 .installed
+*.log
+.claude/

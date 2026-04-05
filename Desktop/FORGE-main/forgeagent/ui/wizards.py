@@ -132,14 +132,22 @@ class ImproveWizard(ModalScreen[dict | None]):
         self._installed = installed_models or []
 
     def compose(self) -> ComposeResult:
-        # Build model dropdown
+        # Build model dropdown — ensure current model is always present
         model_options = []
+        option_values = set()
         for m in self._installed:
             name = m["name"]
             size = m.get("size", "")
             model_options.append((f"{name}  ({size})", name))
+            option_values.add(name)
+        # Add current model if not in list
+        if self._model not in option_values:
+            model_options.insert(0, (self._model, self._model))
+            option_values.add(self._model)
         if not model_options:
             model_options.append((self._model, self._model))
+        # Pick default value — prefer current model, else first option
+        default = self._model if self._model in option_values else model_options[0][1]
 
         with Vertical(id="imw"):
             yield Static("Improve Model", classes="title")
@@ -147,7 +155,7 @@ class ImproveWizard(ModalScreen[dict | None]):
             yield Rule()
             with VerticalScroll(id="imw-scroll"):
                 yield Static("Which model to improve?", classes="field-label")
-                yield Select(model_options, value=self._model, id="imw-model")
+                yield Select(model_options, value=default, id="imw-model")
                 yield Static("Learn from your conversations?", classes="field-label")
                 with Horizontal(classes="toggle-row"):
                     yield Switch(value=True, id="imw-harvest")

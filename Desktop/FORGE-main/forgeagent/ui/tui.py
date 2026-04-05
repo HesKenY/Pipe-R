@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio, logging, os, re as _re
 from pathlib import Path
 from textual.app import App, ComposeResult
+from forgeagent.core.project_worker import ProjectWorker
 from textual.widgets import Header, Footer, Static, Button, Input, RichLog, Rule, ProgressBar
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.binding import Binding
@@ -1885,14 +1886,27 @@ class ForgeAgentApp(App):
                 task_record["summary"] = summary
                 task_record["status"] = "done"
 
-                # Mark task complete in AGENT.md
+                # Mark task complete in AGENT.md + record skill
                 complete_task(project_path, task[:40])
                 completed += 1
                 chat.write(f"    [#00e676]Done[/]")
+                try:
+                    from ..core.skills import SkillTracker
+                    st = SkillTracker(self.config.memory_dir)
+                    st.record_task(self.config.model, task, True,
+                                   task_record.get("tools", []), project_path)
+                except Exception:
+                    pass
 
             except Exception as ex:
                 failed += 1
                 task_record["status"] = "failed"
+                try:
+                    from ..core.skills import SkillTracker
+                    st = SkillTracker(self.config.memory_dir)
+                    st.record_task(self.config.model, task, False, [], project_path)
+                except Exception:
+                    pass
                 task_record["summary"] = str(ex)
                 chat.write(f"    [#ff1744]Error: {ex}[/]")
                 log.error(f"complete_todo task {i+1}: {ex}", exc_info=True)

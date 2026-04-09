@@ -1,0 +1,103 @@
+{
+  "modules": [
+    {
+      "id": "core",
+      "name": "Core",
+      "description": "Authentication, roles, UI shell, and module loader. Required for all instances.",
+      "version": "1.0.0",
+      "dependencies": [],
+      "enabled": true,
+      "requiredRole": "apprentice"
+    },
+    {
+      "id": "timeclock",
+      "name": "Time Clock",
+      "description": "Clock in/out, timecard history, overtime tracking, and pay period summaries.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "apprentice"
+    },
+    {
+      "id": "calculator",
+      "name": "Pipe Calculator",
+      "description": "Offsets, rolling offsets, travel, fitting allowances, and pipe math tools.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "apprentice"
+    },
+    {
+      "id": "mro",
+      "name": "MRO",
+      "description": "Material requisition and ordering. Track materials, generate orders, manage vendors.",
+      "version": "1.0.0",
+      "dependencies": ["core", "inventory"],
+      "enabled": true,
+      "requiredRole": "journeyman"
+    },
+    {
+      "id": "tasklist",
+      "name": "Task List",
+      "description": "Job task management with assignments, priorities, statuses, and due dates.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "apprentice"
+    },
+    {
+      "id": "messaging",
+      "name": "Messaging",
+      "description": "Real-time crew messaging, announcements, and notification system.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "apprentice"
+    },
+    {
+      "id": "documents",
+      "name": "Documents",
+      "description": "Document storage, sharing, and version tracking. Drawings, specs, submittals.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "journeyman"
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "description": "Manpower reports, productivity tracking, cost analysis, and export tools.",
+      "version": "1.0.0",
+      "dependencies": ["core", "timeclock"],
+      "enabled": true,
+      "requiredRole": "foreman"
+    },
+    {
+      "id": "dailylog",
+      "name": "Daily Log",
+      "description": "Foreman daily logs with weather, manpower, equipment, work performed, and notes.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "foreman"
+    },
+    {
+      "id": "safety",
+      "name": "Safety",
+      "description": "Safety toolbox talks, incident reports, JSA/JHA forms, and compliance tracking.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "apprentice"
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory",
+      "description": "Material and tool inventory tracking, bin locations, counts, and reorder alerts.",
+      "version": "1.0.0",
+      "dependencies": ["core"],
+      "enabled": true,
+      "requiredRole": "journeyman"
+    }
+  ]
+}

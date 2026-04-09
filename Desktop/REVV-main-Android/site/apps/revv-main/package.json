@@ -1,0 +1,28 @@
+{
+  "name": "revv-main",
+  "version": "1.0.0",
+  "description": "REVV Main - auto transport operations Android app.",
+  "main": "sw.js",
+  "scripts": {
+    "cap:sync": "npx cap sync android",
+    "cap:open:android": "npx cap open android",
+    "android:sync": "npm run cap:sync",
+    "android:open": "npm run cap:open:android",
+    "android:build": "npm run cap:sync"
+  },
+  "author": "Ken Deibel",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/camera": "^8.0.1",
+    "@capacitor/geolocation": "^8.0.1",
+    "@capacitor/haptics": "^8.0.1",
+    "@capacitor/local-notifications": "^8.0.1",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.1"
+  }
+}

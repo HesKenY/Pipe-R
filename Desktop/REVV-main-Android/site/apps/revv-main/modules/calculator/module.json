@@ -1,0 +1,11 @@
+{
+  "id": "calculator",
+  "name": "Trade Calculator",
+  "version": "1.0.0",
+  "description": "Pipe weight, concrete volume, and material estimator calculators",
+  "dependencies": [],
+  "routes": ["/calculator"],
+  "navIcon": "calculator",
+  "navLabel": "Calculator",
+  "requiredRole": "worker"
+}

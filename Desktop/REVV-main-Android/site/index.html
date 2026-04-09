@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REVV | Auto Transport That Moves Clean</title>
+<meta name="description" content="REVV is the public face of the transport company. Safe pickup, careful delivery, fleet-ready communication, and modern customer updates.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08111d;--panel:#0f1a2b;--panel2:#132238;--line:#223450;--text:#e8eef8;--muted:#9db0c9;--accent:#ff7a18;--accent2:#60a5fa;--green:#22c55e;--radius:18px}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#0e1a2c 0,#08111d 50%,#06101a 100%);color:var(--text);font-family:'DM Sans',sans-serif}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:24px}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:grid;place-items:center;color:#08111d;font:800 20px 'Bebas Neue',sans-serif;letter-spacing:2px}
+.brand h1{font:400 30px 'Bebas Neue',sans-serif;letter-spacing:4px;margin:0}
+.nav a{color:var(--muted);margin-left:18px;font-weight:700;font-size:14px}
+.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;align-items:center;padding:56px 0 28px}
+.eyebrow{letter-spacing:4px;text-transform:uppercase;color:var(--accent2);font-size:11px;font-weight:800}
+h2{font:400 clamp(44px,7vw,82px) 'Bebas Neue',sans-serif;line-height:.93;letter-spacing:3px;margin:12px 0 16px}
+.lead{font-size:18px;line-height:1.8;color:var(--muted);max-width:62ch}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 22px;border-radius:14px;font-weight:800;border:1px solid transparent}
+.btn.primary{background:linear-gradient(135deg,var(--accent),#ffb05c);color:#08111d}
+.btn.secondary{border-color:var(--line);background:rgba(255,255,255,.02)}
+.panel{background:linear-gradient(180deg,var(--panel),#0c1524);border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:0 28px 80px rgba(0,0,0,.28)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:28px 0}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.card h3{margin:0 0 8px;font-size:18px}
+.card p{margin:0;color:var(--muted);line-height:1.75;font-size:14px}
+.section{padding:32px 0}
+.section h3{font:400 42px 'Bebas Neue',sans-serif;letter-spacing:3px;margin:0 0 16px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.list{display:grid;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.25);color:#cfe5ff;font-weight:700;font-size:13px}
+.footer{padding:28px 0 12px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;border-top:1px solid rgba(157,176,201,.15)}
+.small{font-size:13px;color:var(--muted);line-height:1.75}
+@media (max-width:900px){.hero,.split,.grid{grid-template-columns:1fr}.nav{gap:10px;flex-direction:column;align-items:flex-start}.nav-links{display:flex;gap:16px;flex-wrap:wrap}.wrap{padding:18px}.hero{padding-top:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="nav">
+    <div class="brand">
+      <div class="mark">RV</div>
+      <div>
+        <h1>REVV</h1>
+        <div class="small">Auto transport done with care</div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="#services">Services</a>
+      <a href="#process">Process</a>
+      <a href="#contact">Contact</a>
+      <a href="tools/index.html">Internal Tools</a>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div>
+      <div class="eyebrow">REVV Web</div>
+      <h2>Transport that feels organized, responsive, and ready to move.</h2>
+      <p class="lead">We help customers ship vehicles with clear communication, careful handling, and a dispatch flow that keeps pickups, delivery windows, and fleet activity on track from quote to handoff.</p>
+      <div class="cta">
+        <a class="btn primary" href="#contact">Request a Quote</a>
+        <a class="btn secondary" href="tools/index.html">Open Internal Tools</a>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="pill">Live lanes</div>
+      <div class="grid" style="margin-top:16px">
+        <div class="card"><h3>Open Pickup</h3><p>Flexible transport for dealer, auction, and retail moves.</p></div>
+        <div class="card"><h3>Enclosed</h3><p>Added protection for premium and specialty vehicles.</p></div>
+        <div class="card"><h3>Fleet Support</h3><p>Dispatch-ready coordination for recurring routes.</p></div>
+      </div>
+      <img src="transport-brand.jpg" alt="REVV transport branding" style="width:100%;border-radius:16px;border:1px solid var(--line);display:block">
+    </div>
+  </div>
+
+  <div id="services" class="section">
+    <h3>Services</h3>
+    <div class="grid">
+      <div class="card"><h3>Door-to-door shipping</h3><p>Pickup and delivery that keeps customers informed at every step.</p></div>
+      <div class="card"><h3>Auction and dealer moves</h3><p>Fast lane handling for inventory transfers and wholesale work.</p></div>
+      <div class="card"><h3>Fleet coordination</h3><p>Recurring dispatch support, condition notes, and route tracking.</p></div>
+    </div>
+  </div>
+
+  <div id="process" class="section split">
+    <div class="panel">
+      <h3>How it works</h3>
+      <div class="list">
+        <div class="card"><h3>1. Book the lane</h3><p>Share pickup and drop-off details, vehicle info, and timing.</p></div>
+        <div class="card"><h3>2. Confirm dispatch</h3><p>We coordinate the route, carrier, and status updates.</p></div>
+        <div class="card"><h3>3. Deliver clean</h3><p>Arrival is documented and the handoff is completed with care.</p></div>
+      </div>
+    </div>
+    <div class="panel" id="contact">
+      <h3>Contact</h3>
+      <p class="small">Tell us what needs to move and where it needs to go. This is the public customer-facing site, so the software stays in the background where it belongs.</p>
+      <div class="card" style="margin-top:14px">
+        <h3>Request details</h3>
+        <p>Name, pickup city, drop city, vehicle type, and timing are enough to start a quote conversation.</p>
+      </div>
+      <div class="cta">
+        <a class="btn primary" href="mailto:dispatch@revv.example">Email Dispatch</a>
+        <a class="btn secondary" href="privacy.html">Privacy</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>REVV powered by Revv-R</div>
+    <div><a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="tools/index.html">Internal Tools</a></div>
+  </div>
+</div>
+</body>
+</html>

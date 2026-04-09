@@ -234,11 +234,11 @@ function getTimestamp() {
 // PROJECTS REGISTRY
 // ═══════════════════════════════════════════════════════
 const PROJECTS = [
-  { key: '1', name: 'REVV',          path: join(ROOT, 'output', 'REVV-main'),                         url: 'revv.live',               codename: 'ALPHA' },
+  { key: '1', name: 'CHERP',         path: 'C:\\Users\\Ken\\Documents\\CHERP Projects\\CHERP-main',   url: 'cherp.live',              codename: 'ALPHA' },
   { key: '2', name: 'CodeForge',     path: 'C:\\Users\\Ken\\Documents\\CodeForge\\CodeForge-main',    url: 'codesforge.netlify.app',  codename: 'FORGE' },
   { key: '3', name: 'ForgeAgent',    path: 'C:\\Users\\Ken\\Documents\\ForgeAgent\\FORGE-main',       url: null,                      codename: 'NEXUS' },
-  { key: '4', name: 'REVV Worker',   path: 'C:\\Users\\Ken\\Documents\\REVV Projects\\REVV-Worker',   url: null,                      codename: 'GHOST' },
-  { key: '5', name: 'REVV Modular',  path: join(ROOT, 'output', 'REVV-main'),                         url: null,                      codename: 'MODULAR' },
+  { key: '4', name: 'CHERP Worker',  path: 'C:\\Users\\Ken\\Documents\\CHERP Projects\\CHERP-Worker', url: null,                      codename: 'GHOST' },
+  { key: '5', name: 'CHERP Modular', path: join(ROOT, 'output', 'cherp-modular'),                     url: null,                      codename: 'MODULAR' },
   { key: '6', name: "Bird's Nest",   path: join(ROOT, 'output', 'birds-nest'),                        url: null,                      codename: 'NEST' },
 ];
 
@@ -849,13 +849,13 @@ async function customerConsole() {
 
   winEmpty();
 
-  const nestPath = join(ROOT, 'output', 'revv-mcp');
+  const nestPath = join(ROOT, 'output', 'cherp-mcp');
   const nestExists = existsSync(nestPath);
   const customersFile = join(nestPath, 'data', 'customers.json');
 
   if (!nestExists) {
     winLine(`${c.amber}Bird's Nest not installed.${c.reset}`, 3);
-    winLine(`${c.dim2}Build it from the REVV MCP prompt to unlock:${c.reset}`, 3);
+    winLine(`${c.dim2}Build it from the CHERP MCP prompt to unlock:${c.reset}`, 3);
     winLine(`${c.dim2}  - Customer instance builder${c.reset}`, 3);
     winLine(`${c.dim2}  - Deployment management${c.reset}`, 3);
     winLine(`${c.dim2}  - Remote connections${c.reset}`, 3);
@@ -1225,7 +1225,7 @@ function loadPatent() {
   try { return JSON.parse(readFileSync(PATENT_FILE, 'utf8')); }
   catch {
     return {
-      title: 'REVV — Auto Transportation Dispatch & Resource Platform',
+      title: 'CHERP — Construction Hierarchy, Engagement & Resource Platform',
       type: 'Provisional Patent',
       filed: '2026-04-04',
       claims: 10,
@@ -1594,7 +1594,7 @@ async function newProjectMenu() {
       writeFileSync(join(projPath, 'js', 'app.js'), `console.log('${projName} loaded');\n`);
       writeFileSync(join(projPath, 'css', 'app.css'), `* { box-sizing: border-box; margin: 0; padding: 0; }\nbody { font-family: -apple-system, sans-serif; background: #0a0d14; color: #fff; }\n`);
       writeFileSync(join(projPath, 'package.json'), JSON.stringify({ name: projName.toLowerCase().replace(/\s+/g, '-'), version: '1.0.0', dependencies: { '@capacitor/core': '^8.3.0', '@capacitor/cli': '^8.3.0', '@capacitor/android': '^8.3.0' } }, null, 2));
-      writeFileSync(join(projPath, 'capacitor.config.json'), JSON.stringify({ appId: `com.revv.${projName.toLowerCase().replace(/\s+/g, '')}`, appName: projName, webDir: 'www', server: { androidScheme: 'https' } }, null, 2));
+      writeFileSync(join(projPath, 'capacitor.config.json'), JSON.stringify({ appId: `com.cherp.${projName.toLowerCase().replace(/\s+/g, '')}`, appName: projName, webDir: 'www', server: { androidScheme: 'https' } }, null, 2));
       break;
     case '3':
       writeFileSync(join(projPath, 'package.json'), JSON.stringify({ name: projName.toLowerCase().replace(/\s+/g, '-'), version: '1.0.0', type: 'module', scripts: { start: 'node index.js' } }, null, 2));
@@ -2605,9 +2605,9 @@ async function quickLaunch() {
   winBtnRow([
     ['1', 'Open Desktop',          'File Explorer'],
     ['2', 'Open Android Studio',   ''],
-    ['3', 'Open REVV site',        'Browser'],
+    ['3', 'Open cherp.live',       'Browser'],
     ['4', 'Open GitHub',           'HesKenY repos'],
-    ['5', 'Serve REVV Worker',     'Local dev server'],
+    ['5', 'Serve CHERP Worker',    'Local dev server'],
     ['6', 'Terminal at Desktop',   ''],
     ['0', 'Back',                   ''],
   ]);
@@ -2618,13 +2618,13 @@ async function quickLaunch() {
   switch (choice.trim()) {
     case '1': try { execSync('explorer "C:\\Users\\Ken\\Desktop"'); } catch {} console.log(`  ${c.green}✓ Explorer opened${c.reset}`); break;
     case '2': try { execSync('start "" "C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} console.log(`  ${c.green}✓ Android Studio launching${c.reset}`); break;
-    case '3': try { execSync('start "" "https://revv.live"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} break;
+    case '3': try { execSync('start "" "https://cherp.live"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} break;
     case '4': try { execSync('start "" "https://github.com/HesKenY"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} break;
     case '5':
-      if (existsSync('C:\\Users\\Ken\\Desktop\\REVV-Worker')) {
-        launchTerminal('C:\\Users\\Ken\\Desktop\\REVV-Worker', 'npx serve www');
-        console.log(`  ${c.green}✓ Serving REVV Worker...${c.reset}`);
-      } else { console.log(`  ${c.red}REVV-Worker not found${c.reset}`); }
+      if (existsSync('C:\\Users\\Ken\\Desktop\\CHERP-Worker')) {
+        launchTerminal('C:\\Users\\Ken\\Desktop\\CHERP-Worker', 'npx serve www');
+        console.log(`  ${c.green}✓ Serving CHERP Worker...${c.reset}`);
+      } else { console.log(`  ${c.red}CHERP-Worker not found${c.reset}`); }
       break;
     case '6': launchTerminal('C:\\Users\\Ken\\Desktop'); break;
     case '0': return mainMenu();

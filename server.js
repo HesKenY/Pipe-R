@@ -24,12 +24,12 @@ const DIRS = {
 };
 
 const PROJECTS = [
-  { name: 'REVV',          path: join(ROOT, 'output', 'REVV-main'),                         codename: 'ALPHA', url: 'revv.live',               repo: 'HesKenY/JsBackyard' },
-  { name: "Bird's Nest",   path: join(ROOT, 'output', 'birds-nest'),                        codename: 'NEST',                                  repo: 'HesKenY/REVV-Nest' },
+  { name: 'CHERP',         path: join(ROOT, 'output', 'cherp-modular'),                     codename: 'ALPHA', url: 'cherp.live',              repo: 'HesKenY/CHERP' },
+  { name: "Bird's Nest",   path: join(ROOT, 'output', 'birds-nest'),                        codename: 'NEST',                                  repo: 'HesKenY/CHERP-Nest' },
   { name: 'Pipe-R',        path: ROOT,                                                      codename: 'PIPER',                                 repo: 'HesKenY/Pipe-R' },
   { name: 'CodeForge',     path: 'C:\\Users\\Ken\\Documents\\CodeForge\\CodeForge-main',    codename: 'FORGE', url: 'codesforge.netlify.app',   repo: 'HesKenY/CodeForge' },
   { name: 'ForgeAgent',    path: 'C:\\Users\\Ken\\Documents\\ForgeAgent\\FORGE-main',       codename: 'NEXUS',                                 repo: 'HesKenY/FORGE' },
-  { name: 'REVV Worker',   path: 'C:\\Users\\Ken\\Desktop\\REVV-Worker',                    codename: 'GHOST' },
+  { name: 'CHERP Worker',  path: 'C:\\Users\\Ken\\Documents\\CHERP Projects\\CHERP-Worker', codename: 'GHOST' },
   { name: 'RDO Server',    path: 'C:\\Users\\Ken\\Desktop\\Claude\\input\\RDO Server',      codename: 'MERICA',                                repo: 'HesKenY/deibelmerica' },
 ];
 

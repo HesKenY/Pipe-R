@@ -1,0 +1,14 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Output / generated projects
+output/
+
+# Input files (user data, not code)
+input/
+
+# Workspace/staging (temp files)
+workspace/
+staging/

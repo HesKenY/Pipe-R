@@ -1,5 +1,5 @@
-export function render(container, context) {
-  const STORE_KEY = 'cherp_dailylog';
+﻿export function render(container, context) {
+  const STORE_KEY = 'revv_dailylog';
   const getEntries = () => JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
   const saveEntries = (e) => localStorage.setItem(STORE_KEY, JSON.stringify(e));
 

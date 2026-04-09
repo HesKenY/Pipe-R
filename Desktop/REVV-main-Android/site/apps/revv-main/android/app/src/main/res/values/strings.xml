@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">REVV Main</string>
+    <string name="title_activity_main">REVV Main</string>
+    <string name="package_name">com.revv.main</string>
+    <string name="custom_url_scheme">com.revv.main</string>
+</resources>

@@ -1,8 +1,8 @@
-export function render(container, context) {
-  const JSA_KEY = 'cherp_safety_jsa';
-  const INCIDENT_KEY = 'cherp_safety_incidents';
-  const CHECKLIST_KEY = 'cherp_safety_checklist';
-  const CERT_KEY = 'cherp_safety_certs';
+﻿export function render(container, context) {
+  const JSA_KEY = 'revv_safety_jsa';
+  const INCIDENT_KEY = 'revv_safety_incidents';
+  const CHECKLIST_KEY = 'revv_safety_checklist';
+  const CERT_KEY = 'revv_safety_certs';
 
   const getStore = (k, def) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
   const setStore = (k, v) => localStorage.setItem(k, JSON.stringify(v));

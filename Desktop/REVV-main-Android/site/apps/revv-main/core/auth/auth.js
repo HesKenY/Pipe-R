@@ -1,13 +1,13 @@
-/**
- * CHERP AuthManager
+﻿/**
+ * REVV AuthManager
  * PIN-based authentication with SHA-256 hashing, lockout, session timeout, and biometrics.
  */
 class AuthManager {
   constructor() {
     this.user = null;
-    this.sessionKey = 'cherp_session';
-    this.lockoutKey = 'cherp_lockout';
-    this.failKey = 'cherp_fail_count';
+    this.sessionKey = 'revv_session';
+    this.lockoutKey = 'revv_lockout';
+    this.failKey = 'revv_fail_count';
     this.maxAttempts = 5;
     this.sessionTimeoutHours = 12;
     this.pinLength = 4;
@@ -39,7 +39,7 @@ class AuthManager {
 
     const hashedPin = await this.hashPin(pin);
 
-    const { data, error } = await window.CHERP.supabase.SB()
+    const { data, error } = await window.REVV.supabase.SB()
       .from('user_profiles')
       .select('id, username, display_name, role, pin_hash, is_active')
       .eq('username', username.toLowerCase().trim())
@@ -126,7 +126,7 @@ class AuthManager {
     const credential = await navigator.credentials.create({
       publicKey: {
         challenge: challenge,
-        rp: { name: 'CHERP', id: location.hostname },
+        rp: { name: 'REVV', id: location.hostname },
         user: {
           id: userId,
           name: this.user.username,
@@ -146,8 +146,8 @@ class AuthManager {
 
     if (credential) {
       const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
-      localStorage.setItem('cherp_biometric_cred', credentialId);
-      localStorage.setItem('cherp_biometric_user', this.user.username);
+      localStorage.setItem('revv_biometric_cred', credentialId);
+      localStorage.setItem('revv_biometric_user', this.user.username);
       return true;
     }
 
@@ -156,7 +156,7 @@ class AuthManager {
 
   /** Check if biometrics are enrolled */
   hasBiometric() {
-    return !!localStorage.getItem('cherp_biometric_cred') && !!window.PublicKeyCredential;
+    return !!localStorage.getItem('revv_biometric_cred') && !!window.PublicKeyCredential;
   }
 
   /** Authenticate with biometrics */
@@ -165,7 +165,7 @@ class AuthManager {
       throw new Error('No biometric credential enrolled.');
     }
 
-    const credentialId = localStorage.getItem('cherp_biometric_cred');
+    const credentialId = localStorage.getItem('revv_biometric_cred');
     const rawId = Uint8Array.from(atob(credentialId), c => c.charCodeAt(0));
     const challenge = crypto.getRandomValues(new Uint8Array(32));
 
@@ -182,8 +182,8 @@ class AuthManager {
     });
 
     if (assertion) {
-      const username = localStorage.getItem('cherp_biometric_user');
-      const { data, error } = await window.CHERP.supabase.SB()
+      const username = localStorage.getItem('revv_biometric_user');
+      const { data, error } = await window.REVV.supabase.SB()
         .from('user_profiles')
         .select('id, username, display_name, role, is_active')
         .eq('username', username)
@@ -271,7 +271,7 @@ class AuthManager {
     this._sessionTimer = setTimeout(() => {
       this.user = null;
       localStorage.removeItem(this.sessionKey);
-      window.dispatchEvent(new CustomEvent('cherp:session-expired'));
+      window.dispatchEvent(new CustomEvent('revv:session-expired'));
     }, Math.min(remaining, 2147483647)); // Max setTimeout value
   }
 
@@ -287,7 +287,7 @@ class AuthManager {
   async _logSession(action) {
     if (!this.user) return;
     try {
-      await window.CHERP.supabase.SB()
+      await window.REVV.supabase.SB()
         .from('audit_log')
         .insert({
           user_id: this.user.id,

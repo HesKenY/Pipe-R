@@ -1,5 +1,5 @@
-export function render(container, context) {
-  const STORE_KEY = 'cherp_documents';
+﻿export function render(container, context) {
+  const STORE_KEY = 'revv_documents';
   const getStore = () => JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
   const setStore = (v) => localStorage.setItem(STORE_KEY, JSON.stringify(v));
 

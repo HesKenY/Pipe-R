@@ -1,4 +1,4 @@
-export function render(container, context) {
+﻿export function render(container, context) {
   container.innerHTML = `
     <style>
       .rpt-wrap { max-width: 800px; margin: 0 auto; padding: 16px; font-family: -apple-system, system-ui, sans-serif; color: var(--text-primary, #e0e0e0); }
@@ -101,7 +101,7 @@ export function render(container, context) {
   }
 
   function generateDaily(startDate, endDate) {
-    const logs = JSON.parse(localStorage.getItem('cherp_dailylog') || '{}');
+    const logs = JSON.parse(localStorage.getItem('revv_dailylog') || '{}');
     const dates = Object.keys(logs).filter(d => d >= startDate && d <= endDate).sort();
     const CREW_NAMES = ['Mike R.', 'Dave L.', 'Sarah K.', 'Tom B.', 'Chris M.', 'Jake P.', 'Ana G.', 'Luis H.'];
 
@@ -124,10 +124,10 @@ export function render(container, context) {
   }
 
   function generateWeekly(startDate, endDate) {
-    const logs = JSON.parse(localStorage.getItem('cherp_dailylog') || '{}');
-    const punches = JSON.parse(localStorage.getItem('cherp_timeclock_punches') || '[]');
-    const incidents = JSON.parse(localStorage.getItem('cherp_safety_incidents') || '[]');
-    const workorders = JSON.parse(localStorage.getItem('cherp_mro_workorders') || '[]');
+    const logs = JSON.parse(localStorage.getItem('revv_dailylog') || '{}');
+    const punches = JSON.parse(localStorage.getItem('revv_timeclock_punches') || '[]');
+    const incidents = JSON.parse(localStorage.getItem('revv_safety_incidents') || '[]');
+    const workorders = JSON.parse(localStorage.getItem('revv_mro_workorders') || '[]');
 
     const logDates = Object.keys(logs).filter(d => d >= startDate && d <= endDate);
     const rangePunches = punches.filter(p => p.date >= startDate && p.date <= endDate);
@@ -158,7 +158,7 @@ export function render(container, context) {
   }
 
   function generateTimecard(startDate, endDate) {
-    const punches = JSON.parse(localStorage.getItem('cherp_timeclock_punches') || '[]');
+    const punches = JSON.parse(localStorage.getItem('revv_timeclock_punches') || '[]');
     const range = punches.filter(p => p.date >= startDate && p.date <= endDate).sort((a, b) => a.date.localeCompare(b.date));
 
     if (range.length === 0) return '<div class="rpt-empty">No timecard data found for this date range.</div>';
@@ -194,10 +194,10 @@ export function render(container, context) {
   }
 
   function generateSafety(startDate, endDate) {
-    const incidents = JSON.parse(localStorage.getItem('cherp_safety_incidents') || '[]');
-    const jsa = JSON.parse(localStorage.getItem('cherp_safety_jsa') || '[]');
-    const certs = JSON.parse(localStorage.getItem('cherp_safety_certs') || '[]');
-    const checklist = JSON.parse(localStorage.getItem('cherp_safety_checklist') || '[]');
+    const incidents = JSON.parse(localStorage.getItem('revv_safety_incidents') || '[]');
+    const jsa = JSON.parse(localStorage.getItem('revv_safety_jsa') || '[]');
+    const certs = JSON.parse(localStorage.getItem('revv_safety_certs') || '[]');
+    const checklist = JSON.parse(localStorage.getItem('revv_safety_checklist') || '[]');
 
     const rangeInc = incidents.filter(i => i.date >= startDate && i.date <= endDate);
     const today = new Date().toISOString().split('T')[0];
@@ -231,8 +231,8 @@ export function render(container, context) {
   }
 
   function generateMRO(startDate, endDate) {
-    const equipment = JSON.parse(localStorage.getItem('cherp_mro_equipment') || '[]');
-    const workorders = JSON.parse(localStorage.getItem('cherp_mro_workorders') || '[]');
+    const equipment = JSON.parse(localStorage.getItem('revv_mro_equipment') || '[]');
+    const workorders = JSON.parse(localStorage.getItem('revv_mro_workorders') || '[]');
     const rangeWO = workorders.filter(w => w.date >= startDate && w.date <= endDate);
 
     const statusCounts = {};

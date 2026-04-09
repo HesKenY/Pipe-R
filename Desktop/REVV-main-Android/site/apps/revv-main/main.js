@@ -1,12 +1,12 @@
-/**
- * CHERP Modular PWA — Main Entry Point
- * Boot sequence: config → supabase → auth → roles → shell → modules
+﻿/**
+ * REVV Modular PWA â€” Main Entry Point
+ * Boot sequence: config â†’ supabase â†’ auth â†’ roles â†’ shell â†’ modules
  */
 (async function () {
   'use strict';
 
   // Global namespace
-  window.CHERP = {
+  window.REVV = {
     config: null,
     modules: null,
     supabase: null,
@@ -17,9 +17,9 @@
   };
 
   try {
-    console.log('[CHERP] Booting...');
+    console.log('[REVV] Booting...');
 
-    // ── Step 1: Load configs ──
+    // â”€â”€ Step 1: Load configs â”€â”€
     const [instanceRes, modulesRes] = await Promise.all([
       fetch('config/instance.json'),
       fetch('modules.config.json')
@@ -31,9 +31,9 @@
     const instanceConfig = await instanceRes.json();
     const modulesConfig = await modulesRes.json();
 
-    window.CHERP.config = instanceConfig;
-    window.CHERP.modules = modulesConfig;
-    console.log('[CHERP] Config loaded:', instanceConfig.company_name);
+    window.REVV.config = instanceConfig;
+    window.REVV.modules = modulesConfig;
+    console.log('[REVV] Config loaded:', instanceConfig.company_name);
 
     // Apply brand colors as CSS custom properties
     if (instanceConfig.brand_colors) {
@@ -43,77 +43,77 @@
       if (instanceConfig.brand_colors.accent) root.style.setProperty('--info', instanceConfig.brand_colors.accent);
     }
 
-    // ── Step 2: Initialize Supabase ──
-    window.CHERP.supabase = new SupabaseClient();
-    window.CHERP.supabase.init(instanceConfig.supabase_url, instanceConfig.supabase_anon_key);
-    console.log('[CHERP] Supabase ready.');
+    // â”€â”€ Step 2: Initialize Supabase â”€â”€
+    window.REVV.supabase = new SupabaseClient();
+    window.REVV.supabase.init(instanceConfig.supabase_url, instanceConfig.supabase_anon_key);
+    console.log('[REVV] Supabase ready.');
 
-    // ── Step 3: Initialize Auth ──
-    window.CHERP.auth = new AuthManager();
-    window.CHERP.auth.configure(instanceConfig.auth || {});
-    console.log('[CHERP] Auth ready.');
+    // â”€â”€ Step 3: Initialize Auth â”€â”€
+    window.REVV.auth = new AuthManager();
+    window.REVV.auth.configure(instanceConfig.auth || {});
+    console.log('[REVV] Auth ready.');
 
-    // ── Step 4: Initialize Roles ──
-    window.CHERP.roles = new RoleManager();
-    console.log('[CHERP] Roles ready.');
+    // â”€â”€ Step 4: Initialize Roles â”€â”€
+    window.REVV.roles = new RoleManager();
+    console.log('[REVV] Roles ready.');
 
-    // ── Step 5: Initialize UI Shell ──
-    window.CHERP.shell = new UIShell();
-    window.CHERP.shell.init();
-    window.CHERP.shell.setCompanyName(instanceConfig.company_name);
-    console.log('[CHERP] Shell ready.');
+    // â”€â”€ Step 5: Initialize UI Shell â”€â”€
+    window.REVV.shell = new UIShell();
+    window.REVV.shell.init();
+    window.REVV.shell.setCompanyName(instanceConfig.company_name);
+    console.log('[REVV] Shell ready.');
 
-    // ── Step 6: Check existing session ──
-    const existingUser = window.CHERP.auth.checkSession();
+    // â”€â”€ Step 6: Check existing session â”€â”€
+    const existingUser = window.REVV.auth.checkSession();
 
     if (existingUser) {
-      console.log('[CHERP] Existing session:', existingUser.username);
+      console.log('[REVV] Existing session:', existingUser.username);
       await _enterApp(existingUser, modulesConfig, instanceConfig);
     } else {
-      window.CHERP.shell.hideSplash();
-      window.CHERP.shell.showScreen('auth');
+      window.REVV.shell.hideSplash();
+      window.REVV.shell.showScreen('auth');
       _setupBiometric();
     }
 
-    // ── Login form handler ──
-    window.CHERP.shell.els.loginForm.addEventListener('submit', async (e) => {
+    // â”€â”€ Login form handler â”€â”€
+    window.REVV.shell.els.loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      window.CHERP.shell.clearAuthError();
+      window.REVV.shell.clearAuthError();
 
       const username = document.getElementById('login-username').value.trim();
       const pin = document.getElementById('login-pin').value.trim();
 
       if (!username || !pin) {
-        window.CHERP.shell.showAuthError('Enter both username and PIN.');
+        window.REVV.shell.showAuthError('Enter both username and PIN.');
         return;
       }
 
       try {
-        window.CHERP.shell.showLoading();
-        const user = await window.CHERP.auth.login(username, pin);
+        window.REVV.shell.showLoading();
+        const user = await window.REVV.auth.login(username, pin);
         await _enterApp(user, modulesConfig, instanceConfig);
-        window.CHERP.shell.hideLoading();
+        window.REVV.shell.hideLoading();
       } catch (err) {
-        window.CHERP.shell.hideLoading();
-        window.CHERP.shell.showAuthError(err.message);
+        window.REVV.shell.hideLoading();
+        window.REVV.shell.showAuthError(err.message);
       }
     });
 
-    // ── Session expired listener ──
-    window.addEventListener('cherp:session-expired', () => {
-      window.CHERP.shell.showScreen('auth');
-      window.CHERP.shell.showToast('Session expired. Please sign in again.', 'warning');
+    // â”€â”€ Session expired listener â”€â”€
+    window.addEventListener('revv:session-expired', () => {
+      window.REVV.shell.showScreen('auth');
+      window.REVV.shell.showToast('Session expired. Please sign in again.', 'warning');
     });
 
-    console.log('[CHERP] Boot complete.');
+    console.log('[REVV] Boot complete.');
 
   } catch (err) {
-    console.error('[CHERP] Boot failed:', err);
+    console.error('[REVV] Boot failed:', err);
     const splash = document.getElementById('splash-screen');
     if (splash) {
       splash.innerHTML = `
         <div class="splash-content">
-          <div class="splash-logo">CHERP</div>
+          <div class="splash-logo">REVV</div>
           <p style="color:#ef4444;margin-top:1rem;">Failed to start: ${err.message}</p>
           <button onclick="location.reload()" class="btn btn-primary" style="margin-top:1rem;">Retry</button>
         </div>
@@ -121,15 +121,15 @@
     }
   }
 
-  // ── Enter the app after auth ──
+  // â”€â”€ Enter the app after auth â”€â”€
   async function _enterApp(user, modulesConfig, instanceConfig) {
-    window.CHERP.shell.hideSplash();
-    window.CHERP.shell.showScreen('main');
-    window.CHERP.shell.setPageTitle('CHERP');
+    window.REVV.shell.hideSplash();
+    window.REVV.shell.showScreen('main');
+    window.REVV.shell.setPageTitle('REVV');
 
     // Load modules
-    window.CHERP.loader = new ModuleLoader();
-    const result = await window.CHERP.loader.loadAll(
+    window.REVV.loader = new ModuleLoader();
+    const result = await window.REVV.loader.loadAll(
       modulesConfig.modules,
       instanceConfig.enabled_modules,
       user.role
@@ -139,9 +139,9 @@
     const navIcons = _getNavIcons();
     const navModules = ['timeclock', 'calculator', 'tasklist', 'messaging', 'safety'];
     const navItems = navModules
-      .filter(id => window.CHERP.loader.isLoaded(id))
+      .filter(id => window.REVV.loader.isLoaded(id))
       .map(id => {
-        const mod = window.CHERP.loader.getModuleConfig(id);
+        const mod = window.REVV.loader.getModuleConfig(id);
         return {
           id: id,
           name: mod ? mod.name : id,
@@ -158,28 +158,28 @@
       onSelect: () => _showMore()
     });
 
-    window.CHERP.shell.renderNav(navItems);
+    window.REVV.shell.renderNav(navItems);
 
     // Show first module
     if (navItems.length > 0) {
       navItems[0].onSelect();
     }
 
-    window.CHERP.shell.showToast(`Welcome, ${user.displayName}`, 'success');
+    window.REVV.shell.showToast(`Welcome, ${user.displayName}`, 'success');
   }
 
-  // ── Show a module's content ──
+  // â”€â”€ Show a module's content â”€â”€
   function _showModule(id) {
-    const mod = window.CHERP.loader.getModuleConfig(id);
-    window.CHERP.shell.setPageTitle(mod ? mod.name : id);
+    const mod = window.REVV.loader.getModuleConfig(id);
+    window.REVV.shell.setPageTitle(mod ? mod.name : id);
 
     // Check if module has a render function
-    const renderFn = window[`cherp_${id}_render`];
+    const renderFn = window[`revv_${id}_render`];
     if (typeof renderFn === 'function') {
       renderFn(document.getElementById('content-area'));
     } else {
       // Placeholder for modules that don't have their script yet
-      window.CHERP.shell.setContent(`
+      window.REVV.shell.setContent(`
         <div class="empty-state">
           <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
@@ -191,15 +191,15 @@
     }
   }
 
-  // ── Show "More" menu with additional modules ──
+  // â”€â”€ Show "More" menu with additional modules â”€â”€
   function _showMore() {
-    window.CHERP.shell.setPageTitle('More');
+    window.REVV.shell.setPageTitle('More');
     const primaryNav = ['timeclock', 'calculator', 'tasklist', 'messaging', 'safety'];
-    const extras = window.CHERP.loader.getLoadedModules()
+    const extras = window.REVV.loader.getLoadedModules()
       .filter(id => id !== 'core' && !primaryNav.includes(id));
 
     if (extras.length === 0) {
-      window.CHERP.shell.setContent(`
+      window.REVV.shell.setContent(`
         <div class="empty-state">
           <p>No additional modules available.</p>
         </div>
@@ -208,7 +208,7 @@
     }
 
     const items = extras.map(id => {
-      const mod = window.CHERP.loader.getModuleConfig(id);
+      const mod = window.REVV.loader.getModuleConfig(id);
       return `
         <div class="list-item" data-module="${id}">
           <div class="list-icon">
@@ -222,7 +222,7 @@
       `;
     }).join('');
 
-    window.CHERP.shell.setContent(`
+    window.REVV.shell.setContent(`
       <div class="section-header">Additional Modules</div>
       ${items}
     `);
@@ -235,14 +235,14 @@
     });
   }
 
-  // ── Setup biometric button on auth screen ──
+  // â”€â”€ Setup biometric button on auth screen â”€â”€
   function _setupBiometric() {
-    if (window.CHERP.auth.hasBiometric()) {
-      window.CHERP.shell.els.biometricWrap.classList.remove('hidden');
-      window.CHERP.shell.els.biometricBtn.addEventListener('click', async () => {
+    if (window.REVV.auth.hasBiometric()) {
+      window.REVV.shell.els.biometricWrap.classList.remove('hidden');
+      window.REVV.shell.els.biometricBtn.addEventListener('click', async () => {
         try {
-          window.CHERP.shell.showLoading();
-          const user = await window.CHERP.auth.authenticateWithBiometric();
+          window.REVV.shell.showLoading();
+          const user = await window.REVV.auth.authenticateWithBiometric();
           const [instanceRes, modulesRes] = await Promise.all([
             fetch('config/instance.json'),
             fetch('modules.config.json')
@@ -250,16 +250,16 @@
           const instanceConfig = await instanceRes.json();
           const modulesConfig = await modulesRes.json();
           await _enterApp(user, modulesConfig, instanceConfig);
-          window.CHERP.shell.hideLoading();
+          window.REVV.shell.hideLoading();
         } catch (err) {
-          window.CHERP.shell.hideLoading();
-          window.CHERP.shell.showAuthError(err.message);
+          window.REVV.shell.hideLoading();
+          window.REVV.shell.showAuthError(err.message);
         }
       });
     }
   }
 
-  // ── Nav icon SVGs ──
+  // â”€â”€ Nav icon SVGs â”€â”€
   function _getNavIcons() {
     return {
       timeclock: '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',

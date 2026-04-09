@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cherp-v1.1.0';
+﻿const CACHE_NAME = 'revv-v1.1.0';
 
 const PRECACHE_URLS = [
   '/',
@@ -73,7 +73,7 @@ async function cacheFirst(request) {
       const fallback = await caches.match('/index.html');
       if (fallback) return fallback;
     }
-    return new Response('Offline — resource not cached.', {
+    return new Response('Offline â€” resource not cached.', {
       status: 503,
       statusText: 'Service Unavailable',
       headers: { 'Content-Type': 'text/plain' }

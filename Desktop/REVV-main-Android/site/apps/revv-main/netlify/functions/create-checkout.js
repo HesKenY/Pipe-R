@@ -1,4 +1,4 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+﻿const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -13,8 +13,8 @@ exports.handler = async (event) => {
     const { plan, company, username, userId } = JSON.parse(event.body);
 
     const prices = {
-      crew: { amount: 9900, name: 'CHERP Crew Plan', interval: 'month' },
-      company: { amount: 29900, name: 'CHERP Company Plan', interval: 'month' },
+      crew: { amount: 9900, name: 'REVV Crew Plan', interval: 'month' },
+      company: { amount: 29900, name: 'REVV Company Plan', interval: 'month' },
     };
 
     const selected = prices[plan];
@@ -28,7 +28,7 @@ exports.handler = async (event) => {
       line_items: [{
         price_data: {
           currency: 'usd',
-          product_data: { name: selected.name, description: 'CHERP — ' + selected.name + ' for ' + (company || 'your company') },
+          product_data: { name: selected.name, description: 'REVV â€” ' + selected.name + ' for ' + (company || 'your company') },
           recurring: { interval: selected.interval },
           unit_amount: selected.amount,
         },

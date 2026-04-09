@@ -1,5 +1,5 @@
--- ============================================
--- CHERP Modular PWA — Core Migration 001
+﻿-- ============================================
+-- REVV Modular PWA â€” Core Migration 001
 -- Tables: user_profiles, app_settings, audit_log, session_log
 -- Includes RLS policies
 -- ============================================

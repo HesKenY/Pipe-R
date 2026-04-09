@@ -1,4 +1,4 @@
-export function render(container, context) {
+﻿export function render(container, context) {
   container.innerHTML = `
     <style>
       .calc-wrap { max-width: 600px; margin: 0 auto; padding: 16px; font-family: -apple-system, system-ui, sans-serif; color: var(--text-primary, #e0e0e0); }
@@ -50,7 +50,7 @@ export function render(container, context) {
           <label class="calc-label">Length (feet)</label>
           <input class="calc-input" type="number" id="pipe-length" value="20" min="0" step="0.1">
           <button class="calc-btn" id="pipe-calc-btn">Calculate Weight</button>
-          <div class="calc-result" id="pipe-result"></div>
+          <div class="calc-result" id="revvesult"></div>
         </div>
 
         <!-- CONCRETE -->
@@ -119,7 +119,7 @@ export function render(container, context) {
     const len = parseFloat(container.querySelector('#pipe-length').value) || 0;
     const perFoot = pipeWeights[dia]?.[sch] || 0;
     const total = perFoot * len;
-    container.querySelector('#pipe-result').innerHTML = `
+    container.querySelector('#revvesult').innerHTML = `
       <div class="calc-result-row"><span>Weight per Foot</span><span class="calc-result-val">${perFoot.toFixed(2)} lbs/ft</span></div>
       <div class="calc-result-row"><span>Total Weight</span><span class="calc-result-val">${total.toFixed(2)} lbs</span></div>
       <div class="calc-result-row"><span>Total Weight</span><span class="calc-result-val">${(total / 2000).toFixed(3)} tons</span></div>

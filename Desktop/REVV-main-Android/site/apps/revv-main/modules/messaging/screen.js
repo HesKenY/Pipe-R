@@ -1,5 +1,5 @@
-export function render(container, context) {
-  const STORE_KEY = 'cherp_messaging';
+﻿export function render(container, context) {
+  const STORE_KEY = 'revv_messaging';
   const currentUser = context?.user?.name || 'You';
 
   function getData() {

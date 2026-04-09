@@ -1,6 +1,6 @@
-export function render(container, context) {
-  const EQUIP_KEY = 'cherp_mro_equipment';
-  const WO_KEY = 'cherp_mro_workorders';
+﻿export function render(container, context) {
+  const EQUIP_KEY = 'revv_mro_equipment';
+  const WO_KEY = 'revv_mro_workorders';
   const getStore = (k, def) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
   const setStore = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 

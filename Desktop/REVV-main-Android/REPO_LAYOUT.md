@@ -17,6 +17,8 @@ This repo is structured as a master workspace with one public deploy target and 
 ## Android
 
 - `android/` - Android Studio project for REVV Main
+- `scripts/copy-android-project.ps1` - copies the Android source into `site/apps/revv-main/android/` when you need the backup view
+- `ANDROID_COPY_SOURCE.md` - plain-language note for where the Android source lives and how to copy it out
 
 ## Netlify
 

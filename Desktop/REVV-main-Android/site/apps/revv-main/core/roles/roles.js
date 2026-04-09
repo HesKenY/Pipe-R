@@ -1,6 +1,6 @@
-/**
- * CHERP RoleManager
- * 6-tier role hierarchy: apprentice → journeyman → foreman → superintendent → admin → superuser
+﻿/**
+ * REVV RoleManager
+ * 6-tier role hierarchy: apprentice â†’ journeyman â†’ foreman â†’ superintendent â†’ admin â†’ superuser
  */
 class RoleManager {
   constructor() {
@@ -80,7 +80,7 @@ class RoleManager {
   hasPermission(userRole, permission) {
     const requiredRole = this.permissions[permission];
     if (!requiredRole) {
-      // Unknown permission — deny by default
+      // Unknown permission â€” deny by default
       console.warn(`[Roles] Unknown permission: ${permission}`);
       return false;
     }

@@ -1,5 +1,5 @@
-/**
- * CHERP ModuleLoader
+﻿/**
+ * REVV ModuleLoader
  * Loads module configs, performs topological dependency sort, and dynamically loads module scripts.
  */
 class ModuleLoader {
@@ -23,7 +23,7 @@ class ModuleLoader {
     });
 
     // Filter to enabled modules the user can access
-    const roles = window.CHERP.roles;
+    const roles = window.REVV.roles;
     const candidates = moduleConfigs.filter(mod =>
       enabledIds.includes(mod.id) &&
       mod.enabled !== false &&
@@ -33,7 +33,7 @@ class ModuleLoader {
     // Topological sort by dependencies
     this.enabledModules = this._topologicalSort(candidates);
 
-    console.log('[ModuleLoader] Load order:', this.enabledModules.map(m => m.id).join(' → '));
+    console.log('[ModuleLoader] Load order:', this.enabledModules.map(m => m.id).join(' â†’ '));
 
     // Load each module in order
     for (const mod of this.enabledModules) {
@@ -63,7 +63,7 @@ class ModuleLoader {
       }
     }
 
-    // Skip core — it's loaded by the HTML directly
+    // Skip core â€” it's loaded by the HTML directly
     if (mod.id === 'core') {
       this.loaded.add('core');
       return true;
@@ -75,7 +75,7 @@ class ModuleLoader {
       await this._loadScript(scriptPath);
 
       // Call the module's init function if it exists
-      const initFn = window[`cherp_${mod.id}_init`];
+      const initFn = window[`revv_${mod.id}_init`];
       if (typeof initFn === 'function') {
         await initFn();
         console.log(`[ModuleLoader] ${mod.id}: initialized.`);
@@ -116,7 +116,7 @@ class ModuleLoader {
    */
   _topologicalSort(modules) {
     const idSet = new Set(modules.map(m => m.id));
-    const graph = new Map();   // id → set of dependency ids (within enabled set)
+    const graph = new Map();   // id â†’ set of dependency ids (within enabled set)
     const inDegree = new Map();
 
     // Build adjacency
@@ -156,7 +156,7 @@ class ModuleLoader {
     if (sorted.length !== modules.length) {
       const missing = modules.filter(m => !sorted.includes(m.id)).map(m => m.id);
       console.error('[ModuleLoader] Circular dependency detected among:', missing.join(', '));
-      // Add remaining modules anyway — best effort
+      // Add remaining modules anyway â€” best effort
       missing.forEach(id => sorted.push(id));
     }
 

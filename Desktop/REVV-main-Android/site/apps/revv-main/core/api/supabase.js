@@ -1,5 +1,5 @@
-/**
- * CHERP SupabaseClient
+﻿/**
+ * REVV SupabaseClient
  * Wraps @supabase/supabase-js with error handling and admin access.
  */
 class SupabaseClient {
@@ -29,7 +29,7 @@ class SupabaseClient {
       },
       global: {
         headers: {
-          'x-cherp-client': 'modular-pwa'
+          'x-revv-client': 'modular-pwa'
         }
       }
     });
@@ -50,12 +50,12 @@ class SupabaseClient {
 
   /**
    * Get an admin-level Supabase client (service role key).
-   * Only available if a service role key is provided — never expose in production client.
+   * Only available if a service role key is provided â€” never expose in production client.
    * Falls back to the standard client if no admin key set.
    */
   SB_Admin() {
     if (this._adminClient) return this._adminClient;
-    console.warn('[Supabase] No admin client configured — using standard client. Set service_role_key for admin operations.');
+    console.warn('[Supabase] No admin client configured â€” using standard client. Set service_role_key for admin operations.');
     return this.SB();
   }
 
@@ -164,7 +164,7 @@ class SupabaseClient {
    */
   subscribe(table, filter, callback) {
     const channel = this.SB()
-      .channel(`cherp-${table}-${Date.now()}`)
+      .channel(`revv-${table}-${Date.now()}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

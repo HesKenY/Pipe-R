@@ -1,5 +1,5 @@
-/**
- * CHERP UIShell
+﻿/**
+ * REVV UIShell
  * Top bar, bottom nav, toasts, modals, loading overlay.
  */
 class UIShell {
@@ -227,10 +227,10 @@ class UIShell {
 
   /** Show user menu dropdown */
   _showUserMenu() {
-    const user = window.CHERP.auth.getUser();
+    const user = window.REVV.auth.getUser();
     if (!user) return;
 
-    const role = window.CHERP.roles.getRoleLabel(user.role);
+    const role = window.REVV.roles.getRoleLabel(user.role);
 
     this.showModal({
       title: user.displayName,
@@ -245,7 +245,7 @@ class UIShell {
 
     document.getElementById('menu-biometric').addEventListener('click', async () => {
       try {
-        await window.CHERP.auth.enrollBiometric();
+        await window.REVV.auth.enrollBiometric();
         this.closeModal();
         this.showToast('Biometric enrolled.', 'success');
       } catch (e) {
@@ -255,7 +255,7 @@ class UIShell {
 
     document.getElementById('menu-logout').addEventListener('click', async () => {
       this.closeModal();
-      await window.CHERP.auth.logout();
+      await window.REVV.auth.logout();
       this.showScreen('auth');
       this.showToast('Signed out.', 'info');
     });

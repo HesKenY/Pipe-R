@@ -1,6 +1,6 @@
-export function render(container, context) {
-  const ITEMS_KEY = 'cherp_inventory_items';
-  const LOG_KEY = 'cherp_inventory_log';
+﻿export function render(container, context) {
+  const ITEMS_KEY = 'revv_inventory_items';
+  const LOG_KEY = 'revv_inventory_log';
   const getStore = (k, def) => JSON.parse(localStorage.getItem(k) || JSON.stringify(def));
   const setStore = (k, v) => localStorage.setItem(k, JSON.stringify(v));
 

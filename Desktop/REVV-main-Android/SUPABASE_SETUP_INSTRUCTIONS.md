@@ -49,6 +49,10 @@ supabase db push
 
 Only run that after the schema files are ready to be applied.
 
+## 2b) Remote Link Blocker
+
+The Supabase CLI link step also needs the database password from the project dashboard. If you have not copied that yet, the local setup can still be prepared, but `supabase link` will stop here until the password is provided.
+
 ## 3) What The Schema Creates
 
 The current REVV schema is designed to support:

@@ -1,8 +1,0 @@
-{
-  "appId": "com.revv.main",
-  "appName": "REVV Main",
-  "webDir": "www",
-  "server": {
-    "androidScheme": "https"
-  }
-}

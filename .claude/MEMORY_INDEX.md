@@ -21,7 +21,3 @@
 - Runtime logs now live in `.claude/logs/`
 - Session checkpoints should live in `.claude/SESSION_LOG.md`
 - Repo memory / navigation notes belong in `.claude/MEMORY_INDEX.md`
-
-## Current Cleanup Status
-- Pipe-R runtime logs are being moved off the repo root and into `.claude/logs/`
-- REVV now has an explicit `jmoyer` onboarding/admin seed path in its Supabase SQL

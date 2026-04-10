@@ -12,3 +12,6 @@ input/
 # Workspace/staging (temp files)
 workspace/
 staging/
+
+# Desktop folder (separate projects, not part of Pipe-R)
+Desktop/

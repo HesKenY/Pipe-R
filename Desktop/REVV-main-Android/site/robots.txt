@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /apps/
-Disallow: /tools/
-
-Sitemap: https://revv.example/sitemap.xml

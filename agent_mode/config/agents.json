@@ -33,9 +33,9 @@
     "personality": "fast-scanner",
     "modeEligibility": "both",
     "status": "idle",
-    "tasksCompleted": 0,
+    "tasksCompleted": 3,
     "tasksFailed": 0,
-    "lastUsed": null,
+    "lastUsed": "2026-04-10T03:47:25.669Z",
     "registeredAt": "2026-04-09T00:00:00.000Z"
   },
   {
@@ -46,9 +46,9 @@
     "personality": "summarizer",
     "modeEligibility": "both",
     "status": "idle",
-    "tasksCompleted": 0,
+    "tasksCompleted": 1,
     "tasksFailed": 0,
-    "lastUsed": null,
+    "lastUsed": "2026-04-10T03:47:29.076Z",
     "registeredAt": "2026-04-09T00:00:00.000Z"
   },
   {
@@ -73,8 +73,8 @@
     "modeEligibility": "both",
     "status": "idle",
     "tasksCompleted": 0,
-    "tasksFailed": 0,
-    "lastUsed": null,
+    "tasksFailed": 1,
+    "lastUsed": "2026-04-10T03:47:59.087Z",
     "registeredAt": "2026-04-09T00:00:00.000Z"
   }
 ]

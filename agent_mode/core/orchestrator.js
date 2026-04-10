@@ -110,8 +110,10 @@ export class Orchestrator {
 
   /** Run all offline-safe queued tasks */
   async runOfflineBatch() {
+    const liveAgents = this.registry.list(); // includes availability check
     const queued = this.queue.listByStatus('queued').filter(t => {
-      const agent = t.assignedAgent ? this.registry.getById(t.assignedAgent) : null;
+      if (!t.assignedAgent) return false;
+      const agent = liveAgents.find(a => a.id === t.assignedAgent);
       return agent && agent.available;
     });
 

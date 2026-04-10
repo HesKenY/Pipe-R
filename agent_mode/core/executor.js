@@ -20,7 +20,7 @@ export class Executor {
     const agent = this.registry.getById(task.assignedAgent);
     if (!agent) throw new Error('No agent assigned to task ' + task.id);
 
-    const prompt = this._buildPrompt(task, agent);
+    const prompt = await this._buildPrompt(task, agent);
     const startTime = Date.now();
 
     try {
@@ -47,18 +47,36 @@ export class Executor {
   }
 
   /** Build a structured prompt based on task type and agent personality */
-  _buildPrompt(task, agent) {
+  async _buildPrompt(task, agent) {
     const personality = agent.personality ? this._getPersonalityPrefix(agent.personality) : '';
     const scope = task.scope.length ? `\nFocus on these files: ${task.scope.join(', ')}` : '';
 
+    // Load file contents if scope references real files
+    let fileContext = '';
+    if (task.scope.length > 0) {
+      const { readFileSync, existsSync } = await import('fs');
+      const { join } = await import('path');
+      for (const s of task.scope) {
+        const fp = join(process.cwd(), s);
+        if (existsSync(fp)) {
+          try {
+            const content = readFileSync(fp, 'utf8');
+            // Truncate large files to keep prompt manageable
+            const trimmed = content.length > 4000 ? content.substring(0, 4000) + '\n... (truncated)' : content;
+            fileContext += `\n\n--- FILE: ${s} ---\n${trimmed}\n--- END ---`;
+          } catch {}
+        }
+      }
+    }
+
     const typePrompts = {
-      scan: `Scan and analyze the following codebase area. Report: file purposes, key functions, dependencies, and potential issues.${scope}\n\nObjective: ${task.objective}`,
-      index: `Index and catalog the following code. Create a structured summary of exports, imports, and call relationships.${scope}\n\nObjective: ${task.objective}`,
-      draft_patch: `Write a code patch for the following task. Return ONLY the code changes needed, no explanation.${scope}\n\nTask: ${task.objective}`,
-      draft_test: `Write test cases for the following. Return ONLY test code.${scope}\n\nWhat to test: ${task.objective}`,
-      summarize: `Summarize the following concisely. Focus on what changed, what matters, and what needs attention.\n\nSubject: ${task.objective}`,
-      memory_extract: `Extract key facts, decisions, and patterns from the following that would be useful to remember for future work.\n\nSource: ${task.objective}`,
-      general: `${task.objective}${scope}`,
+      scan: `You are a code analyst. Analyze this code and report: file purposes, key functions, dependencies, and potential issues.\n\nObjective: ${task.objective}${fileContext}`,
+      index: `You are a code indexer. Create a structured summary listing all functions, exports, and their purposes.\n\nObjective: ${task.objective}${fileContext}`,
+      draft_patch: `You are a developer. Write a code patch for the following task. Return ONLY the code changes needed, no explanation.\n\nTask: ${task.objective}${fileContext}`,
+      draft_test: `You are a test engineer. Write test cases for the following. Return ONLY test code.\n\nWhat to test: ${task.objective}${fileContext}`,
+      summarize: `You are a technical writer. Summarize the following concisely. Focus on what changed, what matters, and what needs attention.\n\nSubject: ${task.objective}${fileContext}`,
+      memory_extract: `You are a knowledge curator. Extract key facts, decisions, and patterns that would be useful to remember for future work.\n\nSource: ${task.objective}${fileContext}`,
+      general: `${task.objective}${fileContext}`,
     };
 
     const base = typePrompts[task.type] || typePrompts.general;

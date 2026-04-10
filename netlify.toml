@@ -1,7 +1,6 @@
 [build]
-  base = "Desktop/FORGE-main"
-  publish = "Desktop/FORGE-main/public"
-  command = "echo 'Static site'"
+  publish = "."
+  command = "echo 'Static site — Pipe-R command center'"
 
 [[redirects]]
   from = "/*"

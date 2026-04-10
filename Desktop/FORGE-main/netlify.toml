@@ -1,8 +1,0 @@
-[build]
-  publish = "Desktop/FORGE-main/public"
-  command = "echo 'Static site - no build needed'"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200

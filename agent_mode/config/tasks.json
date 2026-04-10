@@ -1,0 +1,93 @@
+[
+  {
+    "id": "task-mnscqocv-phkq",
+    "type": "scan",
+    "objective": "Scan hub.js and document all menu functions, their purpose, and navigation flow",
+    "scope": [
+      "hub.js"
+    ],
+    "priority": 2,
+    "status": "queued",
+    "assignedAgent": "cherp-piper:latest",
+    "requiresClaudeReview": true,
+    "output": null,
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-10T03:34:16.783Z",
+    "startedAt": null,
+    "completedAt": null,
+    "reviewedAt": null
+  },
+  {
+    "id": "task-mnscqoht-cmkt",
+    "type": "scan",
+    "objective": "Scan server.js and document all API endpoints, request/response formats",
+    "scope": [
+      "server.js"
+    ],
+    "priority": 2,
+    "status": "queued",
+    "assignedAgent": "cherp-piper:latest",
+    "requiresClaudeReview": true,
+    "output": null,
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-10T03:34:16.961Z",
+    "startedAt": null,
+    "completedAt": null,
+    "reviewedAt": null
+  },
+  {
+    "id": "task-mnscqomr-nvgq",
+    "type": "index",
+    "objective": "Index the CHERP demo app structure — list all screens, their JS files, and what each screen does",
+    "scope": [
+      "js/screens/"
+    ],
+    "priority": 2,
+    "status": "queued",
+    "assignedAgent": "cherp-piper:latest",
+    "requiresClaudeReview": true,
+    "output": null,
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-10T03:34:17.139Z",
+    "startedAt": null,
+    "completedAt": null,
+    "reviewedAt": null
+  },
+  {
+    "id": "task-mnscqors-7ob0",
+    "type": "summarize",
+    "objective": "Summarize the CHERP platform architecture: app vs website vs android vs nest. What each component does and how they connect.",
+    "scope": [],
+    "priority": 2,
+    "status": "queued",
+    "assignedAgent": "llama3.1:8b",
+    "requiresClaudeReview": true,
+    "output": null,
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-10T03:34:17.320Z",
+    "startedAt": null,
+    "completedAt": null,
+    "reviewedAt": null
+  },
+  {
+    "id": "task-mnscqowp-jz6f",
+    "type": "memory_extract",
+    "objective": "Extract key patterns from hub.js: color scheme constants, UI rendering pattern (winTitle/winTop/winLine/winBottom), menu flow pattern. Document for reuse.",
+    "scope": [],
+    "priority": 2,
+    "status": "queued",
+    "assignedAgent": "jefferferson:latest",
+    "requiresClaudeReview": true,
+    "output": null,
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-10T03:34:17.497Z",
+    "startedAt": null,
+    "completedAt": null,
+    "reviewedAt": null
+  }
+]

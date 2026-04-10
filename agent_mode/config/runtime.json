@@ -1,0 +1,8 @@
+{
+  "mode": "hybrid",
+  "autoExecute": true,
+  "autoExecuteInterval": 30000,
+  "requireClaudeReview": true,
+  "maxConcurrentTasks": 2,
+  "maxRetries": 3
+}

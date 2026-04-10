@@ -1,0 +1,80 @@
+[
+  {
+    "id": "qwen2.5-coder:14b",
+    "base": "qwen2.5-coder:14b",
+    "displayName": "Qwen Coder",
+    "role": "Patch Drafter",
+    "personality": "primary-coder",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-09T00:00:00.000Z"
+  },
+  {
+    "id": "forgeagent:latest",
+    "base": "forgeagent:latest",
+    "displayName": "ForgeAgent",
+    "role": "General Worker",
+    "personality": "primary-coder",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-09T00:00:00.000Z"
+  },
+  {
+    "id": "cherp-piper:latest",
+    "base": "cherp-piper:latest",
+    "displayName": "CHERP Piper",
+    "role": "Repo Scanner",
+    "personality": "fast-scanner",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-09T00:00:00.000Z"
+  },
+  {
+    "id": "llama3.1:8b",
+    "base": "llama3.1:8b",
+    "displayName": "Llama 3.1",
+    "role": "Log Summarizer",
+    "personality": "summarizer",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-09T00:00:00.000Z"
+  },
+  {
+    "id": "jefferyjefferferson:latest",
+    "base": "jefferyjefferferson:latest",
+    "displayName": "Jeffery",
+    "role": "Test Builder",
+    "personality": "conservative-coder",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-09T00:00:00.000Z"
+  },
+  {
+    "id": "jefferferson:latest",
+    "base": "jefferferson:latest",
+    "displayName": "Jefferferson",
+    "role": "Memory Curator",
+    "personality": "curator",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-09T00:00:00.000Z"
+  }
+]

@@ -1,31 +1,21 @@
 # Session Log
 
-Date: 2026-04-09
+Date: 2026-04-10
 
-## Checkpoint
-- Full repo maintenance sweep
-- Removed Desktop/FORGE-main from git tracking (separate project)
-- Created CLAUDE.md for future Claude Code sessions
-- Cleaned netlify.toml (was pointing to removed FORGE-main)
-- CHERP repo restored and repaired (separate work in /tmp/CHERP-check)
+## What Was Done
+- Google Sheets Sync: auth.js, schema.js, sync.js — full push/pull engine, zero deps
+- Hub.js [G] menu, server.js 4 endpoints + 15-min auto-sync timer
+- Google OAuth authorized (project cherp-493003, account kdeibel.pipedown@gmail.com)
+- Alpha Crew spreadsheet created and synced live (1QwE0Aur8BVd0SrAee6OnXA7QKY9-1F0NJBo0v8mwnNY)
+- CLAUDE.md updated with Sheets docs + Future section
+- Pipe-R pushed to GitHub (43fea8f)
 
-## Files Updated
-- CLAUDE.md (new)
-- .gitignore (Desktop/ rule now effective)
-- netlify.toml (simplified)
-- .claude/SESSION_LOG.md
-- Removed Desktop/FORGE-main from git tracking
+## Not Finished
+- CHERP "View in Sheets" button — need sheet_url column in Supabase via SQL Editor
+- CHERP config.js local copy still points to old Supabase — verify live deployment
 
-## CHERP Repairs (HesKenY/CHERP)
-- Reverted to last working state (36d551d)
-- Restored CHERP-main as demo app
-- Added Install App PWA button
-- Restored Supabase service key
-- Fixed work tab crew requirement
-- Added clock-in/out without photo option
-- Crew management uses SB_Admin for RLS bypass
-
-## Next Steps
-- Add crew tables (team_codes, crew_members) to Supabase for CHERP
-- Find cherp-worker version (check C:\Users\Ken\Documents\CHERP Projects\CHERP-Worker)
-- Build web UIs (pipe-r.html, remote.html) per CLAUDE_BUILD_INSTRUCTIONS.md
+## Tomorrow
+1. **Ken AI** — personality coding model, use agent_mode training pipeline
+2. Android multi-instance architecture — Hub routing table, Play Store onboarding flow
+3. CHERP web Sheets button
+4. Nest wizard: Google Cloud provisioning per instance

@@ -84,10 +84,48 @@
     "requiresClaudeReview": true,
     "output": "ERROR: spawnSync C:\\WINDOWS\\system32\\cmd.exe ETIMEDOUT",
     "reviewNotes": null,
-    "retries": 1,
+    "retries": 2,
     "createdAt": "2026-04-10T03:34:17.497Z",
-    "startedAt": "2026-04-10T03:47:29.077Z",
+    "startedAt": "2026-04-11T02:43:35.068Z",
     "completedAt": null,
+    "reviewedAt": null
+  },
+  {
+    "id": "task-mntqdbmd-1yen",
+    "type": "scan",
+    "objective": "Analyze the CHERP auth system in auth.js. Document: login flow, registration flow, PIN hashing, session management, hardcoded users fallback. List every function and what it does.",
+    "scope": [
+      "js/auth.js"
+    ],
+    "priority": 2,
+    "status": "waiting_for_claude",
+    "assignedAgent": "cherp-piper:latest",
+    "requiresClaudeReview": true,
+    "output": "I'm scanning the job site's plumbing plans... Here are my findings:\n\n• **Rough-in heights**: All fixtures meet standard rough-in heights (IPC 70\u001b[2D\u001b[K\n704.1).\n• **Pipe support spacing**: PVC DWV supports at 4ft intervals, ABS DWV at 4\u001b[1D\u001b[K\n4ft.\n• **Vent sizing**: Min vent size is 1.25\" (IPC 906), WC vent recommended at\u001b[2D\u001b[K\nat 2\".\n• **Thread engagement**: All NPT threads meet minimum engagement requiremen\u001b[10D\u001b[K\nrequirements (NPSM).\n• **Thermal expansion**: No excessive thermal expansion risks detected, but\u001b[3D\u001b[K\nbut PEX pipe may require additional support.\n• **Safety concerns**:\n\t+ Fall protection required for heights over 6ft (OSHA 1926.502).\n\t+ Trench protection needed for depths over 5ft (Subpart P).\n\nVerify with your AHJ (Authority Having Jurisdiction) for final approval.",
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-11T02:43:34.549Z",
+    "startedAt": "2026-04-11T02:44:05.091Z",
+    "completedAt": "2026-04-11T02:44:54.953Z",
+    "reviewedAt": null
+  },
+  {
+    "id": "task-mntqdbr9-73a3",
+    "type": "draft_patch",
+    "objective": "Write a function that exports all time_punches from Supabase as CSV format. The function should accept a date range and team_code filter.",
+    "scope": [
+      "js/utils.js"
+    ],
+    "priority": 2,
+    "status": "waiting_for_claude",
+    "assignedAgent": "qwen2.5-coder:14b",
+    "requiresClaudeReview": true,
+    "output": "Sure, I'll keep that in mind. Here's an example of how you might write a si\u001b[2D\u001b[K\nsimple Python function to calculate the factorial of a number with minimal \u001b[K\nabstraction:\n\n```python\ndef factorial(n):\n    if n < 0:\n        raise ValueError(\"Factorial is not defined for negative numbers\")\n    elif n == 0 or n == 1:\n        return 1\n    else:\n        result = 1\n        for i in range(2, n + 1):\n            result *= i\n        return result\n```\n\nThis function calculates the factorial of a non-negative integer `n`. It ra\u001b[2D\u001b[K\nraises an error if `n` is negative and uses an iterative approach to calcul\u001b[6D\u001b[K\ncalculate the factorial, avoiding unnecessary recursion or additional funct\u001b[5D\u001b[K\nfunctions.",
+    "reviewNotes": null,
+    "retries": 0,
+    "createdAt": "2026-04-11T02:43:34.725Z",
+    "startedAt": "2026-04-11T02:44:54.954Z",
+    "completedAt": "2026-04-11T02:45:34.020Z",
     "reviewedAt": null
   }
 ]

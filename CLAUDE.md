@@ -17,9 +17,27 @@ No `npm install` needed. Both scripts are standalone.
 
 ## Architecture
 
-- **hub.js** (~3,240 LOC) — Terminal TUI. All interaction through numbered buttons and letter keys. `mainMenu()` is the entry point. Each menu is a function (e.g., `projectsMenu()`, `taskBoard()`, `gitMenu()`). New features need a menu function wired into `mainMenu()`.
+- **hub.js** (~3,240 LOC) — Terminal TUI. All interaction through numbered buttons and letter keys. `mainMenu()` is the entry point. Each menu is a function (e.g., `projectsMenu()`, `taskBoard()`, `gitMenu()`). New features need a menu function wired into `mainMenu()`. Press `M` for Agent Mode.
 - **server.js** (~522 LOC) — HTTP server on port 7777. REST endpoints under `/api/*`. Serves web UIs (`pipe-r.html`, `remote.html` — not yet built). New endpoints go before the 404 handler. Has a 30-second auto-executor loop for queued agent tasks.
-- **agent_mode/** — Task orchestration framework. `Orchestrator` class handles task creation, execution, review, and agent assignment. Supports hybrid/offline modes. Agent profiles go in `agent_mode/agents/profiles/`.
+- **agent_mode/** — Hybrid AI framework. Claude Code dispatches tasks, Ollama agents execute, results come back for review.
+  - `core/orchestrator.js` — Task dispatch, auto-assign, batch execution, review flow
+  - `core/queue.js` — Persistent task storage (JSON) with status tracking
+  - `core/registry.js` — Agent profiles, roles, personalities, completion metrics
+  - `core/executor.js` — Builds prompts with file context, runs against Ollama, captures training data
+  - `config/` — `runtime.json` (mode settings), `agents.json` (registered models), `tasks.json` (task queue)
+  - `training/training-log.jsonl` — Every prompt/response pair saved for model improvement
+
+## Agent Mode
+
+Six Ollama models registered with specialized roles:
+- **Qwen Coder** (14B) — Patch Drafter, primary code brain
+- **ForgeAgent** — General Worker
+- **CHERP Piper** — Construction domain knowledge (not code — fine-tuned for field specs)
+- **Llama 3.1** (8B) — Log Summarizer
+- **Jeffery** — Test Builder (conservative)
+- **Jefferferson** — Memory Curator
+
+Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP Piper.
 
 ## Folder Pipeline
 
@@ -51,11 +69,20 @@ Projects are hardcoded in both `hub.js` (lines ~236) and `server.js` (lines ~26)
 - **No external deps.** Hub and server use only Node.js built-ins (fs, path, http, readline, child_process). Keep it that way.
 - **Web UIs don't exist yet.** `pipe-r.html` and `remote.html` are referenced by server.js but not built. Spec is in `CLAUDE_BUILD_INSTRUCTIONS.md`.
 
+## CHERP (Related — HesKenY/CHERP, private repo)
+
+Construction crew management platform deployed to cherp.live via Netlify. Key things to know when working on CHERP from this repo:
+- **Supabase project:** `nptmzihtujgkmqougkzd` — master schema in `cherp-schema.sql`
+- **netlify.toml CSP:** `connect-src` must include the Supabase project URL or API calls silently fail
+- **Branch strategy:** `main` auto-deploys to cherp.live, `dev` branch for testing
+- **Service worker:** Can cache stale files. Bump cache version or use one-time buster when deploying breaking changes
+- **Hardcoded fallback users** in `js/config.js` allow PIN login when Supabase is unreachable
+
 ## Related Repos
 
 | Project | Repo | Domain | Notes |
 |---------|------|--------|-------|
-| CHERP | HesKenY/CHERP | cherp.live | Construction crew management platform |
+| CHERP | HesKenY/CHERP (private) | cherp.live | Construction crew management platform |
 | Bird's Nest | HesKenY/CHERP-Nest | — | Backend superuser/instance manager |
 | Pipe-R | HesKenY/Pipe-R | — | This repo |
 | CodeForge | HesKenY/CodeForge | codesforge.netlify.app | — |

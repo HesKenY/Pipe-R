@@ -4,28 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Pipe-R v4.0 — a Node.js project orchestration command center. Button-driven terminal UI + HTTP API + agent dispatch system. No external dependencies — uses only Node.js built-in modules.
+Pipe-R v4.0 — a Node.js project orchestration command center. Button-driven terminal UI + HTTP API + agent dispatch system + Google Sheets backup layer. No external dependencies — uses only Node.js built-in modules.
 
 ## Running
 
 ```bash
 node hub.js        # Terminal UI (interactive, blocking)
-node server.js     # HTTP API on :7777 (background)
+node server.js     # HTTP API on :7777 (background, includes auto-sync)
 ```
 
 No `npm install` needed. Both scripts are standalone.
 
 ## Architecture
 
-- **hub.js** (~3,240 LOC) — Terminal TUI. All interaction through numbered buttons and letter keys. `mainMenu()` is the entry point. Each menu is a function (e.g., `projectsMenu()`, `taskBoard()`, `gitMenu()`). New features need a menu function wired into `mainMenu()`. Press `M` for Agent Mode.
-- **server.js** (~522 LOC) — HTTP server on port 7777. REST endpoints under `/api/*`. Serves web UIs (`pipe-r.html`, `remote.html` — not yet built). New endpoints go before the 404 handler. Has a 30-second auto-executor loop for queued agent tasks.
-- **agent_mode/** — Hybrid AI framework. Claude Code dispatches tasks, Ollama agents execute, results come back for review.
+- **hub.js** (~3,440 LOC) — Terminal TUI. All interaction through numbered buttons and letter keys. `mainMenu()` is the entry point. Each menu is a function (e.g., `projectsMenu()`, `taskBoard()`, `sheetsMenu()`). New features need a menu function wired into `mainMenu()`. Press `M` for Agent Mode, `G` for Google Sheets.
+- **server.js** (~580 LOC) — HTTP server on port 7777. REST endpoints under `/api/*`. Serves web UIs (`pipe-r.html`, `remote.html` — not yet built). New endpoints go before the 404 handler. Has a 30-second auto-executor loop for queued agent tasks and a 15-minute auto-sync for Google Sheets.
+- **agent_mode/** — Hybrid AI framework + Google Sheets sync layer.
   - `core/orchestrator.js` — Task dispatch, auto-assign, batch execution, review flow
   - `core/queue.js` — Persistent task storage (JSON) with status tracking
   - `core/registry.js` — Agent profiles, roles, personalities, completion metrics
   - `core/executor.js` — Builds prompts with file context, runs against Ollama, captures training data
   - `config/` — `runtime.json` (mode settings), `agents.json` (registered models), `tasks.json` (task queue)
   - `training/training-log.jsonl` — Every prompt/response pair saved for model improvement
+  - `sheets/auth.js` — Google OAuth2 token management, one-time browser auth on port 9999
+  - `sheets/schema.js` — 8 tab definitions (Roster, Timecards, Tasks, MROs, Incidents, Certifications, JSAs, Crew Info) with headers, formatting, validation, protection rules
+  - `sheets/sync.js` — Push (Supabase → Sheets) and Pull (Sheets → Supabase) sync engine. Config tracks per-crew spreadsheet IDs and sync timestamps
 
 ## Agent Mode
 
@@ -38,6 +41,20 @@ Six Ollama models registered with specialized roles:
 - **Jefferferson** — Memory Curator
 
 Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP Piper.
+
+## Google Sheets Sync
+
+Dual-purpose system: backup + customer-facing feature for clients who prefer spreadsheets. One Google Spreadsheet per crew with 8 tabs mirroring Supabase tables.
+
+- **Push sync** (Supabase → Sheets): Replaces all data rows, preserves headers. Runs on manual trigger or auto-sync timer.
+- **Pull sync** (Sheets → Supabase): Editable tabs only (Roster, Timecards, Tasks, MROs). Diffs against DB, won't create new rows — safety measure.
+- **Auto-sync**: server.js pushes every 15 minutes when auth token exists and crews are configured.
+- **Hub.js**: Press `G` → Sync Now, Pull Changes, Create Crew Sheet, Status, Open in Browser, Authorize.
+- **Server.js endpoints**: `POST /api/sheets/sync`, `POST /api/sheets/pull`, `GET /api/sheets/status`, `POST /api/sheets/create`.
+- **Auth**: OAuth2 via Google Cloud project `cherp-493003`. First run opens browser on :9999 for consent. Tokens auto-refresh.
+- **Security**: `token.json`, `config.json`, `credentials.json` are all gitignored. Supabase service key passed at runtime via env var.
+
+When adding new CHERP tables to sync: add tab definition in `schema.js` TABS array, then add query logic in `sync.js` pushSync/pullSync.
 
 ## Folder Pipeline
 
@@ -86,3 +103,10 @@ Construction crew management platform deployed to cherp.live via Netlify. Key th
 | Bird's Nest | HesKenY/CHERP-Nest | — | Backend superuser/instance manager |
 | Pipe-R | HesKenY/Pipe-R | — | This repo |
 | CodeForge | HesKenY/CodeForge | codesforge.netlify.app | — |
+
+## Future / In-Progress
+
+- **Google Cloud for Nest wizard**: When the Bird's Nest Instance Builder publishes custom CHERP instances, it needs Google Cloud integration steps — creating per-instance Google Sheets, setting up Drive storage, and provisioning OAuth credentials as part of the wizard flow. This is not built yet.
+- **Ken AI model**: Personality AI coding model trained on Ken's style, preferences, and decision patterns. Uses existing agent_mode training pipeline. Priority after Sheets sync is stable.
+- **CHERP web integration**: Add `sheet_url` column to `team_codes` in Supabase. CHERP web app shows "View in Sheets" button so customers can access their crew's spreadsheet directly from cherp.live.
+- **Web UIs**: `pipe-r.html` and `remote.html` referenced by server.js but not yet built.

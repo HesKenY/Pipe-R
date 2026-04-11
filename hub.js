@@ -385,6 +385,7 @@ async function mainMenu() {
   winSep();
   winBtnRow([
     ['M', 'Agent Mode',         'Hybrid AI framework'],
+    ['G', 'Sheets Sync',        'Google Sheets backup'],
     ['N', 'Notes',              "Commander's log"],
     ['D', 'Diagnostics',        'Full system scan'],
     ['L', 'Logs',               'Flight recorder'],
@@ -414,6 +415,7 @@ async function mainMenu() {
     case 'I': return businessIntel();
     case 'A': return activityFeed();
     case 'M': return agentMode();
+    case 'G': return sheetsMenu();
     case 'N': return notesMenu();
     case 'D': return systemDiag();
     case 'L': return viewLogs();
@@ -2988,6 +2990,215 @@ async function notesMenu() {
     case '0': return mainMenu();
   }
   return notesMenu();
+}
+
+// ═══════════════════════════════════════════════════════
+// [G] GOOGLE SHEETS SYNC — Backup & Reference System
+// ═══════════════════════════════════════════════════════
+async function sheetsMenu() {
+  let sync, auth;
+  try {
+    sync = require('./agent_mode/sheets/sync');
+    auth = require('./agent_mode/sheets/auth');
+  } catch (e) {
+    winTitle(' Google Sheets Sync ');
+    winTop();
+    winEmpty();
+    winLine(`${c.red}Sheets module not loaded: ${e.message.substring(0, 50)}${c.reset}`, 3);
+    winEmpty();
+    winSep();
+    winBtnRow([['0', 'Back', '']]);
+    winEmpty();
+    winBottom();
+    await winPrompt();
+    return mainMenu();
+  }
+
+  const hasAuth = auth.hasToken();
+  const crews = sync.getConfiguredCrews();
+  const status = sync.getSyncStatus();
+
+  winTitle(' Google Sheets Sync — CHERP Backup ');
+  winMenuBar(['Sync', 'Crews', 'Config']);
+  winTop();
+  winEmpty();
+
+  // Auth status
+  const authIcon = hasAuth ? `${c.green}●${c.reset}` : `${c.red}○${c.reset}`;
+  const authLabel = hasAuth ? 'Connected' : 'Not authorized';
+  winLine(`${authIcon} ${c.white}Google Auth:${c.reset} ${hasAuth ? c.green : c.red}${authLabel}${c.reset}    ${c.dim2}Crews linked: ${crews.length}${c.reset}`, 1);
+  winEmpty();
+
+  // Crew sheets status
+  if (crews.length > 0) {
+    winSep();
+    winSection('Linked Crews');
+    winEmpty();
+    crews.forEach((code, i) => {
+      const s = status[code];
+      const lastPush = s.lastPush ? new Date(s.lastPush).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never';
+      const lastPull = s.lastPull ? new Date(s.lastPull).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never';
+      winLine(`  ${c.cyan}${String(i + 1).padStart(2)}.${c.reset} ${c.white}${pad(s.crewName, 20)}${c.reset} ${c.dim2}Push: ${lastPush}${c.reset}  ${c.dim2}Pull: ${lastPull}${c.reset}`, 1);
+    });
+    winEmpty();
+  } else {
+    winLine(`${c.dim2}No crew sheets configured yet. Create one below.${c.reset}`, 3);
+    winEmpty();
+  }
+
+  winSep();
+  winSection('Actions');
+  winEmpty();
+  winBtnRow([
+    ['1', 'Sync Now',           'Push CHERP → Sheets (all crews)'],
+    ['2', 'Pull Changes',       'Import Sheet edits → CHERP'],
+    ['3', 'Create Crew Sheet',  'New spreadsheet for a crew'],
+    ['4', 'Sync Status',        'Detailed last-sync report'],
+    ['5', 'Open in Browser',    'View crew spreadsheet'],
+    ['6', 'Authorize Google',   hasAuth ? 'Re-auth' : 'Required first'],
+    ['0', 'Back',                ''],
+  ]);
+  winEmpty();
+  winBottom();
+  winStatusBar(` Sheets Sync`, `${crews.length} crew(s) | ${hasAuth ? 'Authorized' : 'Needs Auth'} `);
+
+  const choice = await winPrompt();
+  switch (choice.trim()) {
+    case '1': {
+      if (!hasAuth) {
+        console.log(`  ${c.red}Not authorized. Run option [6] first.${c.reset}`);
+        await ask(`  ${c.dim2}[Enter]${c.reset} `);
+        return sheetsMenu();
+      }
+      if (crews.length === 0) {
+        console.log(`  ${c.amber}No crews configured. Create a crew sheet first.${c.reset}`);
+        await ask(`  ${c.dim2}[Enter]${c.reset} `);
+        return sheetsMenu();
+      }
+      console.log(`\n  ${c.cyan}Pushing data to Sheets...${c.reset}`);
+      try {
+        const results = await sync.pushSyncAll();
+        for (const [code, res] of Object.entries(results)) {
+          if (res.error) {
+            console.log(`  ${c.red}✗ ${code}: ${res.error}${c.reset}`);
+          } else {
+            const tabSummary = Object.entries(res.tabs).map(([name, t]) => `${name}:${t.rows}`).join(', ');
+            console.log(`  ${c.green}✓ ${code}${c.reset} — ${c.dim2}${tabSummary}${c.reset}`);
+          }
+        }
+        hubLog('info', `Sheets push sync: ${crews.length} crew(s)`);
+      } catch (e) {
+        console.log(`  ${c.red}Sync failed: ${e.message}${c.reset}`);
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
+      return sheetsMenu();
+    }
+    case '2': {
+      if (!hasAuth || crews.length === 0) {
+        console.log(`  ${c.red}${!hasAuth ? 'Not authorized.' : 'No crews configured.'}${c.reset}`);
+        await ask(`  ${c.dim2}[Enter]${c.reset} `);
+        return sheetsMenu();
+      }
+      console.log(`\n  ${c.cyan}Pulling changes from Sheets...${c.reset}`);
+      try {
+        for (const code of crews) {
+          const result = await sync.pullSync(code);
+          const changed = result.changes;
+          const icon = changed > 0 ? `${c.amber}↓` : `${c.green}✓`;
+          console.log(`  ${icon}${c.reset} ${code}: ${changed} change(s) imported`);
+          if (result.errors.length) {
+            result.errors.forEach(e => console.log(`    ${c.red}${e}${c.reset}`));
+          }
+        }
+        hubLog('info', `Sheets pull sync: ${crews.length} crew(s)`);
+      } catch (e) {
+        console.log(`  ${c.red}Pull failed: ${e.message}${c.reset}`);
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
+      return sheetsMenu();
+    }
+    case '3': {
+      if (!hasAuth) {
+        console.log(`  ${c.red}Not authorized. Run option [6] first.${c.reset}`);
+        await ask(`  ${c.dim2}[Enter]${c.reset} `);
+        return sheetsMenu();
+      }
+      const teamCode = await ask(`  ${c.text}Team code: ${c.reset}`);
+      const crewName = await ask(`  ${c.text}Crew name: ${c.reset}`);
+      if (teamCode.trim()) {
+        console.log(`\n  ${c.cyan}Creating spreadsheet...${c.reset}`);
+        try {
+          const id = await sync.createCrewSheet(teamCode.trim(), crewName.trim());
+          const url = `https://docs.google.com/spreadsheets/d/${id}`;
+          console.log(`  ${c.green}✓ Created!${c.reset}`);
+          console.log(`  ${c.blue}${url}${c.reset}`);
+          hubLog('info', `Created crew sheet: ${teamCode.trim()}`);
+          // Auto-push data
+          console.log(`  ${c.cyan}Pushing initial data...${c.reset}`);
+          const pushResult = await sync.pushSync(teamCode.trim());
+          const tabSummary = Object.entries(pushResult.tabs).map(([name, t]) => `${name}:${t.rows}`).join(', ');
+          console.log(`  ${c.green}✓ ${tabSummary}${c.reset}`);
+        } catch (e) {
+          console.log(`  ${c.red}Failed: ${e.message}${c.reset}`);
+        }
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
+      return sheetsMenu();
+    }
+    case '4': {
+      console.log();
+      if (crews.length === 0) {
+        console.log(`  ${c.dim2}No crews configured.${c.reset}`);
+      } else {
+        for (const [code, s] of Object.entries(status)) {
+          console.log(`  ${c.white}${s.crewName}${c.reset} ${c.dim2}(${code})${c.reset}`);
+          console.log(`    ${c.dim2}Sheet:${c.reset} ${c.blue}${s.url}${c.reset}`);
+          console.log(`    ${c.dim2}Last push:${c.reset} ${s.lastPush || 'never'}`);
+          console.log(`    ${c.dim2}Last pull:${c.reset} ${s.lastPull || 'never'}`);
+          console.log();
+        }
+      }
+      await ask(`  ${c.dim2}[Enter]${c.reset} `);
+      return sheetsMenu();
+    }
+    case '5': {
+      if (crews.length === 0) {
+        console.log(`  ${c.dim2}No crew sheets to open.${c.reset}`);
+      } else if (crews.length === 1) {
+        const url = sync.getSheetUrl(crews[0]);
+        try { require('child_process').execSync(`start "" "${url}"`, { shell: 'cmd.exe', stdio: 'ignore' }); }
+        catch { console.log(`  ${c.blue}${url}${c.reset}`); }
+      } else {
+        console.log();
+        crews.forEach((code, i) => {
+          console.log(`  ${c.cyan}${i + 1}.${c.reset} ${status[code].crewName} ${c.dim2}(${code})${c.reset}`);
+        });
+        const pick = await ask(`\n  ${c.text}Open #: ${c.reset}`);
+        const idx = parseInt(pick) - 1;
+        if (idx >= 0 && idx < crews.length) {
+          const url = sync.getSheetUrl(crews[idx]);
+          try { require('child_process').execSync(`start "" "${url}"`, { shell: 'cmd.exe', stdio: 'ignore' }); }
+          catch { console.log(`  ${c.blue}${url}${c.reset}`); }
+        }
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
+      return sheetsMenu();
+    }
+    case '6': {
+      console.log(`\n  ${c.cyan}Opening Google authorization in browser...${c.reset}`);
+      try {
+        await auth.authorizeInteractive();
+        console.log(`  ${c.green}✓ Authorized! Token saved.${c.reset}`);
+        hubLog('info', 'Google Sheets authorized');
+      } catch (e) {
+        console.log(`  ${c.red}Auth failed: ${e.message}${c.reset}`);
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
+      return sheetsMenu();
+    }
+    case '0': return mainMenu();
+    default: return sheetsMenu();
+  }
 }
 
 // ═══════════════════════════════════════════════════════

@@ -15,3 +15,8 @@ staging/
 
 # Desktop folder (separate projects, not part of Pipe-R)
 Desktop/
+
+# Google Sheets sync secrets
+agent_mode/sheets/token.json
+agent_mode/sheets/config.json
+agent_mode/sheets/credentials.json

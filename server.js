@@ -467,6 +467,59 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
+  // ── Google Sheets Sync ──
+
+  // POST /api/sheets/sync — Push CHERP data to Sheets
+  if (url === '/api/sheets/sync' && req.method === 'POST') {
+    try {
+      const sync = require('./agent_mode/sheets/sync');
+      const body = await readBody(req);
+      const { teamCode } = body ? JSON.parse(body) : {};
+      let result;
+      if (teamCode) {
+        result = await sync.pushSync(teamCode);
+      } else {
+        result = await sync.pushSyncAll();
+      }
+      log(`Sheets push sync: ${teamCode || 'all'}`);
+      return jsonResp(res, result);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // POST /api/sheets/pull — Import edits from Sheets to CHERP
+  if (url === '/api/sheets/pull' && req.method === 'POST') {
+    try {
+      const sync = require('./agent_mode/sheets/sync');
+      const body = await readBody(req);
+      const { teamCode } = body ? JSON.parse(body) : {};
+      if (!teamCode) return jsonResp(res, { error: 'teamCode required' }, 400);
+      const result = await sync.pullSync(teamCode);
+      log(`Sheets pull sync: ${teamCode} — ${result.changes} changes`);
+      return jsonResp(res, result);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // GET /api/sheets/status — Sync status for all crews
+  if (url === '/api/sheets/status' && req.method === 'GET') {
+    try {
+      const sync = require('./agent_mode/sheets/sync');
+      return jsonResp(res, sync.getSyncStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // POST /api/sheets/create — Create new crew spreadsheet
+  if (url === '/api/sheets/create' && req.method === 'POST') {
+    try {
+      const sync = require('./agent_mode/sheets/sync');
+      const body = await readBody(req);
+      const { teamCode, crewName } = JSON.parse(body);
+      if (!teamCode) return jsonResp(res, { error: 'teamCode required' }, 400);
+      const spreadsheetId = await sync.createCrewSheet(teamCode, crewName);
+      log(`Created crew sheet: ${teamCode} → ${spreadsheetId}`);
+      return jsonResp(res, { spreadsheetId, url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}` });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
   // 404
   jsonResp(res, { error: 'Not found' }, 404);
 });
@@ -498,6 +551,34 @@ async function autoExecuteQueued() {
 
 // Check for queued tasks every 30 seconds
 setInterval(autoExecuteQueued, 30000);
+
+// ── SHEETS AUTO-SYNC: Push CHERP data to Google Sheets ──
+let sheetsSyncRunning = false;
+async function autoSheetsSync() {
+  if (sheetsSyncRunning) return;
+  sheetsSyncRunning = true;
+  try {
+    const sync = require('./agent_mode/sheets/sync');
+    const auth = require('./agent_mode/sheets/auth');
+    if (!auth.hasToken()) { sheetsSyncRunning = false; return; }
+    const crews = sync.getConfiguredCrews();
+    if (crews.length === 0) { sheetsSyncRunning = false; return; }
+    const results = await sync.pushSyncAll();
+    const crewCount = Object.keys(results).length;
+    const errorCount = Object.values(results).filter(r => r.error).length;
+    if (errorCount > 0) {
+      log(`Sheets auto-sync: ${crewCount} crews, ${errorCount} errors`);
+    } else {
+      log(`Sheets auto-sync: ${crewCount} crews synced`);
+    }
+  } catch (e) {
+    log(`Sheets auto-sync error: ${e.message}`);
+  }
+  sheetsSyncRunning = false;
+}
+
+// Auto-sync every 15 minutes
+setInterval(autoSheetsSync, 900000);
 
 // ── API endpoint for Claude Code to dispatch tasks directly ──
 // POST /api/dispatch — create + optionally execute a task

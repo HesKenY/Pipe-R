@@ -50,8 +50,30 @@ Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP 
 ### Known Issues / Gotchas
 
 - **`jefferferson:latest`** consistently times out on `ollama run` (spawnSync ETIMEDOUT). Don't route tasks to it until fixed or replaced.
-- **Executor has no max-retry cap.** Failed tasks stay `queued` and the 30s auto-exec loop retries them forever with no backoff. Mark stuck tasks `status: "failed"` manually in `agent_mode/config/tasks.json` until a retry cap lands in `orchestrator.js`.
+- **Executor has no max-retry cap.** Failed tasks stay `queued` and the 30s auto-exec loop retries them forever with no backoff. Mark stuck tasks `status: "failed"` manually in `agent_mode/config/tasks.json` until a retry cap lands in `orchestrator.js`. (Codex rebuild workspace has a retry-cap + backoff implementation queued for merge — see `.claude/CODEX_REBUILD_INTEGRATION_PLAN.md`.)
 - **`tasks.json` is held in memory by the running server.** Editing the file while `server.js` is live gets clobbered on next save. Stop the server first, edit, then restart.
+
+### Dispatch fix (2026-04-12)
+
+The orchestrator had three combined bugs that made every agent produce garbage output:
+
+1. `queue.js add()` hardcoded `assignedAgent: null`, silently dropping the agent parameter from `/api/dispatch`.
+2. `orchestrator.js createTask()` didn't forward `opts.assignedAgent` to `queue.add()`, so `_tryAutoAssign()` always ran and overrode the caller's choice.
+3. `executor.js` used `execSync` with the prompt passed as a quoted shell arg. Windows `cmd.exe` has an 8191-char limit and double-quote escaping corrupts multi-line SYSTEM prompts — Ken's 6 KB profile was arriving at the model as shell noise. Fixed by switching to `spawnSync('ollama', ['run', model], { input: prompt })` so the prompt goes through stdin.
+
+After the fix (commit `02d0d6f` + server restart), dispatch respects `agent:` correctly and the training-log captures real in-voice ken-ai responses. Verified with three back-to-back dispatches that previously produced plumbing metaphors or factorial Python code.
+
+## Git remotes
+
+The Claude project folder (this repo) is a private git repo pushed to two remotes:
+- **origin** → `https://github.com/HesKenY/CHERP-Backup.git` (primary, pushed by default; wiped + force-reset 2026-04-12 to serve as the Pipe-R backup destination)
+- **pipe-r** → `https://github.com/HesKenY/Pipe-R.git` (secondary, legacy, still intact)
+
+Both repos are private. CHERP-Nest (`https://github.com/HesKenY/CHERP-Nest.git`) and CHERP (`https://github.com/HesKenY/CHERP.git`) are separate repos with their own remotes.
+
+## Related workstreams
+
+- **`.claude/CODEX_REBUILD_INTEGRATION_PLAN.md`** — Codex is working on a Pipe-R rebuild in `C:\Users\Ken\Desktop\Pipe-R Rebuild (Codex)\workspace`. Plan file catalogs what they shipped (retry cap, web UIs, P0K3M0N trainer theming), flags high-risk merge conflicts (queue.js, executor.js, orchestrator.js, agents.json, profile.md), and proposes a merge procedure. Do not execute without Ken's go-ahead.
 
 ## Google Sheets Sync
 
@@ -77,7 +99,9 @@ When adding new CHERP tables to sync: add tab definition in `schema.js` TABS arr
 
 The **`ken-coder` personality** is wired into `executor.js`: any existing agent can run in Ken's voice today by setting `personality: "ken-coder"` in `agents.json`. The executor loads `profile.md` fresh at startup — no rebuild needed for personality-only changes.
 
-Training data from every Ken AI task flows into `agent_mode/training/training-log.jsonl`, building the dataset for a future real fine-tune. Curation script (`curate.js`) is deferred until there's enough data to justify it.
+Training data from every Ken AI task flows into `agent_mode/training/training-log.jsonl`, building the dataset for a future real fine-tune. A `curate.js` script will filter out `success=false` rows, broken-agent outputs, and short responses. v1 is prompt-engineered (SYSTEM block in Modelfile); v2 will be a real fine-tune once the curated set reaches ~200 clean entries.
+
+**Voice rule (2026-04-12):** Ken AI speaks AS Ken — lowercase, 3–10 word messages, typos left in, no pleasantries, no analogies, no "as an AI" disclaimers. Full rule in `~/.claude/projects/.../memory/feedback_ken_ai_voice.md`. Do NOT re-introduce the "use construction analogies" instruction when editing `profile.md` — that was the original voice bug.
 
 ## Folder Pipeline
 

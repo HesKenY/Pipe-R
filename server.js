@@ -1,22 +1,25 @@
 #!/usr/bin/env node
+// Goals 2 and 3: trainer dashboard, remote PIN gate, and agent control endpoints - see CHANGES.md
 /**
  * PIPE-R Server v4.0
- * HTTP API on :7777 — serves the web UI, remote client, and all API endpoints
+ * HTTP API on :7777 â€” serves the web UI, remote client, and all API endpoints
  * Unified backend for pipe-r.html, pipe-r-remote.html, and hub.js
  */
 
 import { createServer } from 'http';
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, appendFileSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
-import { join } from 'path';
+import { join, basename, dirname } from 'path';
 import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
 const require = createRequire(import.meta.url);
 
 const PORT = 7777;
-const ROOT = process.cwd();
+const ROOT = dirname(fileURLToPath(import.meta.url));
 const CLAUDE_DIR = join(ROOT, '.claude');
 const LOG_DIR = join(CLAUDE_DIR, 'logs');
 const HUB_LOG_FILE = join(LOG_DIR, 'hub.log');
+const POKEDEX_ICON_DIR = 'C:\\Users\\Ken\\Desktop\\Pokemon icons';
 
 const DIRS = {
   input:     join(ROOT, 'input'),
@@ -118,7 +121,7 @@ function getState() {
   // Agent Mode profiles
   let agentProfiles = [];
   try {
-    const modelsFile = join(ROOT, 'agent_mode', 'config', 'models.json');
+      const modelsFile = join(ROOT, 'agent_mode', 'config', 'agents.json');
     if (existsSync(modelsFile)) {
       agentProfiles = JSON.parse(readFileSync(modelsFile, 'utf8'));
     }
@@ -232,7 +235,141 @@ function handleCommand(cmd) {
   }
 }
 
-// ── CORS ──
+function readRuntimeConfig() {
+  try {
+    return JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'runtime.json'), 'utf8'));
+  } catch {
+    return {
+      mode: 'hybrid',
+      maxRetries: 5,
+      trainerAgentId: 'ken-ai:latest',
+      remotePin: '1996',
+      theme: {
+        name: 'gba-trainer-deck',
+        trainerLabel: 'Ken AI',
+        partyLabel: 'P0K3M0N-Style Dev Party',
+        workbenchLabel: 'Game Boy Advance Field Kit',
+      },
+    };
+  }
+}
+
+function getLoadedModels() {
+  try {
+    const out = execSync('ollama ps', { encoding: 'utf8', timeout: 3000 });
+    return out.trim().split('\n').slice(1).map(line => {
+      const parts = line.trim().split(/\s+/);
+      return {
+        name: parts[0],
+        id: parts[1] || '',
+        size: parts[2] || '',
+        processor: parts[3] || '',
+        until: parts.slice(4).join(' '),
+      };
+    }).filter(model => model.name);
+  } catch {
+    return [];
+  }
+}
+
+async function getDashboardState() {
+  const runtime = readRuntimeConfig();
+  const state = getState();
+  const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+  const orch = new Orchestrator();
+  const dash = orch.dashboard();
+
+  let sheets = { available: false, crews: 0, status: {} };
+  try {
+    const sync = require('./agent_mode/sheets/sync');
+    const status = sync.getSyncStatus();
+    sheets = {
+      available: true,
+      crews: Object.keys(status).length,
+      status,
+    };
+  } catch (e) {
+    sheets = {
+      available: false,
+      crews: 0,
+      status: {},
+      error: e.message,
+    };
+  }
+
+  return {
+    timestamp: new Date().toISOString(),
+    uptime: state.uptime,
+    system: {
+      mode: dash.mode || state.mode,
+      claudeStatus: state.claudeStatus,
+      ollamaStatus: state.ollamaStatus,
+      nodeVersion: state.nodeVersion,
+      autoExecutePaused: agentsPaused,
+    },
+    theme: runtime.theme || {
+      name: 'gba-trainer-deck',
+      trainerLabel: 'Ken AI',
+        partyLabel: 'P0K3M0N-Style Dev Party',
+      workbenchLabel: 'Game Boy Advance Field Kit',
+    },
+    trainerAgentId: runtime.trainerAgentId || 'ken-ai:latest',
+    queue: dash.queue,
+    tasks: dash.tasks,
+    trainer: dash.trainer,
+    companion: dash.companion,
+    party: dash.party,
+    agents: dash.agents,
+    projects: state.projects,
+    storage: state.storage,
+    recentActivity: state.recentActivity,
+    models: state.models,
+    loadedModels: getLoadedModels(),
+    sheets,
+  };
+}
+
+// â”€â”€ CORS â”€â”€
+function isRemotePinValid(pin) {
+  const runtime = readRuntimeConfig();
+  const configuredPin = String(runtime.remotePin || '').trim();
+  if (!/^\d{4}$/.test(configuredPin)) return false;
+  return String(pin || '').trim() === configuredPin;
+}
+
+async function dispatchTaskFromPayload(payload = {}) {
+  const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+  const orch = new Orchestrator();
+  const { objective, type, scope, agent, priority, execute, maxRetries, coordinator } = payload;
+
+  const task = orch.createTask({
+    type: type || 'general',
+    objective: objective || '',
+    scope: scope
+      ? (Array.isArray(scope)
+          ? scope
+          : String(scope).split(',').map(item => item.trim()).filter(Boolean))
+      : [],
+    assignedAgent: agent || null,
+    coordinatorAgent: coordinator || orch.trainerAgentId,
+    priority: parseInt(priority) || 3,
+    maxRetries: Number.isFinite(Number(maxRetries)) ? parseInt(maxRetries) : undefined,
+    requiresClaudeReview: true,
+  });
+
+  log(`Dispatch: ${task.objective.substring(0, 50)} -> ${task.assignedAgent || 'auto'}`);
+
+  if (execute) {
+    if (!task.assignedAgent) orch._tryAutoAssign(task);
+    if (task.assignedAgent) {
+      const result = await orch.executeTask(task.id);
+      return { task: result.task, result };
+    }
+  }
+
+  return { task };
+}
+
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -257,6 +394,18 @@ function serveFile(res, filePath, contentType) {
   }
 }
 
+function serveBinaryFile(res, filePath, contentType) {
+  try {
+    const content = readFileSync(filePath);
+    cors(res);
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(content);
+  } catch {
+    res.writeHead(404);
+    res.end('Not found');
+  }
+}
+
 function readBody(req) {
   return new Promise(resolve => {
     let body = '';
@@ -265,14 +414,14 @@ function readBody(req) {
   });
 }
 
-// ── Server ──
+// â”€â”€ Server â”€â”€
 const server = createServer(async (req, res) => {
   cors(res);
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
   const url = req.url.split('?')[0];
 
-  // ── STATIC FILES ──
+  // â”€â”€ STATIC FILES â”€â”€
 
   // Main web UI
   if (url === '/' || url === '/index.html' || url === '/pipe-r.html') {
@@ -284,11 +433,30 @@ const server = createServer(async (req, res) => {
     return serveFile(res, join(ROOT, 'remote.html'), 'text/html');
   }
 
-  // ── API ROUTES ──
+  if (url.startsWith('/assets/pokedex/')) {
+    const requested = basename(decodeURIComponent(url.slice('/assets/pokedex/'.length)));
+    if (!/^\d{4}(?:-icon|-icons)?\.png$/i.test(requested)) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    return serveBinaryFile(res, join(POKEDEX_ICON_DIR, requested), 'image/png');
+  }
+
+  // â”€â”€ API ROUTES â”€â”€
 
   // Full state
   if (url === '/api/state' && req.method === 'GET') {
     return jsonResp(res, getState());
+  }
+
+  // Dashboard state for the web UIs
+  if (url === '/api/dashboard' && req.method === 'GET') {
+    try {
+      return jsonResp(res, await getDashboardState());
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
   }
 
   // Projects scan
@@ -342,6 +510,73 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { result: e.message, error: true }, 400); }
   }
 
+  // Remote entry PIN check
+  if (url === '/api/remote/auth' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { pin } = JSON.parse(body || '{}');
+      const runtime = readRuntimeConfig();
+      const configured = /^\d{4}$/.test(String(runtime.remotePin || '').trim());
+      const ok = configured && isRemotePinValid(pin);
+      log(`Remote auth ${ok ? 'OK' : 'FAIL'}`);
+      return jsonResp(res, {
+        ok,
+        unlocked: ok,
+        configured,
+        theme: runtime.theme || null,
+      }, configured ? (ok ? 200 : 401) : 503);
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 400);
+    }
+  }
+
+  // Remote-only task dispatch behind the runtime PIN gate
+  if (url === '/api/remote/dispatch' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      if (!isRemotePinValid(payload.pin)) return jsonResp(res, { error: 'Invalid PIN' }, 401);
+      return jsonResp(res, await dispatchTaskFromPayload(payload));
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 400);
+    }
+  }
+
+  // Remote-only task kill behind the runtime PIN gate
+  if (url === '/api/remote/task/kill' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      if (!isRemotePinValid(payload.pin)) return jsonResp(res, { error: 'Invalid PIN' }, 401);
+      const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+      const orch = new Orchestrator();
+      if (!payload.taskId) return jsonResp(res, { error: 'taskId required' }, 400);
+      const task = orch.killTask(payload.taskId, payload.reason || 'Killed from remote');
+      if (!task) return jsonResp(res, { error: 'Task not found' }, 404);
+      log(`Remote task killed: ${payload.taskId}`);
+      return jsonResp(res, { result: 'Killed', task });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 400);
+    }
+  }
+
+  // Remote-only Sheets sync behind the runtime PIN gate
+  if (url === '/api/remote/sheets/sync' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      if (!isRemotePinValid(payload.pin)) return jsonResp(res, { error: 'Invalid PIN' }, 401);
+      const sync = require('./agent_mode/sheets/sync');
+      let result;
+      if (payload.teamCode) result = await sync.pushSync(payload.teamCode);
+      else result = await sync.pushSyncAll();
+      log(`Remote sheets sync: ${payload.teamCode || 'all'}`);
+      return jsonResp(res, result);
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
   // Command (legacy /api/command)
   if ((url === '/api/command' || url === '/api/cmd') && req.method === 'POST') {
     const body = await readBody(req);
@@ -363,33 +598,47 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { result: e.message, error: true }, 400); }
   }
 
-  // Dispatch task (Claude Code → Agent Mode)
+  // Dispatch task (Claude Code â†’ Agent Mode)
   if (url === '/api/dispatch' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      return jsonResp(res, await dispatchTaskFromPayload(payload));
+    } catch (e) { return jsonResp(res, { error: e.message }, 400); }
+  }
+
+  // Kill a queued or stuck task
+  if (url === '/api/task/kill' && req.method === 'POST') {
     const body = await readBody(req);
     try {
       const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
       const orch = new Orchestrator();
-      const { objective, type, scope, agent, priority, execute } = JSON.parse(body);
-      const task = orch.createTask({
-        type: type || 'general',
-        objective: objective || '',
-        scope: scope ? (Array.isArray(scope) ? scope : scope.split(',')) : [],
-        assignedAgent: agent || null,
-        priority: parseInt(priority) || 3,
-        requiresClaudeReview: true,
-      });
-      log(`Dispatch: ${task.objective.substring(0, 50)} → ${task.assignedAgent || 'auto'}`);
+      const { taskId, reason } = JSON.parse(body || '{}');
+      if (!taskId) return jsonResp(res, { error: 'taskId required' }, 400);
+      const task = orch.killTask(taskId, reason || 'Killed from remote');
+      if (!task) return jsonResp(res, { error: 'Task not found' }, 404);
+      log(`Task killed: ${taskId}`);
+      return jsonResp(res, { result: 'Killed', task });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 400);
+    }
+  }
 
-      // Optionally execute immediately
-      if (execute) {
-        if (!task.assignedAgent) orch._tryAutoAssign(task);
-        if (task.assignedAgent) {
-          const result = await orch.executeTask(task.id);
-          return jsonResp(res, { task, result });
-        }
-      }
-      return jsonResp(res, { task });
-    } catch (e) { return jsonResp(res, { error: e.message }, 400); }
+  // Heal an unhealthy agent
+  if (url === '/api/agent/heal' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+      const orch = new Orchestrator();
+      const { agentId } = JSON.parse(body || '{}');
+      if (!agentId) return jsonResp(res, { error: 'agentId required' }, 400);
+      const healed = orch.healAgent(agentId);
+      if (!healed) return jsonResp(res, { error: 'Agent not found' }, 404);
+      log(`Agent healed: ${agentId}`);
+      return jsonResp(res, { result: 'Healed', agentId });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 400);
+    }
   }
 
   // Get review queue (Claude Code pulls pending work)
@@ -424,7 +673,7 @@ const server = createServer(async (req, res) => {
       let result = '';
       switch (action) {
         case 'status':
-          result = execSync('git status --short', { cwd: proj.path, encoding: 'utf8', timeout: 5000 }).trim() || 'Clean — no changes';
+          result = execSync('git status --short', { cwd: proj.path, encoding: 'utf8', timeout: 5000 }).trim() || 'Clean â€” no changes';
           break;
         case 'pull':
           result = execSync('git pull', { cwd: proj.path, encoding: 'utf8', timeout: 30000 }).trim();
@@ -464,14 +713,14 @@ const server = createServer(async (req, res) => {
       cors(res);
       res.writeHead(200, { 'Content-Type': 'application/zip', 'Content-Disposition': 'attachment; filename="' + zipName + '"', 'Content-Length': zipData.length });
       res.end(zipData);
-      log(`Zip download: ${projName} → ${zipName}`);
+      log(`Zip download: ${projName} â†’ ${zipName}`);
       return;
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
-  // ── Google Sheets Sync ──
+  // â”€â”€ Google Sheets Sync â”€â”€
 
-  // POST /api/sheets/sync — Push CHERP data to Sheets
+  // POST /api/sheets/sync â€” Push CHERP data to Sheets
   if (url === '/api/sheets/sync' && req.method === 'POST') {
     try {
       const sync = require('./agent_mode/sheets/sync');
@@ -488,7 +737,7 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
-  // POST /api/sheets/pull — Import edits from Sheets to CHERP
+  // POST /api/sheets/pull â€” Import edits from Sheets to CHERP
   if (url === '/api/sheets/pull' && req.method === 'POST') {
     try {
       const sync = require('./agent_mode/sheets/sync');
@@ -496,12 +745,12 @@ const server = createServer(async (req, res) => {
       const { teamCode } = body ? JSON.parse(body) : {};
       if (!teamCode) return jsonResp(res, { error: 'teamCode required' }, 400);
       const result = await sync.pullSync(teamCode);
-      log(`Sheets pull sync: ${teamCode} — ${result.changes} changes`);
+      log(`Sheets pull sync: ${teamCode} â€” ${result.changes} changes`);
       return jsonResp(res, result);
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
-  // GET /api/sheets/status — Sync status for all crews
+  // GET /api/sheets/status â€” Sync status for all crews
   if (url === '/api/sheets/status' && req.method === 'GET') {
     try {
       const sync = require('./agent_mode/sheets/sync');
@@ -509,7 +758,7 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
-  // POST /api/sheets/create — Create new crew spreadsheet
+  // POST /api/sheets/create â€” Create new crew spreadsheet
   if (url === '/api/sheets/create' && req.method === 'POST') {
     try {
       const sync = require('./agent_mode/sheets/sync');
@@ -517,7 +766,7 @@ const server = createServer(async (req, res) => {
       const { teamCode, crewName } = JSON.parse(body);
       if (!teamCode) return jsonResp(res, { error: 'teamCode required' }, 400);
       const spreadsheetId = await sync.createCrewSheet(teamCode, crewName);
-      log(`Created crew sheet: ${teamCode} → ${spreadsheetId}`);
+      log(`Created crew sheet: ${teamCode} â†’ ${spreadsheetId}`);
       return jsonResp(res, { spreadsheetId, url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}` });
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
@@ -526,7 +775,7 @@ const server = createServer(async (req, res) => {
   jsonResp(res, { error: 'Not found' }, 404);
 });
 
-// ── AUTO-EXECUTOR: Pick up queued tasks and run them ──
+// â”€â”€ AUTO-EXECUTOR: Pick up queued tasks and run them â”€â”€
 let autoExecRunning = false;
 let agentsPaused = false;
 async function autoExecuteQueued() {
@@ -540,9 +789,9 @@ async function autoExecuteQueued() {
       const task = queued.sort((a, b) => a.priority - b.priority)[0]; // highest priority first
       if (!task.assignedAgent) orch._tryAutoAssign(task);
       if (task.assignedAgent) {
-        log(`Auto-exec: ${task.objective.substring(0, 50)} → ${task.assignedAgent}`);
+        log(`Auto-exec: ${task.objective.substring(0, 50)} â†’ ${task.assignedAgent}`);
         const result = await orch.executeTask(task.id);
-        log(`Auto-exec result: ${result.success ? 'OK' : 'FAIL'} — ${task.id}`);
+        log(`Auto-exec result: ${result.success ? 'OK' : 'FAIL'} â€” ${task.id}${result.error ? ' â€” ' + result.error : ''}`);
       }
     }
   } catch (e) {
@@ -554,7 +803,7 @@ async function autoExecuteQueued() {
 // Check for queued tasks every 30 seconds
 setInterval(autoExecuteQueued, 30000);
 
-// ── SHEETS AUTO-SYNC: Push CHERP data to Google Sheets ──
+// â”€â”€ SHEETS AUTO-SYNC: Push CHERP data to Google Sheets â”€â”€
 let sheetsSyncRunning = false;
 async function autoSheetsSync() {
   if (sheetsSyncRunning) return;
@@ -582,24 +831,24 @@ async function autoSheetsSync() {
 // Auto-sync every 15 minutes
 setInterval(autoSheetsSync, 900000);
 
-// ── API endpoint for Claude Code to dispatch tasks directly ──
-// POST /api/dispatch — create + optionally execute a task
+// â”€â”€ API endpoint for Claude Code to dispatch tasks directly â”€â”€
+// POST /api/dispatch â€” create + optionally execute a task
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log();
-  console.log(`  \x1b[38;5;80m╔══════════════════════════════════════╗\x1b[0m`);
-  console.log(`  \x1b[38;5;80m║\x1b[0m  \x1b[38;5;231m\x1b[1mPIPE-R Server v4.0\x1b[0m                  \x1b[38;5;80m║\x1b[0m`);
-  console.log(`  \x1b[38;5;80m╠══════════════════════════════════════╣\x1b[0m`);
-  console.log(`  \x1b[38;5;80m║\x1b[0m  Web UI:  \x1b[38;5;80mhttp://localhost:${PORT}\x1b[0m       \x1b[38;5;80m║\x1b[0m`);
+  console.log(`  \x1b[38;5;80mâ•”â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•—\x1b[0m`);
+  console.log(`  \x1b[38;5;80mâ•‘\x1b[0m  \x1b[38;5;231m\x1b[1mPIPE-R Server v4.0\x1b[0m                  \x1b[38;5;80mâ•‘\x1b[0m`);
+  console.log(`  \x1b[38;5;80mâ• â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•£\x1b[0m`);
+  console.log(`  \x1b[38;5;80mâ•‘\x1b[0m  Web UI:  \x1b[38;5;80mhttp://localhost:${PORT}\x1b[0m       \x1b[38;5;80mâ•‘\x1b[0m`);
   try {
     const ipOut = execSync('powershell -Command "(Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notlike \'*Loopback*\' -and $_.PrefixOrigin -eq \'Dhcp\' } | Select-Object -First 1).IPAddress"', { encoding: 'utf8', timeout: 5000 }).trim();
     if (ipOut) {
       const padded = `http://${ipOut}:${PORT}`;
-      console.log(`  \x1b[38;5;80m║\x1b[0m  Phone:   \x1b[38;5;80m${padded}\x1b[0m${' '.repeat(Math.max(0, 21 - padded.length))}\x1b[38;5;80m║\x1b[0m`);
+      console.log(`  \x1b[38;5;80mâ•‘\x1b[0m  Phone:   \x1b[38;5;80m${padded}\x1b[0m${' '.repeat(Math.max(0, 21 - padded.length))}\x1b[38;5;80mâ•‘\x1b[0m`);
     }
   } catch {}
-  console.log(`  \x1b[38;5;80m║\x1b[0m  Remote:  \x1b[38;5;80mhttp://localhost:${PORT}/remote\x1b[0m\x1b[38;5;80m║\x1b[0m`);
-  console.log(`  \x1b[38;5;80m╚══════════════════════════════════════╝\x1b[0m`);
+  console.log(`  \x1b[38;5;80mâ•‘\x1b[0m  Remote:  \x1b[38;5;80mhttp://localhost:${PORT}/remote\x1b[0m\x1b[38;5;80mâ•‘\x1b[0m`);
+  console.log(`  \x1b[38;5;80mâ•šâ•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\x1b[0m`);
   console.log();
   log('Server started on :' + PORT);
 });

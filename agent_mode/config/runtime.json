@@ -4,5 +4,14 @@
   "autoExecuteInterval": 30000,
   "requireClaudeReview": true,
   "maxConcurrentTasks": 2,
-  "maxRetries": 3
+  "maxRetries": 5,
+  "trainerAgentId": "ken-ai:latest",
+  "remotePin": "1996",
+  "theme": {
+    "name": "gba-trainer-deck",
+    "flavor": "p0k3m0n-gba",
+    "trainerLabel": "Ken AI",
+    "partyLabel": "P0K3M0N-Style Dev Party",
+    "workbenchLabel": "Game Boy Advance Field Kit"
+  }
 }

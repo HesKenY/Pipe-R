@@ -1,0 +1,2201 @@
+<!-- Goal 3: added the trainer dashboard web UI with the P0K3M0N-style GBA field-kit theme - see CHANGES.md -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipe-R Trainer Deck</title>
+  <style>
+    :root {
+      --bg: #356c4a;
+      --bg2: #6f9a53;
+      --panel: rgba(240, 239, 209, 0.97);
+      --panel-strong: rgba(210, 222, 182, 0.98);
+      --screen: #e8eed2;
+      --border: #437457;
+      --border-strong: #d7dc8f;
+      --text: #f7f8e8;
+      --muted: #5f735d;
+      --pixel: #f8ed9d;
+      --pixel-deep: #8ca851;
+      --cyan: #7ac8a7;
+      --amber: #d8b45c;
+      --danger: #c66d5b;
+      --ok: #4da463;
+      --shadow: 0 18px 38px rgba(25, 56, 35, 0.28);
+      --radius: 18px;
+      --grid: rgba(255, 255, 255, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Consolas", "Courier New", monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(248, 237, 157, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(122, 200, 167, 0.16), transparent 28%),
+        linear-gradient(180deg, #7fac60 0%, #5d8c4b 32%, #38714f 70%, #2d5f45 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 50%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.05) 75%, transparent 75%, transparent);
+      background-size: 18px 18px, 18px 18px, 34px 34px;
+      opacity: 0.34;
+    }
+
+    body::after {
+      background: radial-gradient(circle at center, transparent 52%, rgba(24, 46, 33, 0.2) 100%);
+    }
+
+    .shell {
+      width: min(1380px, calc(100vw - 28px));
+      margin: 18px auto 36px;
+      background:
+        linear-gradient(180deg, rgba(39, 104, 71, 0.98), rgba(24, 73, 54, 0.98)),
+        linear-gradient(135deg, rgba(255,255,255,0.04), transparent 36%);
+      border: 2px solid rgba(215, 220, 143, 0.46);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .shell::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 2px solid rgba(248, 237, 157, 0.18);
+      border-radius: 18px;
+      pointer-events: none;
+    }
+
+    .shell::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 22px 16px;
+      background:
+        linear-gradient(180deg, rgba(61, 140, 89, 0.96), rgba(41, 102, 67, 0.96)),
+        linear-gradient(90deg, rgba(255,255,255,0.06), transparent 55%);
+      border-bottom: 3px solid rgba(248, 237, 157, 0.34);
+    }
+
+    .title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .eyebrow {
+      color: var(--pixel);
+      font-size: 0.82rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      text-shadow: 0 1px 0 rgba(20, 52, 35, 0.28);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.6rem);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-shadow: 0 2px 0 rgba(26, 58, 40, 0.34);
+    }
+
+    .subtitle {
+      color: rgba(240, 246, 219, 0.86);
+      font-size: 0.95rem;
+      max-width: 720px;
+      line-height: 1.5;
+    }
+
+    .status-cluster,
+    .button-row,
+    .stat-row,
+    .card-actions,
+    .agent-meta,
+    .sheet-tags,
+    .task-meta,
+    .project-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(67, 116, 87, 0.24);
+      background: linear-gradient(180deg, rgba(247, 244, 220, 0.96), rgba(220, 229, 194, 0.96));
+      color: #284138;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .badge.ok { color: #2d7b48; }
+    .badge.warn { color: #9a6b19; }
+    .badge.danger { color: #a34f41; }
+    .badge.pixel { color: #6b6419; }
+
+    .content {
+      padding: 18px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .button-row {
+      padding: 6px 2px 2px;
+    }
+
+    button {
+      appearance: none;
+      border: 2px solid rgba(215, 220, 143, 0.36);
+      border-radius: 12px;
+      padding: 11px 14px;
+      font: inherit;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(58, 128, 81, 0.98), rgba(39, 90, 61, 0.98));
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    }
+
+    button:hover,
+    button:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(248, 237, 157, 0.72);
+      box-shadow: 0 0 0 2px rgba(248, 237, 157, 0.18);
+      outline: none;
+    }
+
+    button.secondary {
+      background: linear-gradient(180deg, rgba(86, 123, 60, 0.98), rgba(56, 86, 38, 0.98));
+      border-color: rgba(215, 220, 143, 0.34);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 18px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(240, 239, 209, 0.98), rgba(210, 222, 182, 0.98));
+      border: 2px solid rgba(67, 116, 87, 0.30);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top left, rgba(248, 237, 157, 0.18) 0 10px, transparent 11px),
+        radial-gradient(circle at top right, rgba(248, 237, 157, 0.18) 0 10px, transparent 11px),
+        radial-gradient(circle at bottom left, rgba(122, 200, 167, 0.14) 0 10px, transparent 11px),
+        radial-gradient(circle at bottom right, rgba(122, 200, 167, 0.14) 0 10px, transparent 11px),
+        linear-gradient(135deg, rgba(255,255,255,0.22), transparent 28%, transparent 72%, rgba(122, 200, 167, 0.10)),
+        linear-gradient(180deg, rgba(255,255,255,0.12), transparent 24%);
+      pointer-events: none;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(67, 116, 87, 0.16);
+      pointer-events: none;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #346049;
+    }
+
+    .panel-kicker {
+      color: #5d735d;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .trainer-card {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(246, 201, 108, 0.24);
+      background:
+        linear-gradient(180deg, rgba(33, 56, 34, 0.56), rgba(15, 28, 19, 0.74)),
+        linear-gradient(90deg, rgba(181, 214, 110, 0.06), transparent 40%);
+    }
+
+    .trainer-card h3,
+    .agent-card h3,
+    .task-card h3,
+    .project-card h3,
+    .sheet-card h3,
+    .activity-item h3 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .trainer-copy,
+    .card-copy,
+    .empty,
+    .stat-label,
+    .project-copy,
+    .sheet-copy,
+    .activity-copy,
+    .status-banner {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .stat-pill {
+      flex: 1 1 130px;
+      min-width: 120px;
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(86, 113, 129, 0.24);
+    }
+
+    .stat-label {
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+
+    .agent-grid,
+    .task-grid,
+    .project-grid,
+    .sheet-grid,
+    .activity-grid {
+      display: grid;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .agent-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .agent-card,
+    .task-card,
+    .project-card,
+    .sheet-card,
+    .activity-item {
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(246, 244, 220, 0.98), rgba(222, 232, 194, 0.98));
+      border: 1px solid rgba(67, 116, 87, 0.18);
+      position: relative;
+      overflow: hidden;
+      color: #253849;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+    }
+
+    .agent-card {
+      border-color: var(--card-border, rgba(107, 182, 169, 0.16));
+      background:
+        linear-gradient(180deg, rgba(246, 244, 220, 0.98), rgba(222, 232, 194, 0.98)),
+        radial-gradient(circle at top right, var(--card-sheen, rgba(255,255,255,0.12)), transparent 60%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22), 0 8px 20px rgba(39, 78, 53, 0.10);
+    }
+
+    .trainer-card.selectable,
+    .agent-card.selectable,
+    .companion-chip {
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    }
+
+    .trainer-card.selectable:hover,
+    .agent-card.selectable:hover,
+    .companion-chip:hover {
+      transform: translateY(-1px);
+    }
+
+    .trainer-card.selected,
+    .agent-card.selected {
+      border-color: var(--card-border, rgba(246, 201, 108, 0.5));
+      box-shadow: 0 0 0 2px rgba(248, 237, 157, 0.26), 0 12px 24px rgba(46, 88, 61, 0.16);
+    }
+
+    .trainer-card {
+      color: #223248;
+      background:
+        linear-gradient(180deg, rgba(250, 246, 215, 0.98), rgba(207, 224, 176, 0.98)),
+        linear-gradient(90deg, rgba(248, 237, 157, 0.10), transparent 40%);
+      border-color: rgba(93, 126, 66, 0.32);
+    }
+
+    .trainer-card .muted-code,
+    .trainer-card .trainer-copy,
+    .summary-card .muted-code,
+    .summary-copy {
+      color: #5a6b61;
+    }
+
+    .trainer-card .stat-value {
+      color: #223248;
+    }
+
+    .trainer-topline {
+      display: grid;
+      grid-template-columns: 94px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .trainer-emblem {
+      width: 94px;
+      height: 94px;
+      border-radius: 22px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255,255,255,0.85), transparent 30%),
+        linear-gradient(180deg, rgba(58, 92, 121, 0.98), rgba(35, 55, 76, 0.98));
+      border: 4px solid rgba(246, 201, 108, 0.52);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16);
+    }
+
+    .trainer-emblem span,
+    .party-icon-fallback,
+    .summary-emblem span {
+      color: #f5f0d1;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .trainer-emblem span {
+      font-size: 1.8rem;
+    }
+
+    .trainer-identity,
+    .party-main {
+      display: grid;
+      gap: 8px;
+    }
+
+    .trainer-subline,
+    .trainer-companion,
+    .party-meta-row,
+    .summary-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .companion-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      justify-content: flex-start;
+      border-radius: 14px;
+      border: 1px solid rgba(86, 113, 129, 0.24);
+      background: rgba(255,255,255,0.44);
+      color: #223248;
+      min-width: 0;
+      box-shadow: none;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .companion-chip.selected {
+      border-color: rgba(196, 91, 145, 0.52);
+      box-shadow: 0 0 0 2px rgba(196, 91, 145, 0.16);
+    }
+
+    .companion-chip img {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,0.22));
+    }
+
+    .companion-chip-copy {
+      min-width: 0;
+    }
+
+    .companion-chip-copy strong,
+    .summary-name-row h3 {
+      display: block;
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .party-slot-card {
+      display: grid;
+      grid-template-columns: 20px 76px 1fr;
+      gap: 12px;
+      align-items: center;
+      min-height: 108px;
+      padding: 12px 14px;
+      background:
+        linear-gradient(180deg, rgba(249, 246, 220, 0.98), rgba(214, 226, 184, 0.98));
+      color: #223248;
+      position: relative;
+      overflow: hidden;
+      animation: emeraldWindowIn 180ms ease-out;
+    }
+
+    .party-cursor {
+      width: 0;
+      height: 0;
+      border-top: 10px solid transparent;
+      border-bottom: 10px solid transparent;
+      border-left: 14px solid rgba(64, 88, 114, 0.24);
+      opacity: 0;
+      transform: translateX(-2px);
+      transition: opacity 120ms ease, transform 120ms ease, border-left-color 120ms ease;
+    }
+
+    @keyframes emeraldCursorPulse {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(4px); }
+    }
+
+    @keyframes emeraldWindowIn {
+      0% {
+        opacity: 0;
+        transform: translateY(6px);
+        filter: saturate(0.94);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: saturate(1);
+      }
+    }
+
+    @keyframes emeraldPageIn {
+      0% {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .agent-card.selected .party-cursor {
+      opacity: 1;
+      transform: translateX(0);
+      border-left-color: rgba(64, 88, 114, 0.88);
+      animation: emeraldCursorPulse 680ms steps(2, end) infinite;
+    }
+
+    .party-icon-shell {
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+    }
+
+    .slot-marker {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #6a7f71;
+    }
+
+    .party-icon-frame {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      padding: 4px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(180deg, rgba(235, 231, 195, 0.96), rgba(202, 214, 170, 0.96));
+      border: 3px solid rgba(84, 110, 129, 0.42);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.26);
+    }
+
+    .party-icon-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 10px rgba(0,0,0,0.22));
+    }
+
+    .party-icon-fallback {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(70, 103, 127, 0.96), rgba(41, 59, 79, 0.96));
+      font-size: 1rem;
+    }
+
+    .party-headline {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .party-name-stack {
+      min-width: 0;
+    }
+
+    .party-name-stack h3 {
+      color: #203245;
+      font-size: 1rem;
+    }
+
+    .party-level {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 0.84rem;
+      color: #506674;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .party-level strong {
+      font-size: 1.12rem;
+      color: #1f3348;
+    }
+
+    .party-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      color: #5a6e64;
+      font-size: 0.8rem;
+    }
+
+    .party-track {
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--card-role, #5c6c5f);
+    }
+
+    .party-hp-block {
+      display: grid;
+      gap: 6px;
+    }
+
+    .party-hp-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5a6d63;
+    }
+
+    .party-hp-label {
+      color: #456777;
+      font-weight: 700;
+    }
+
+    .party-hp-bar {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(57, 72, 84, 0.18);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+    }
+
+    .party-hp-bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--meter-from, #568749), var(--meter-to, #d8ba61));
+    }
+
+    .party-subline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .party-subline .badge {
+      background: rgba(255,255,255,0.52);
+      border-color: rgba(86, 113, 129, 0.22);
+      color: #2b4054;
+    }
+
+    .party-menu-box {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(249, 246, 220, 0.98), rgba(214, 226, 184, 0.98));
+      border: 3px solid rgba(67, 116, 87, 0.32);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.30);
+      color: #243446;
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      animation: emeraldWindowIn 180ms ease-out;
+    }
+
+    .party-menu-box::before,
+    .summary-core::before,
+    .summary-portrait-shell::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 14px;
+      border: 1px solid rgba(67, 116, 87, 0.16);
+      background:
+        radial-gradient(circle at top left, rgba(248, 237, 157, 0.14) 0 7px, transparent 8px),
+        radial-gradient(circle at top right, rgba(248, 237, 157, 0.14) 0 7px, transparent 8px),
+        radial-gradient(circle at bottom left, rgba(122, 200, 167, 0.12) 0 7px, transparent 8px),
+        radial-gradient(circle at bottom right, rgba(122, 200, 167, 0.12) 0 7px, transparent 8px);
+      pointer-events: none;
+    }
+
+    .party-menu-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .party-menu-title {
+      margin: 0;
+      font-size: 0.92rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #355165;
+    }
+
+    .party-menu-copy {
+      color: #566a62;
+      line-height: 1.5;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+    }
+
+    .party-command-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .party-command {
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 2px solid rgba(86, 113, 129, 0.24);
+      background: linear-gradient(180deg, rgba(226, 236, 193, 0.96), rgba(189, 205, 158, 0.96));
+      color: #23384c;
+      box-shadow: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .party-command.active {
+      border-color: rgba(58, 92, 121, 0.62);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(227, 239, 198, 0.96));
+    }
+
+    .party-command small {
+      color: #5a6f62;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .party-menu-hint {
+      margin-top: 12px;
+      font-size: 0.76rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #5b7162;
+    }
+
+    .summary-card {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 14px;
+      animation: emeraldWindowIn 180ms ease-out;
+    }
+
+    .summary-layout {
+      display: grid;
+      grid-template-columns: minmax(190px, 220px) 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .summary-portrait-shell {
+      padding: 14px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(236, 233, 196, 0.98), rgba(198, 211, 161, 0.98));
+      border: 3px solid rgba(86, 113, 129, 0.44);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.34);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-portrait {
+      aspect-ratio: 1 / 1;
+      border-radius: 18px;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.38), transparent 32%),
+        linear-gradient(180deg, rgba(129, 165, 162, 0.98), rgba(68, 94, 108, 0.98));
+      border: 3px solid rgba(36, 56, 74, 0.28);
+    }
+
+    .summary-portrait img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 12px 12px rgba(0,0,0,0.24));
+    }
+
+    .summary-emblem {
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 36% 28%, rgba(255,255,255,0.84), transparent 24%),
+        linear-gradient(180deg, rgba(77, 105, 131, 0.98), rgba(43, 62, 82, 0.98));
+    }
+
+    .summary-emblem span {
+      font-size: 2rem;
+    }
+
+    .summary-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      color: #35495e;
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .summary-core {
+      padding: 16px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(249, 246, 220, 0.98), rgba(214, 226, 184, 0.98));
+      border: 3px solid var(--card-border, rgba(67, 116, 87, 0.34));
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.36);
+      color: #233042;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .summary-name-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .summary-role {
+      margin-top: 5px;
+      color: var(--card-role, #5c6c5f);
+      font-size: 0.92rem;
+    }
+
+    .summary-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      margin-bottom: 12px;
+    }
+
+    .summary-tab {
+      min-width: 88px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      border: 2px solid rgba(86, 113, 129, 0.24);
+      background: linear-gradient(180deg, rgba(226, 236, 193, 0.96), rgba(189, 205, 158, 0.96));
+      color: #2a4154;
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: none;
+    }
+
+    .summary-tab.active {
+      border-color: var(--card-border, rgba(86, 113, 129, 0.34));
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(232, 242, 205, 0.96));
+      color: #1f3348;
+    }
+
+    .summary-page {
+      display: grid;
+      gap: 14px;
+      animation: emeraldPageIn 180ms ease-out;
+    }
+
+    .summary-chip-row .badge {
+      background: rgba(255,255,255,0.52);
+      border-color: rgba(86, 113, 129, 0.22);
+      color: #2b4054;
+    }
+
+    .summary-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .summary-stat {
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255,255,255,0.46);
+      border: 1px solid rgba(86, 113, 129, 0.20);
+    }
+
+    .summary-stat label {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #657661;
+    }
+
+    .summary-stat strong {
+      font-size: 1rem;
+      color: #233042;
+    }
+
+    .summary-bars {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .summary-memo {
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(255,255,255,0.44);
+      border: 1px solid rgba(86, 113, 129, 0.20);
+      color: #314455;
+      line-height: 1.6;
+    }
+
+    .summary-notes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-note {
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(255,255,255,0.46);
+      border: 1px solid rgba(86, 113, 129, 0.18);
+    }
+
+    .summary-note label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #657661;
+    }
+
+    .summary-note strong {
+      color: #223248;
+    }
+
+    .summary-bar {
+      display: grid;
+      gap: 6px;
+    }
+
+    .summary-bar-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #5a6d63;
+    }
+
+    .summary-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(57, 72, 84, 0.15);
+      overflow: hidden;
+    }
+
+    .summary-track span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--meter-from, #568749), var(--meter-to, #d8ba61));
+    }
+
+    .agent-card h3 {
+      color: var(--card-title, #26433d);
+    }
+
+    .agent-card .card-copy {
+      color: var(--card-role, #5f735d);
+    }
+
+    .agent-card.unhealthy,
+    .task-card.failed,
+    .sheet-card.error {
+      border-color: rgba(255, 127, 107, 0.44);
+    }
+
+    .card-top,
+    .task-top,
+    .project-top,
+    .sheet-top,
+    .activity-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+
+    .muted-code {
+      color: #627661;
+      font-size: 0.78rem;
+      word-break: break-word;
+    }
+
+    .meter {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--meter-from, var(--pixel-deep)), var(--meter-to, var(--pixel)));
+    }
+
+    .status-banner {
+      min-height: 24px;
+      margin-top: 4px;
+      font-size: 0.9rem;
+      color: #1c3b30;
+    }
+
+    .emerald-textbox-shell {
+      position: relative;
+      z-index: 1;
+      padding: 10px;
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(55, 117, 77, 0.98), rgba(30, 76, 54, 0.98)),
+        linear-gradient(135deg, rgba(255,255,255,0.06), transparent 38%);
+      border: 2px solid rgba(215, 220, 143, 0.42);
+      box-shadow: 0 10px 20px rgba(33, 68, 47, 0.18);
+    }
+
+    .emerald-textbox-shell::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.14);
+      pointer-events: none;
+    }
+
+    .emerald-textbox {
+      position: relative;
+      min-height: 112px;
+      padding: 16px 18px 22px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(249, 246, 220, 0.98), rgba(214, 226, 184, 0.98));
+      border: 3px solid rgba(67, 116, 87, 0.34);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.34);
+      color: #243446;
+      overflow: hidden;
+    }
+
+    .emerald-textbox::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(67, 116, 87, 0.16);
+      pointer-events: none;
+    }
+
+    .textbox-speaker {
+      margin-bottom: 8px;
+      color: #355165;
+      font-size: 0.74rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .textbox-body {
+      color: #243446;
+      line-height: 1.68;
+      font-size: 0.97rem;
+    }
+
+    .textbox-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      color: #5b7162;
+      font-size: 0.74rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .textbox-prompt {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(67, 116, 87, 0.20);
+      background: linear-gradient(180deg, rgba(255,255,255,0.70), rgba(223, 233, 196, 0.72));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.42);
+      color: #355165;
+    }
+
+    .textbox-button {
+      display: inline-grid;
+      place-items: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 8px;
+      border: 2px solid rgba(86, 113, 129, 0.24);
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(227, 239, 198, 0.96));
+      color: #223248;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    @keyframes emeraldTextboxArrow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(3px); }
+    }
+
+    .textbox-arrow {
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 12px solid #355165;
+      animation: emeraldTextboxArrow 620ms steps(2, end) infinite;
+    }
+
+    .status-banner.ok { color: var(--ok); }
+    .status-banner.warn { color: var(--amber); }
+    .status-banner.danger { color: var(--danger); }
+
+    .small { font-size: 0.8rem; }
+    .empty { padding: 14px 0 4px; }
+
+    @media (max-width: 1120px) { .grid { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) {
+      .shell { width: min(100vw - 10px, 100%); margin: 8px auto 20px; border-radius: 18px; }
+      .topbar { padding: 18px 14px 14px; flex-direction: column; align-items: flex-start; }
+      .content { padding: 12px; }
+      .trainer-topline,
+      .party-slot-card,
+      .summary-layout,
+      .summary-stat-grid,
+      .summary-notes-grid { grid-template-columns: 1fr; }
+      .party-command-grid { grid-template-columns: 1fr; }
+      .party-icon-shell { justify-items: flex-start; }
+      .badge { width: 100%; justify-content: space-between; }
+      .button-row > * { flex: 1 1 calc(50% - 10px); }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="title-wrap">
+        <div class="eyebrow">Pipe-R Trainer Deck</div>
+        <h1 id="deck-title">Ken AI Field Kit</h1>
+        <div class="subtitle" id="deck-subtitle">Pokémon Emerald-style trainer workbench for Ken AI, the six-slot party, and one companion lane.</div>
+      </div>
+      <div class="status-cluster" id="status-cluster"></div>
+    </header>
+
+    <section class="content">
+      <div class="button-row">
+        <button id="refresh-btn">Refresh Now</button>
+        <button id="sync-btn" class="secondary">Run Sheets Sync</button>
+        <button id="pause-btn">Pause Auto-Exec</button>
+        <button id="remote-btn">Open Remote Deck</button>
+      </div>
+      <div class="status-banner" id="banner"></div>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Trainer Bench</div>
+                <h2 class="panel-title" id="trainer-heading">Ken AI</h2>
+              </div>
+              <span class="badge pixel" id="mode-badge">Mode</span>
+            </div>
+            <div id="trainer-panel"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Party Screen</div>
+<h2 class="panel-title" id="party-heading">P0K3M0N-Style Dev Party</h2>
+              </div>
+              <span class="badge" id="party-count">0 slots</span>
+            </div>
+            <div class="agent-grid" id="party-grid"></div>
+            <div id="party-menu"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Gym Queue</div>
+                <h2 class="panel-title">Recent Tasks</h2>
+              </div>
+              <span class="badge" id="queue-count">0 tasks</span>
+            </div>
+            <div class="task-grid" id="task-grid"></div>
+          </section>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Stats Screen</div>
+                <h2 class="panel-title" id="summary-heading">Selected Model</h2>
+              </div>
+              <span class="badge pixel" id="summary-dex">Summary</span>
+            </div>
+            <div id="summary-panel"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Project Board</div>
+                <h2 class="panel-title">Tracked Projects</h2>
+              </div>
+              <span class="badge" id="project-count">0 online</span>
+            </div>
+            <div class="project-grid" id="project-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Sheets Link</div>
+                <h2 class="panel-title">Crew Sync Status</h2>
+              </div>
+              <span class="badge" id="sheet-count">0 crews</span>
+            </div>
+            <div class="sheet-grid" id="sheet-grid"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Recent Feed</div>
+                <h2 class="panel-title">Activity Log</h2>
+              </div>
+              <span class="badge" id="activity-count">0 events</span>
+            </div>
+            <div class="activity-grid" id="activity-grid"></div>
+          </section>
+        </div>
+      </div>
+      <section class="emerald-textbox-shell">
+        <div class="emerald-textbox" id="emerald-textbox"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = { dashboard: null, sheets: {}, selectedFocus: null, selectedSummaryTab: 'info' };
+    const themeFallback = {
+      trainerLabel: 'Ken AI',
+        partyLabel: 'P0K3M0N-Style Dev Party',
+      workbenchLabel: 'Hoenn Emerald Field Kit',
+    };
+
+    const els = {
+      deckTitle: document.getElementById('deck-title'),
+      deckSubtitle: document.getElementById('deck-subtitle'),
+      statusCluster: document.getElementById('status-cluster'),
+      banner: document.getElementById('banner'),
+      trainerHeading: document.getElementById('trainer-heading'),
+      trainerPanel: document.getElementById('trainer-panel'),
+      partyHeading: document.getElementById('party-heading'),
+      partyCount: document.getElementById('party-count'),
+      partyGrid: document.getElementById('party-grid'),
+      partyMenu: document.getElementById('party-menu'),
+      summaryHeading: document.getElementById('summary-heading'),
+      summaryDex: document.getElementById('summary-dex'),
+      summaryPanel: document.getElementById('summary-panel'),
+      emeraldTextbox: document.getElementById('emerald-textbox'),
+      queueCount: document.getElementById('queue-count'),
+      taskGrid: document.getElementById('task-grid'),
+      projectCount: document.getElementById('project-count'),
+      projectGrid: document.getElementById('project-grid'),
+      sheetCount: document.getElementById('sheet-count'),
+      sheetGrid: document.getElementById('sheet-grid'),
+      activityCount: document.getElementById('activity-count'),
+      activityGrid: document.getElementById('activity-grid'),
+      modeBadge: document.getElementById('mode-badge'),
+      refreshBtn: document.getElementById('refresh-btn'),
+      syncBtn: document.getElementById('sync-btn'),
+      pauseBtn: document.getElementById('pause-btn'),
+      remoteBtn: document.getElementById('remote-btn'),
+    };
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+      });
+      let data = {};
+      try { data = await response.json(); } catch {}
+      if (!response.ok) throw new Error(data.error || data.result || `Request failed (${response.status})`);
+      return data;
+    }
+
+    function setBanner(message, tone = 'ok') {
+      els.banner.textContent = message || '';
+      els.banner.className = `status-banner ${tone}`;
+    }
+
+    function badge(label, tone = '') { return `<span class="badge ${tone}">${escapeHtml(label)}</span>`; }
+
+    function getAgentAccent(agent) {
+      const map = {
+        TR:  { border: 'rgba(246, 201, 108, 0.44)', glow: 'rgba(108, 80, 20, 0.30)', sheen: 'rgba(246, 201, 108, 0.18)', title: '#f6df8e', role: '#e8c86c', meterFrom: '#c2972b', meterTo: '#f6d46f', pillBg: 'rgba(72, 50, 12, 0.82)', pillBorder: 'rgba(246, 201, 108, 0.40)', pillText: '#f6df8e' },
+        SCZ: { border: 'rgba(129, 219, 149, 0.34)', glow: 'rgba(33, 82, 44, 0.28)', sheen: 'rgba(129, 219, 149, 0.16)', title: '#baf1b3', role: '#8cdd9a', meterFrom: '#3f8b4e', meterTo: '#94f39a', pillBg: 'rgba(23, 58, 30, 0.82)', pillBorder: 'rgba(129, 219, 149, 0.30)', pillText: '#baf1b3' },
+        ROT: { border: 'rgba(255, 193, 92, 0.34)', glow: 'rgba(90, 58, 18, 0.30)', sheen: 'rgba(255, 193, 92, 0.18)', title: '#ffd88c', role: '#ffc76b', meterFrom: '#af6d17', meterTo: '#ffd35e', pillBg: 'rgba(77, 46, 7, 0.82)', pillBorder: 'rgba(255, 193, 92, 0.34)', pillText: '#ffd88c' },
+        DEC: { border: 'rgba(104, 225, 176, 0.34)', glow: 'rgba(21, 70, 52, 0.28)', sheen: 'rgba(104, 225, 176, 0.18)', title: '#9df0c7', role: '#6fe0ae', meterFrom: '#237c57', meterTo: '#78f0b8', pillBg: 'rgba(14, 53, 37, 0.82)', pillBorder: 'rgba(104, 225, 176, 0.34)', pillText: '#9df0c7' },
+        PGN: { border: 'rgba(118, 224, 248, 0.34)', glow: 'rgba(24, 60, 84, 0.30)', sheen: 'rgba(118, 224, 248, 0.18)', title: '#a5f0ff', role: '#73d8f0', meterFrom: '#3278a7', meterTo: '#83e6ff', pillBg: 'rgba(15, 45, 67, 0.82)', pillBorder: 'rgba(118, 224, 248, 0.34)', pillText: '#a5f0ff' },
+        UMB: { border: 'rgba(184, 143, 255, 0.34)', glow: 'rgba(45, 28, 72, 0.30)', sheen: 'rgba(184, 143, 255, 0.18)', title: '#d3b7ff', role: '#b98df6', meterFrom: '#6a3f99', meterTo: '#d0a5ff', pillBg: 'rgba(35, 22, 56, 0.82)', pillBorder: 'rgba(184, 143, 255, 0.34)', pillText: '#dec6ff' },
+        ALK: { border: 'rgba(255, 143, 214, 0.34)', glow: 'rgba(82, 29, 68, 0.30)', sheen: 'rgba(255, 143, 214, 0.18)', title: '#ffc3ec', role: '#ff9cdf', meterFrom: '#a53f8f', meterTo: '#ffb2eb', pillBg: 'rgba(67, 20, 54, 0.82)', pillBorder: 'rgba(255, 143, 214, 0.34)', pillText: '#ffd0f2' },
+        M3W: { border: 'rgba(255, 184, 213, 0.34)', glow: 'rgba(88, 36, 62, 0.30)', sheen: 'rgba(255, 225, 238, 0.20)', title: '#ffe2ee', role: '#ffb3d1', meterFrom: '#c45b91', meterTo: '#ffd1e4', pillBg: 'rgba(74, 28, 49, 0.82)', pillBorder: 'rgba(255, 184, 213, 0.34)', pillText: '#ffe2ee' },
+      };
+      return map[agent?.partyBadge] || map.TR;
+    }
+
+    function accentStyle(accent) {
+      return [
+        `--card-border:${accent.border}`,
+        `--card-glow:${accent.glow}`,
+        `--card-sheen:${accent.sheen}`,
+        `--card-title:${accent.title}`,
+        `--card-role:${accent.role}`,
+        `--meter-from:${accent.meterFrom}`,
+        `--meter-to:${accent.meterTo}`,
+      ].join(';');
+    }
+
+    function accentBadge(label, accent) {
+      return `<span class="badge" style="background:${accent.pillBg};border-color:${accent.pillBorder};color:${accent.pillText}">${escapeHtml(label)}</span>`;
+    }
+
+    const POKEDEX_MEDIA = {
+      TR: { dex: 'Trainer ID', icon: '', portrait: '', alias: 'Ken AI' },
+      SCZ: { dex: 'No. 0212', icon: '0212-icon.png', portrait: '0212.png', alias: '5c1z0r' },
+      ROT: { dex: 'No. 0479', icon: '0479-icon.png', portrait: '0479.png', alias: 'R0t0m' },
+      DEC: { dex: 'No. 0724', icon: '0724-icon.png', portrait: '0724.png', alias: 'D3c1du3y3' },
+      PGN: { dex: 'No. 0474', icon: '0474-icons.png', portrait: '0474.png', alias: 'P0ryg0n' },
+      UMB: { dex: 'No. 0197', icon: '0197-icon.png', portrait: '0197.png', alias: 'Umbr30n' },
+      ALK: { dex: 'No. 0065', icon: '0065-icon.png', portrait: '0065.png', alias: '4l4k4z4m' },
+      M3W: { dex: 'No. 0151', icon: '0151-icon.png', portrait: '0151.png', alias: 'M3w' },
+    };
+
+    function getAgentMedia(agent) {
+      const media = POKEDEX_MEDIA[agent?.partyBadge] || POKEDEX_MEDIA.TR;
+      return {
+        ...media,
+        iconUrl: media.icon ? `/assets/pokedex/${encodeURIComponent(media.icon)}` : '',
+        portraitUrl: media.portrait ? `/assets/pokedex/${encodeURIComponent(media.portrait)}` : '',
+      };
+    }
+
+    function getSelectableAgents(dashboard) {
+      return [dashboard.trainer, dashboard.companion, ...(dashboard.party || [])].filter(Boolean);
+    }
+
+    function getPartyMenuOrder(dashboard) {
+      return [dashboard.trainer, dashboard.companion, ...(dashboard.party || [])].filter(Boolean);
+    }
+
+    function getSelectedAgent(dashboard) {
+      const allAgents = getSelectableAgents(dashboard);
+      if (!allAgents.length) {
+        state.selectedFocus = null;
+        return null;
+      }
+      const current = allAgents.find(agent => agent.id === state.selectedFocus);
+      if (current) return current;
+      const fallback = (dashboard.party || [])[0] || dashboard.companion || dashboard.trainer || allAgents[0];
+      state.selectedFocus = fallback?.id || null;
+      return fallback || null;
+    }
+
+    function setSelectedFocus(focusId) {
+      state.selectedFocus = focusId || null;
+      state.selectedSummaryTab = 'info';
+      render();
+    }
+
+    function setSummaryTab(tabId) {
+      state.selectedSummaryTab = tabId || 'info';
+      render();
+    }
+
+    function shiftSelectedFocus(step) {
+      if (!state.dashboard) return;
+      const order = getPartyMenuOrder(state.dashboard);
+      if (!order.length) return;
+      const currentIndex = Math.max(0, order.findIndex(agent => agent.id === state.selectedFocus));
+      const nextIndex = (currentIndex + step + order.length) % order.length;
+      setSelectedFocus(order[nextIndex].id);
+    }
+
+    function cycleSummaryTab(step) {
+      const tabs = ['info', 'stats', 'memo'];
+      const currentIndex = Math.max(0, tabs.indexOf(state.selectedSummaryTab || 'info'));
+      const nextIndex = (currentIndex + step + tabs.length) % tabs.length;
+      setSummaryTab(tabs[nextIndex]);
+    }
+
+    function bindFocusTargets(root) {
+      if (!root) return;
+      root.querySelectorAll('[data-focus]').forEach(node => {
+        node.addEventListener('click', event => {
+          event.stopPropagation();
+          setSelectedFocus(node.dataset.focus);
+        });
+      });
+    }
+
+    function bindSummaryTabs(root) {
+      if (!root) return;
+      root.querySelectorAll('[data-summary-tab]').forEach(node => {
+        node.addEventListener('click', event => {
+          event.stopPropagation();
+          setSummaryTab(node.dataset.summaryTab);
+        });
+      });
+    }
+
+    function bindPartyMenuActions(root) {
+      if (!root) return;
+      root.querySelectorAll('[data-party-command]').forEach(node => {
+        node.addEventListener('click', event => {
+          event.stopPropagation();
+          const command = node.dataset.partyCommand;
+          if (command === 'heal' && node.dataset.agentId) {
+            healAgent(node.dataset.agentId);
+            return;
+          }
+          if (command === 'remote') {
+            window.location.href = '/remote';
+            return;
+          }
+          if (command) setSummaryTab(command);
+        });
+      });
+    }
+
+    function getAgentStanding(agent) {
+      if (!agent) return { tone: 'warn', label: 'Unknown' };
+      if (agent.status === 'unhealthy') return { tone: 'danger', label: 'Needs Heal' };
+      if (agent.status === 'pending_build') return { tone: 'warn', label: 'Pending Build' };
+      if (agent.available) return { tone: 'ok', label: 'Ready' };
+      return { tone: 'warn', label: 'Offline' };
+    }
+
+    function getLaneLabel(agent) {
+      if (!agent) return 'Unassigned';
+      if (agent.teamRole === 'trainer') return 'Trainer Bench';
+      if (agent.teamRole === 'companion') return 'Companion Lane';
+      return `Party Slot ${agent.partySlot || '?'}`;
+    }
+
+    function getProfileCopy(agent) {
+      if (!agent) return 'No profile selected.';
+      if (agent.teamRole === 'trainer') {
+        return 'Ken AI runs the trainer bench, makes architecture and routing calls, and keeps the party aligned with your preferences as the project lead.';
+      }
+      if (agent.teamRole === 'companion') {
+        return 'M3w Promptdex rides beside Ken AI as the memory-and-learning lane, turning completed work into stronger prompts, reusable lessons, and sharper future routing.';
+      }
+      return `${agent.displayName} holds the ${agent.specialistTrack || 'specialist'} lane, can stand on its own, and syncs with ${agent.preferredPartnerName || 'the active lead'} when a task benefits from a two-model pass.`;
+    }
+
+    function summaryBar(label, value) {
+      const clamped = Math.max(0, Math.min(100, Math.round(value || 0)));
+      return `
+        <div class="summary-bar">
+          <div class="summary-bar-top"><span>${escapeHtml(label)}</span><span>${clamped}</span></div>
+          <div class="summary-track"><span style="width:${clamped}%"></span></div>
+        </div>
+      `;
+    }
+
+    function getAgentMetrics(agent) {
+      const attempts = agent?.attempts || ((agent?.tasksCompleted || 0) + (agent?.tasksFailed || 0));
+      const successPct = agent?.teamRole === 'trainer'
+        ? 88
+        : Math.round((agent?.successRate || 0) * 100);
+      const readiness = agent?.teamRole === 'trainer'
+        ? 98
+        : (agent?.status === 'unhealthy' ? 18 : agent?.status === 'pending_build' ? 44 : agent?.available ? 94 : 32);
+      const volume = agent?.teamRole === 'trainer'
+        ? 74
+        : Math.max(10, Math.min(100, attempts ? attempts * 12 : 18));
+      const cohesion = agent?.teamRole === 'trainer'
+        ? 96
+        : agent?.teamRole === 'companion'
+          ? 98
+          : agent?.preferredPartnerName ? 92 : 64;
+      return { attempts, successPct, readiness, volume, cohesion };
+    }
+
+    function getAgentLevel(agent) {
+      const metrics = getAgentMetrics(agent);
+      const base = agent?.teamRole === 'trainer' ? 99 : agent?.teamRole === 'companion' ? 42 : 24;
+      return Math.max(base, Math.min(99, base + Math.round(metrics.successPct / 6) + Math.min(18, metrics.attempts * 4)));
+    }
+
+    function getAgentNature(agent) {
+      const map = {
+        TR: 'Bold',
+        SCZ: 'Adamant',
+        ROT: 'Hasty',
+        DEC: 'Calm',
+        PGN: 'Modest',
+        UMB: 'Careful',
+        ALK: 'Timid',
+        M3W: 'Curious',
+      };
+      return map[agent?.partyBadge] || 'Hardy';
+    }
+
+    function getAgentAbility(agent) {
+      if (agent?.teamRole === 'trainer') return 'Command Link';
+      if (agent?.teamRole === 'companion') return 'Memory Loop';
+      return agent?.battleRole || agent?.role || agent?.specialistTrack || 'Adaptive Specialist';
+    }
+
+    function getPartner(agent, dashboard) {
+      if (agent?.teamRole === 'trainer') return dashboard.companion?.displayName || 'Companion lane open';
+      if (agent?.teamRole === 'companion') return dashboard.trainer?.displayName || 'Trainer bench';
+      return agent?.preferredPartnerName || 'Solo-capable';
+    }
+
+    function getMemoTitle(agent) {
+      if (agent?.teamRole === 'trainer') return 'Trainer Memo';
+      if (agent?.teamRole === 'companion') return 'Companion Memo';
+      return 'Model Memo';
+    }
+
+    function renderEmeraldTextbox(dashboard) {
+      const agent = getSelectedAgent(dashboard);
+      if (!agent) {
+        els.emeraldTextbox.innerHTML = `
+          <div class="textbox-speaker">Trainer Log</div>
+          <div class="textbox-body">Choose a trainer, companion, or party slot to inspect the deck.</div>
+          <div class="textbox-footer">
+            <span>Arrows move through the party</span>
+            <span class="textbox-prompt"><span class="textbox-button">A</span> Next <span class="textbox-arrow" aria-hidden="true"></span></span>
+          </div>
+        `;
+        return;
+      }
+
+      const tab = state.selectedSummaryTab || 'info';
+      const metrics = getAgentMetrics(agent);
+      const level = getAgentLevel(agent);
+      const standing = getAgentStanding(agent);
+      const partner = getPartner(agent, dashboard);
+      let body = '';
+      if (tab === 'stats') {
+        body = `${agent.displayName} is at Lv ${level}. Current status is ${standing.label.toLowerCase()}, readiness is ${metrics.readiness}/100, success is ${metrics.successPct}%, and cohesion with the team rates at ${metrics.cohesion}.`;
+      } else if (tab === 'memo') {
+        body = getProfileCopy(agent);
+      } else {
+        body = `${agent.displayName} occupies ${getLaneLabel(agent)} and specializes in ${agent.specialistTrack || agent.teamRole || 'general work'}. Preferred pair: ${partner}.`;
+      }
+
+      const pageLabel = tab === 'stats' ? 'Stats Page' : tab === 'memo' ? getMemoTitle(agent) : 'Summary Page';
+      const controls = tab === 'memo'
+        ? 'Left/Right change pages | H heals if needed'
+        : 'Up/Down move slots | 1 2 3 jump pages';
+      els.emeraldTextbox.innerHTML = `
+        <div class="textbox-speaker">${escapeHtml(agent.displayName)} / ${escapeHtml(pageLabel)}</div>
+        <div class="textbox-body">${escapeHtml(body)}</div>
+        <div class="textbox-footer">
+          <span>${escapeHtml(controls)}</span>
+          <span class="textbox-prompt"><span class="textbox-button">A</span> Next <span class="textbox-arrow" aria-hidden="true"></span></span>
+        </div>
+      `;
+    }
+
+    function renderPartyMenu(dashboard) {
+      const agent = getSelectedAgent(dashboard);
+      if (!agent) {
+        els.partyMenu.innerHTML = '';
+        return;
+      }
+
+      const standing = getAgentStanding(agent);
+      const menuActions = [
+        { id: 'info', label: 'Info', hint: 'Open page 1' },
+        { id: 'stats', label: 'Stats', hint: 'Open page 2' },
+        { id: 'memo', label: 'Memo', hint: 'Open page 3' },
+        agent.status === 'unhealthy'
+          ? { id: 'heal', label: 'Heal', hint: 'Recover slot' }
+          : { id: 'remote', label: 'Remote', hint: 'Open deck' },
+      ];
+
+      els.partyMenu.innerHTML = `
+        <section class="party-menu-box">
+          <div class="party-menu-head">
+            <h3 class="party-menu-title">${escapeHtml(agent.displayName)}</h3>
+            ${badge(standing.label, standing.tone)}
+          </div>
+          <div class="party-menu-copy">Choose a command, use arrow keys to move through the lineup, or page through the selected model like a handheld stats screen.</div>
+          <div class="party-command-grid">
+            ${menuActions.map(action => `
+              <button
+                type="button"
+                class="party-command ${(state.selectedSummaryTab === action.id) ? 'active' : ''}"
+                data-party-command="${action.id}"
+                ${agent.id ? `data-agent-id="${escapeHtml(agent.id)}"` : ''}
+              >
+                <span>${escapeHtml(action.label)}</span>
+                <small>${escapeHtml(action.hint)}</small>
+              </button>
+            `).join('')}
+          </div>
+          <div class="party-menu-hint">Up/Down: move slot | Left/Right: change page | 1 2 3: info, stats, memo | H: heal if needed</div>
+        </section>
+      `;
+      bindPartyMenuActions(els.partyMenu);
+    }
+
+    function formatWhen(value) {
+      if (!value) return 'Never';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    function formatAgo(value) {
+      if (!value) return 'No timestamp';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      const diffMs = date.getTime() - Date.now();
+      const abs = Math.abs(diffMs);
+      const mins = Math.round(abs / 60000);
+      if (mins < 1) return diffMs >= 0 ? 'Now' : 'Just now';
+      if (mins < 60) return diffMs >= 0 ? `in ${mins}m` : `${mins}m ago`;
+      const hours = Math.round(mins / 60);
+      return diffMs >= 0 ? `in ${hours}h` : `${hours}h ago`;
+    }
+
+    function renderStatusCluster(dashboard) {
+      const system = dashboard.system || {};
+      const theme = { ...themeFallback, ...(dashboard.theme || {}) };
+      els.statusCluster.innerHTML = [
+        badge(theme.workbenchLabel, 'pixel'),
+        badge(`${dashboard.queue?.total || 0} tasks`),
+        badge(system.claudeStatus || 'Claude ?', system.claudeStatus === 'available' ? 'ok' : 'warn'),
+        badge(system.ollamaStatus || 'Ollama ?', system.ollamaStatus === 'online' ? 'ok' : 'danger'),
+        badge(system.autoExecutePaused ? 'Auto-Exec Paused' : 'Auto-Exec Live', system.autoExecutePaused ? 'warn' : 'ok'),
+      ].join('');
+    }
+
+    function renderTrainer(dashboard) {
+      const trainer = dashboard.trainer;
+      const companion = dashboard.companion;
+      const queue = dashboard.queue || {};
+      if (!trainer) {
+        els.trainerPanel.innerHTML = '<div class="empty">Trainer slot not configured yet.</div>';
+        return;
+      }
+      const selected = getSelectedAgent(dashboard);
+      const trainerStanding = getAgentStanding(trainer);
+      const companionStanding = getAgentStanding(companion);
+      const companionMedia = getAgentMedia(companion);
+      els.trainerPanel.innerHTML = `
+        <article class="trainer-card selectable ${selected?.id === trainer.id ? 'selected' : ''}" data-focus="${escapeHtml(trainer.id)}">
+          <div class="trainer-topline">
+            <div class="trainer-emblem"><span>${escapeHtml(trainer.partyBadge || 'TR')}</span></div>
+            <div class="trainer-identity">
+              <div class="card-top">
+                <div>
+                  <h3>${escapeHtml(trainer.displayName)}</h3>
+                  <div class="muted-code">${escapeHtml(trainer.base)}</div>
+                </div>
+                ${badge(trainerStanding.label, trainerStanding.tone)}
+              </div>
+              <div class="trainer-subline">
+                ${accentBadge('Trainer / Orchestrator', getAgentAccent(trainer))}
+                ${badge(getLaneLabel(trainer), 'pixel')}
+              </div>
+            </div>
+          </div>
+          <div class="trainer-copy">Ken AI is the trainer slot. This screen treats the trainer as the decision maker while the field party executes and M3w keeps the memory loop alive as the companion lane.</div>
+          <div class="trainer-companion">
+            ${companion ? `
+              <button type="button" class="companion-chip ${selected?.id === companion.id ? 'selected' : ''}" data-focus="${escapeHtml(companion.id)}">
+                ${companionMedia.iconUrl ? `<img src="${companionMedia.iconUrl}" alt="${escapeHtml(companion.displayName)} icon" />` : `<div class="party-icon-fallback">${escapeHtml(companion.partyBadge || 'CP')}</div>`}
+                <div class="companion-chip-copy">
+                  <strong>${escapeHtml(companion.displayName)}</strong>
+                  <div class="muted-code">${escapeHtml(companionStanding.label)} companion lane</div>
+                </div>
+              </button>
+            ` : '<div class="muted-code">Companion lane empty.</div>'}
+          </div>
+          <div class="stat-row">
+            <div class="stat-pill"><div class="stat-label">Battle Role</div><div class="stat-value">${escapeHtml(trainer.role || trainer.battleRole || 'Trainer')}</div></div>
+            <div class="stat-pill"><div class="stat-label">Companion</div><div class="stat-value">${escapeHtml(companion?.displayName || 'None')}</div></div>
+            <div class="stat-pill"><div class="stat-label">Queue Standing</div><div class="stat-value">${queue.pendingReview || 0} review</div></div>
+            <div class="stat-pill"><div class="stat-label">System</div><div class="stat-value">${escapeHtml((dashboard.system?.mode || dashboard.mode || 'hybrid').toUpperCase())}</div></div>
+          </div>
+        </article>
+      `;
+      bindFocusTargets(els.trainerPanel);
+    }
+
+    function renderParty(dashboard) {
+      const party = dashboard.party || [];
+      const theme = { ...themeFallback, ...(dashboard.theme || {}) };
+      const selected = getSelectedAgent(dashboard);
+      els.partyHeading.textContent = theme.partyLabel;
+      els.partyCount.textContent = `${party.length} slots`;
+      if (!party.length) {
+        els.partyGrid.innerHTML = '<div class="empty">No party agents registered.</div>';
+        return;
+      }
+      els.partyGrid.innerHTML = party.map(agent => {
+        const accent = getAgentAccent(agent);
+        const metrics = getAgentMetrics(agent);
+        const attempts = metrics.attempts;
+        const successPct = metrics.successPct;
+        const readiness = metrics.readiness;
+        const tone = agent.status === 'unhealthy' ? 'danger' : (agent.available ? 'ok' : 'warn');
+        const label = agent.status === 'unhealthy' ? 'Sick' : (agent.available ? 'Ready' : 'Missing');
+        const pairLabel = agent.preferredPartnerName ? `Best with ${agent.preferredPartnerName}` : '';
+        const media = getAgentMedia(agent);
+        const level = getAgentLevel(agent);
+        return `
+          <article class="agent-card selectable party-slot-card ${agent.status === 'unhealthy' ? 'unhealthy' : ''} ${selected?.id === agent.id ? 'selected' : ''}" style="${accentStyle(accent)}" data-focus="${escapeHtml(agent.id)}">
+            <div class="party-cursor" aria-hidden="true"></div>
+            <div class="party-icon-shell">
+              <div class="slot-marker">${escapeHtml(getLaneLabel(agent))}</div>
+              <div class="party-icon-frame">
+                ${media.iconUrl ? `<img src="${media.iconUrl}" alt="${escapeHtml(agent.displayName)} icon" />` : `<div class="party-icon-fallback">${escapeHtml(agent.partyBadge || 'P?')}</div>`}
+              </div>
+            </div>
+            <div class="party-main">
+              <div class="party-headline">
+                <div class="party-name-stack"><h3>${escapeHtml(agent.displayName)}</h3><div class="muted-code">${escapeHtml(agent.base)}</div></div>
+                <div class="party-level">Lv <strong>${level}</strong></div>
+              </div>
+              <div class="party-line">
+                <span class="party-track">${escapeHtml(agent.specialistTrack || 'generalist')}</span>
+                ${badge(label, tone)}
+              </div>
+              <div class="card-copy">${escapeHtml(agent.battleRole || agent.role || 'General Worker')}</div>
+              <div class="party-hp-block">
+                <div class="party-hp-top">
+                  <span class="party-hp-label">HP</span>
+                  <span>${readiness}/100 readiness</span>
+                </div>
+                <div class="party-hp-bar"><span style="width:${Math.max(8, readiness)}%"></span></div>
+              </div>
+              <div class="party-subline small">
+                ${accentBadge(media.alias || agent.partyBadge || 'P?', accent)}
+                ${badge(`${attempts} runs`)}
+                ${badge(`${successPct}% win`, successPct >= 60 ? 'ok' : (attempts ? 'warn' : ''))}
+                ${pairLabel ? badge(pairLabel) : ''}
+                ${badge(agent.status || 'idle', agent.status === 'unhealthy' ? 'danger' : '')}
+              </div>
+              <div class="card-actions">${agent.status === 'unhealthy' ? `<button data-heal="${escapeHtml(agent.id)}">Heal Slot</button>` : ''}</div>
+            </div>
+          </article>
+        `;
+      }).join('');
+      bindFocusTargets(els.partyGrid);
+      els.partyGrid.querySelectorAll('[data-heal]').forEach(button => button.addEventListener('click', event => {
+        event.stopPropagation();
+        healAgent(button.dataset.heal);
+      }));
+    }
+
+    function renderSummary(dashboard) {
+      const agent = getSelectedAgent(dashboard);
+      if (!agent) {
+        els.summaryHeading.textContent = 'Selected Model';
+        els.summaryDex.textContent = 'Summary';
+        els.summaryPanel.innerHTML = '<div class="empty">Pick a trainer, companion, or party slot to inspect the stats screen.</div>';
+        return;
+      }
+
+      const accent = getAgentAccent(agent);
+      const media = getAgentMedia(agent);
+      const standing = getAgentStanding(agent);
+      const metrics = getAgentMetrics(agent);
+      const level = getAgentLevel(agent);
+      const partner = getPartner(agent, dashboard);
+      const summaryTab = state.selectedSummaryTab || 'info';
+      const pages = [
+        { id: 'info', label: 'Info' },
+        { id: 'stats', label: 'Stats' },
+        { id: 'memo', label: 'Memo' },
+      ];
+      const tab = pages.find(page => page.id === summaryTab)?.id || 'info';
+
+      let summaryPage = '';
+      if (tab === 'stats') {
+        summaryPage = `
+          <section class="summary-page">
+            <div class="summary-stat-grid">
+              <div class="summary-stat"><label>Level</label><strong>${level}</strong></div>
+              <div class="summary-stat"><label>Status</label><strong>${escapeHtml(standing.label)}</strong></div>
+              <div class="summary-stat"><label>Wins</label><strong>${agent.tasksCompleted || (agent.teamRole === 'trainer' ? 'Lead' : 0)}</strong></div>
+              <div class="summary-stat"><label>Losses</label><strong>${agent.tasksFailed || 0}</strong></div>
+            </div>
+            <div class="summary-bars">
+              ${summaryBar('Readiness', metrics.readiness)}
+              ${summaryBar('Success', metrics.successPct)}
+              ${summaryBar('Volume', metrics.volume)}
+              ${summaryBar('Cohesion', metrics.cohesion)}
+            </div>
+          </section>
+        `;
+      } else if (tab === 'memo') {
+        summaryPage = `
+          <section class="summary-page">
+            <div class="summary-memo">${escapeHtml(getProfileCopy(agent))}</div>
+            <div class="summary-notes-grid">
+              <div class="summary-note"><label>Ability</label><strong>${escapeHtml(getAgentAbility(agent))}</strong></div>
+              <div class="summary-note"><label>Nature</label><strong>${escapeHtml(getAgentNature(agent))}</strong></div>
+              <div class="summary-note"><label>Preferred Pair</label><strong>${escapeHtml(partner)}</strong></div>
+              <div class="summary-note"><label>Memo Title</label><strong>${escapeHtml(getMemoTitle(agent))}</strong></div>
+            </div>
+          </section>
+        `;
+      } else {
+        summaryPage = `
+          <section class="summary-page">
+            <div class="summary-stat-grid">
+              <div class="summary-stat"><label>Model ID</label><strong>${escapeHtml(agent.id || 'unknown')}</strong></div>
+              <div class="summary-stat"><label>Base</label><strong>${escapeHtml(agent.base || 'No base model recorded')}</strong></div>
+              <div class="summary-stat"><label>Track</label><strong>${escapeHtml(agent.specialistTrack || (agent.teamRole === 'trainer' ? 'command' : agent.teamRole || 'generalist'))}</strong></div>
+              <div class="summary-stat"><label>Partner</label><strong>${escapeHtml(partner)}</strong></div>
+            </div>
+            <div class="summary-memo">${escapeHtml(agent.battleRole || agent.role || 'Specialist lane')}</div>
+          </section>
+        `;
+      }
+
+      els.summaryHeading.textContent = agent.displayName || 'Selected Model';
+      els.summaryDex.textContent = media.dex || 'Summary';
+      els.summaryPanel.innerHTML = `
+        <article class="summary-card" style="${accentStyle(accent)}">
+          <div class="summary-layout">
+            <section class="summary-portrait-shell">
+              <div class="summary-portrait">
+                ${media.portraitUrl ? `<img src="${media.portraitUrl}" alt="${escapeHtml(agent.displayName)} portrait" />` : `<div class="summary-emblem"><span>${escapeHtml(agent.partyBadge || 'AI')}</span></div>`}
+              </div>
+              <div class="summary-caption">
+                <span>${escapeHtml(getLaneLabel(agent))}</span>
+                <span>${escapeHtml(standing.label)}</span>
+              </div>
+            </section>
+            <section class="summary-core" style="${accentStyle(accent)}">
+              <div class="summary-name-row">
+                <div>
+                  <h3>${escapeHtml(agent.displayName)}</h3>
+                  <div class="muted-code">${escapeHtml(agent.base || 'No base model recorded')}</div>
+                  <div class="summary-role">${escapeHtml(agent.battleRole || agent.role || 'Specialist lane')}</div>
+                </div>
+                ${badge(standing.label, standing.tone)}
+              </div>
+              <div class="summary-chip-row">
+                ${accentBadge(media.alias || agent.partyBadge || 'AI', accent)}
+                ${badge(getLaneLabel(agent), 'pixel')}
+                ${agent.specialistTrack ? accentBadge(agent.specialistTrack, accent) : ''}
+                ${partner ? badge(`Pair: ${partner}`) : ''}
+                ${badge(`Lv ${level}`)}
+              </div>
+              <div class="summary-tabs">
+                ${pages.map(page => `
+                  <button type="button" class="summary-tab ${page.id === tab ? 'active' : ''}" data-summary-tab="${page.id}">
+                    ${escapeHtml(page.label)}
+                  </button>
+                `).join('')}
+              </div>
+              ${summaryPage}
+            </section>
+          </div>
+        </article>
+      `;
+      bindSummaryTabs(els.summaryPanel);
+    }
+
+    function renderTasks(dashboard) {
+      const tasks = dashboard.tasks || [];
+      els.queueCount.textContent = `${tasks.length} shown`;
+      if (!tasks.length) {
+        els.taskGrid.innerHTML = '<div class="empty">Queue is clear.</div>';
+        return;
+      }
+      els.taskGrid.innerHTML = tasks.map(task => {
+        const tone = task.status === 'failed' ? 'danger' : task.status === 'waiting_for_claude' ? 'warn' : task.status === 'approved_for_merge' ? 'ok' : '';
+        const retryText = task.maxRetries ? `${task.retries || 0}/${task.maxRetries}` : '0/0';
+        return `
+          <article class="task-card ${task.status === 'failed' ? 'failed' : ''}">
+            <div class="task-top">
+              <div><h3>${escapeHtml(task.type || 'general')}</h3><div class="muted-code">${escapeHtml(task.id)}</div></div>
+              ${badge(task.status || 'queued', tone)}
+            </div>
+            <div class="project-copy">${escapeHtml(task.objective || 'No objective recorded.')}</div>
+            <div class="task-meta small">
+              ${badge(`Lead: ${task.assignedAgentName || task.assignedAgent || 'auto'}`)}
+              ${task.supportAgentName ? badge(`Wing: ${task.supportAgentName}`) : ''}
+              ${task.routingLane ? badge(`Lane: ${task.routingLane}`) : ''}
+              ${badge(`Retries: ${retryText}`, (task.retries || 0) > 0 ? 'warn' : '')}
+              ${task.nextRetryAt ? badge(`Next: ${formatAgo(task.nextRetryAt)}`, 'warn') : ''}
+              ${task.failureReason ? badge(`Fail: ${task.failureReason.slice(0, 26)}`, 'danger') : ''}
+            </div>
+            ${task.routingReason ? `<div class="card-copy">${escapeHtml(task.routingReason)}</div>` : ''}
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderProjects(dashboard) {
+      const projects = dashboard.projects || [];
+      const online = projects.filter(project => project.online).length;
+      els.projectCount.textContent = `${online}/${projects.length} online`;
+      if (!projects.length) {
+        els.projectGrid.innerHTML = '<div class="empty">No projects returned from the deck.</div>';
+        return;
+      }
+      els.projectGrid.innerHTML = projects.map(project => `
+        <article class="project-card">
+          <div class="project-top">
+            <div><h3>${escapeHtml(project.name)}</h3><div class="muted-code">${escapeHtml(project.codename || '')}</div></div>
+            ${badge(project.online ? 'Online' : 'Offline', project.online ? 'ok' : 'danger')}
+          </div>
+          <div class="project-copy">${escapeHtml(project.repo || project.url || project.path || 'No repo set')}</div>
+          <div class="project-meta small">
+            ${badge(`${project.gitChanges || 0} changes`, (project.gitChanges || 0) ? 'warn' : 'ok')}
+            ${badge(project.lastCommit ? `Last: ${project.lastCommit}` : 'No git log', project.lastCommit ? '' : 'warn')}
+          </div>
+        </article>
+      `).join('');
+    }
+
+    function renderSheets() {
+      const entries = Object.entries(state.sheets || {});
+      els.sheetCount.textContent = `${entries.length} crews`;
+      if (!entries.length) {
+        els.sheetGrid.innerHTML = '<div class="empty">Sheets sync data is unavailable or not configured.</div>';
+        return;
+      }
+      els.sheetGrid.innerHTML = entries.map(([teamCode, info]) => {
+        const failed = info?.error;
+        return `
+          <article class="sheet-card ${failed ? 'error' : ''}">
+            <div class="sheet-top">
+              <div><h3>${escapeHtml(teamCode)}</h3><div class="muted-code">${escapeHtml(info?.name || info?.crewName || 'Crew sync record')}</div></div>
+              ${badge(failed ? 'Error' : 'Ready', failed ? 'danger' : 'ok')}
+            </div>
+            <div class="sheet-copy">${escapeHtml(info?.error || info?.status || 'Sheets sync standing by.')}</div>
+            <div class="sheet-tags small">
+              ${badge(info?.spreadsheetId ? 'Sheet linked' : 'No sheet', info?.spreadsheetId ? 'ok' : 'warn')}
+              ${badge(`Updated: ${formatWhen(info?.lastSync || info?.updatedAt || info?.ts)}`)}
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderActivity(dashboard) {
+      const items = dashboard.recentActivity || [];
+      els.activityCount.textContent = `${items.length} events`;
+      if (!items.length) {
+        els.activityGrid.innerHTML = '<div class="empty">Recent activity log is quiet.</div>';
+        return;
+      }
+      els.activityGrid.innerHTML = items.slice(0, 8).map(item => `
+        <article class="activity-item">
+          <div class="activity-top">
+            <div><h3>${escapeHtml(item.level || 'INFO')}</h3><div class="muted-code">${escapeHtml(item.time || '')}</div></div>
+            ${badge(item.type || 'system', item.type === 'error' ? 'danger' : (item.type === 'agent' ? 'pixel' : ''))}
+          </div>
+          <div class="activity-copy">${escapeHtml(item.msg || '')}</div>
+        </article>
+      `).join('');
+    }
+
+    function render() {
+      if (!state.dashboard) return;
+      const dashboard = state.dashboard;
+      const theme = { ...themeFallback, ...(dashboard.theme || {}) };
+      els.deckTitle.textContent = `${theme.trainerLabel} Trainer Deck`;
+      els.deckSubtitle.textContent = `${theme.workbenchLabel}. The left side now behaves like a party menu, and the right side lets you page through model info like a handheld stats screen for the trainer, companion, or selected field slot.`;
+      els.trainerHeading.textContent = theme.trainerLabel;
+      els.modeBadge.textContent = (dashboard.system?.mode || dashboard.mode || 'hybrid').toUpperCase();
+      els.modeBadge.className = `badge ${(dashboard.system?.mode || dashboard.mode) === 'offline' ? 'warn' : 'ok'}`;
+      els.pauseBtn.textContent = dashboard.system?.autoExecutePaused ? 'Resume Auto-Exec' : 'Pause Auto-Exec';
+      renderStatusCluster(dashboard);
+      renderTrainer(dashboard);
+      renderParty(dashboard);
+      renderPartyMenu(dashboard);
+      renderSummary(dashboard);
+      renderEmeraldTextbox(dashboard);
+      renderTasks(dashboard);
+      renderProjects(dashboard);
+      renderSheets();
+      renderActivity(dashboard);
+    }
+
+    async function loadAll(silent = false) {
+      try {
+        const [dashboard, sheets] = await Promise.all([
+          fetchJson('/api/dashboard'),
+          fetchJson('/api/sheets/status').catch(() => ({})),
+        ]);
+        state.dashboard = dashboard;
+        state.sheets = sheets;
+        render();
+        if (!silent) setBanner(`Deck refreshed at ${new Date().toLocaleTimeString()}.`, 'ok');
+      } catch (error) {
+        setBanner(error.message, 'danger');
+      }
+    }
+
+    async function runSheetsSync() {
+      try {
+        setBanner('Running Sheets sync across the deck...', 'warn');
+        await fetchJson('/api/sheets/sync', { method: 'POST', body: '{}' });
+        await loadAll(true);
+        setBanner('Sheets sync triggered.', 'ok');
+      } catch (error) {
+        setBanner(error.message, 'danger');
+      }
+    }
+
+    async function toggleAutoExec() {
+      if (!state.dashboard) return;
+      const paused = state.dashboard.system?.autoExecutePaused;
+      const command = paused ? 'resume-agents' : 'pause-agents';
+      try {
+        await fetchJson('/api/command', { method: 'POST', body: JSON.stringify({ command }) });
+        await loadAll(true);
+        setBanner(paused ? 'Auto-exec resumed.' : 'Auto-exec paused.', 'ok');
+      } catch (error) {
+        setBanner(error.message, 'danger');
+      }
+    }
+
+    async function healAgent(agentId) {
+      try {
+        await fetchJson('/api/agent/heal', { method: 'POST', body: JSON.stringify({ agentId }) });
+        await loadAll(true);
+        setBanner(`Party slot ${agentId} healed.`, 'ok');
+      } catch (error) {
+        setBanner(error.message, 'danger');
+      }
+    }
+
+    function handleDeckKeydown(event) {
+      const tag = (event.target?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || event.target?.isContentEditable) return;
+      if (!state.dashboard) return;
+
+      const selected = getSelectedAgent(state.dashboard);
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        shiftSelectedFocus(1);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        shiftSelectedFocus(-1);
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        cycleSummaryTab(1);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        cycleSummaryTab(-1);
+        return;
+      }
+      if (event.key === '1') {
+        event.preventDefault();
+        setSummaryTab('info');
+        return;
+      }
+      if (event.key === '2') {
+        event.preventDefault();
+        setSummaryTab('stats');
+        return;
+      }
+      if (event.key === '3') {
+        event.preventDefault();
+        setSummaryTab('memo');
+        return;
+      }
+      if ((event.key === 'h' || event.key === 'H') && selected?.status === 'unhealthy') {
+        event.preventDefault();
+        healAgent(selected.id);
+      }
+    }
+
+    els.refreshBtn.addEventListener('click', () => loadAll());
+    els.syncBtn.addEventListener('click', runSheetsSync);
+    els.pauseBtn.addEventListener('click', toggleAutoExec);
+    els.remoteBtn.addEventListener('click', () => { window.location.href = '/remote'; });
+    window.addEventListener('keydown', handleDeckKeydown);
+
+    loadAll();
+    window.setInterval(() => loadAll(true), 5000);
+  </script>
+</body>
+</html>

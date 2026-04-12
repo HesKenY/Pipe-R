@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
- * PIPE-R v4.0 — Windows-Style Command Center
+ * PIPE-R v4.0 Ã¢â‚¬â€ Windows-Style Command Center
  * Professional terminal UI for project orchestration
  * Button-driven. No typing required.
  *
  * Folders:
- *   input/      — Drop files here for processing
- *   output/     — Finished deliverables
- *   workspace/  — Active in-progress work
- *   staging/    — Ready for review
+ *   input/      Ã¢â‚¬â€ Drop files here for processing
+ *   output/     Ã¢â‚¬â€ Finished deliverables
+ *   workspace/  Ã¢â‚¬â€ Active in-progress work
+ *   staging/    Ã¢â‚¬â€ Ready for review
  */
 
 import { createInterface } from 'readline';
@@ -35,16 +35,16 @@ if (!existsSync(join(ROOT, 'agents'))) mkdirSync(join(ROOT, 'agents'), { recursi
 if (!existsSync(CLAUDE_DIR)) mkdirSync(CLAUDE_DIR, { recursive: true });
 if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
 
-// ═══════════════════════════════════════════════════════
-// COLORS — Modern 2026 Dark Theme
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// COLORS Ã¢â‚¬â€ Modern 2026 Dark Theme
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 const c = {
   reset:   '\x1b[0m',
   bold:    '\x1b[1m',
   dim:     '\x1b[2m',
   under:   '\x1b[4m',
   italic:  '\x1b[3m',
-  // UI chrome — gradient blues
+  // UI chrome Ã¢â‚¬â€ gradient blues
   title:   '\x1b[38;5;15m\x1b[48;5;25m',   // white on rich blue
   titleHi: '\x1b[38;5;231m\x1b[48;5;32m',  // bright white on vibrant blue
   menu:    '\x1b[38;5;254m\x1b[48;5;237m',  // light on charcoal (modern flat)
@@ -85,14 +85,14 @@ const c = {
   bgAccent:'\x1b[48;5;236m',
 };
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // LOGGING
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 function hubLog(level, message) {
   const ts = new Date().toISOString();
   try { appendFileSync(LOG_FILE, `[${ts}] [${level.toUpperCase()}] ${message}\n`); } catch {}
 }
-hubLog('info', '═══ PIPE-R v4.0 session started ═══');
+hubLog('info', 'Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â PIPE-R v4.0 session started Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â');
 
 const rl = createInterface({ input: process.stdin, output: process.stdout });
 const ask = (q) => new Promise(r => rl.question(q, r));
@@ -104,25 +104,25 @@ function launchTerminal(dir, cmd) {
   const script = cmd ? `cd /d "${dir}" && ${cmd}` : `cd /d "${dir}"`;
   try {
     execSync(`start "" cmd /k "${script}"`, { shell: 'cmd.exe', stdio: 'ignore' });
-    hubLog('info', `Terminal launched: ${dir}${cmd ? ' → ' + cmd : ''}`);
+    hubLog('info', `Terminal launched: ${dir}${cmd ? ' Ã¢â€ â€™ ' + cmd : ''}`);
   } catch (e) {
     hubLog('error', `Terminal launch failed: ${e.message}`);
   }
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // WINDOWS-STYLE UI RENDERER
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 const W = 72; // inner width
 
 function winTitle(title, active = true) {
   cls();
   const color = active ? c.titleHi : c.title;
-  const icon = '◆';
+  const icon = 'Ã¢â€”â€ ';
   const titleText = ` ${icon} ${title} `;
-  const closeBtn = ` ✕ `;
-  const maxBtn = ` □ `;
-  const minBtn = ` ─ `;
+  const closeBtn = ` Ã¢Å“â€¢ `;
+  const maxBtn = ` Ã¢â€“Â¡ `;
+  const minBtn = ` Ã¢â€â‚¬ `;
   const btns = `${minBtn}${maxBtn}${closeBtn}`;
   const padLen = W + 2 - titleText.length - btns.length;
   const padding = padLen > 0 ? ' '.repeat(padLen) : '';
@@ -133,7 +133,7 @@ function winMenuBar(items) {
   let bar = ' ';
   items.forEach((item, i) => {
     bar += ` ${item} `;
-    if (i < items.length - 1) bar += `${c.reset}${c.menu}·`;
+    if (i < items.length - 1) bar += `${c.reset}${c.menu}Ã‚Â·`;
   });
   const padLen = W + 2 - bar.replace(/\x1b\[[0-9;]*m/g, '').length;
   console.log(`${c.menu}${bar}${padLen > 0 ? ' '.repeat(padLen) : ''}${c.reset}`);
@@ -143,23 +143,23 @@ function winLine(text = '', indent = 1) {
   const clean = text.replace(/\x1b\[[0-9;]*m/g, '');
   const padding = W - clean.length - indent;
   const spaces = padding > 0 ? ' '.repeat(padding) : '';
-  console.log(`${c.panel}│${c.reset}${' '.repeat(indent)}${text}${c.reset}${spaces} ${c.panel}│${c.reset}`);
+  console.log(`${c.panel}Ã¢â€â€š${c.reset}${' '.repeat(indent)}${text}${c.reset}${spaces} ${c.panel}Ã¢â€â€š${c.reset}`);
 }
 
 function winEmpty() {
-  console.log(`${c.panel}│${' '.repeat(W + 1)}│${c.reset}`);
+  console.log(`${c.panel}Ã¢â€â€š${' '.repeat(W + 1)}Ã¢â€â€š${c.reset}`);
 }
 
-function winSep(char = '─') {
-  console.log(`${c.panel}├${c.dark}${char.repeat(W + 1)}${c.panel}┤${c.reset}`);
+function winSep(char = 'Ã¢â€â‚¬') {
+  console.log(`${c.panel}Ã¢â€Å“${c.dark}${char.repeat(W + 1)}${c.panel}Ã¢â€Â¤${c.reset}`);
 }
 
 function winTop() {
-  console.log(`${c.panel}┌${c.dark}${'─'.repeat(W + 1)}${c.panel}┐${c.reset}`);
+  console.log(`${c.panel}Ã¢â€Å’${c.dark}${'Ã¢â€â‚¬'.repeat(W + 1)}${c.panel}Ã¢â€Â${c.reset}`);
 }
 
 function winBottom() {
-  console.log(`${c.panel}└${c.dark}${'─'.repeat(W + 1)}${c.panel}┘${c.reset}`);
+  console.log(`${c.panel}Ã¢â€â€${c.dark}${'Ã¢â€â‚¬'.repeat(W + 1)}${c.panel}Ã¢â€Ëœ${c.reset}`);
 }
 
 function winStatusBar(left, right = '') {
@@ -171,14 +171,14 @@ function winStatusBar(left, right = '') {
 }
 
 function winSection(title) {
-  const line = '━'.repeat(W - title.length - 5);
-  winLine(`${c.cyan}${c.bold}▸ ${title}${c.reset} ${c.dark}${line}${c.reset}`, 1);
+  const line = 'Ã¢â€Â'.repeat(W - title.length - 5);
+  winLine(`${c.cyan}${c.bold}Ã¢â€“Â¸ ${title}${c.reset} ${c.dark}${line}${c.reset}`, 1);
 }
 
 function winBtn(key, label, desc = '') {
-  const k = key === '0' ? `${c.dark}⌊${c.gray}${key}${c.dark}⌋` : `${c.panel}⌊${c.cyan}${c.bold}${key}${c.reset}${c.panel}⌋`;
+  const k = key === '0' ? `${c.dark}Ã¢Å’Å ${c.gray}${key}${c.dark}Ã¢Å’â€¹` : `${c.panel}Ã¢Å’Å ${c.cyan}${c.bold}${key}${c.reset}${c.panel}Ã¢Å’â€¹`;
   const l = key === '0' ? `${c.gray}${label}` : `${c.white}${label}`;
-  const d = desc ? `  ${c.dim2}· ${desc}` : '';
+  const d = desc ? `  ${c.dim2}Ã‚Â· ${desc}` : '';
   winLine(`  ${k}${c.reset}  ${l}${c.reset}${d}${c.reset}`, 1);
 }
 
@@ -187,12 +187,12 @@ function winBtnRow(opts) {
 }
 
 function winPrompt() {
-  return ask(`${c.bgInput} ${c.cyan}▸${c.reset}${c.bgInput} ${c.reset} `);
+  return ask(`${c.bgInput} ${c.cyan}Ã¢â€“Â¸${c.reset}${c.bgInput} ${c.reset} `);
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // HELPERS
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 function countFiles(dir) {
   try { return readdirSync(dir).filter(f => !f.startsWith('.')).length; }
   catch { return 0; }
@@ -230,9 +230,9 @@ function getTimestamp() {
   return new Date().toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // PROJECTS REGISTRY
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 const PROJECTS = [
   { key: '1', name: 'CHERP',         path: 'C:\\Users\\Ken\\Documents\\CHERP Projects\\CHERP-main',   url: 'cherp.live',              codename: 'ALPHA' },
   { key: '2', name: 'CodeForge',     path: 'C:\\Users\\Ken\\Documents\\CodeForge\\CodeForge-main',    url: 'codesforge.netlify.app',  codename: 'FORGE' },
@@ -242,9 +242,9 @@ const PROJECTS = [
   { key: '6', name: "Bird's Nest",   path: join(ROOT, 'output', 'birds-nest'),                        url: null,                      codename: 'NEST' },
 ];
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // BOOT SEQUENCE
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function bootSequence() {
   cls();
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -253,18 +253,18 @@ async function bootSequence() {
   const bw = 62;
   const splash = c.bgBlue;
   console.log();
-  console.log(`  ${c.dark}${'▄'.repeat(bw)}${c.reset}`);
+  console.log(`  ${c.dark}${'Ã¢â€“â€ž'.repeat(bw)}${c.reset}`);
   console.log(`  ${splash}${' '.repeat(bw)}${c.reset}`);
-  console.log(`  ${splash}${c.white}${c.bold}      ██████╗  ██╗ ██████╗  ███████╗       ██████╗         ${c.reset}`);
-  console.log(`  ${splash}${c.white}${c.bold}      ██╔══██╗ ██║ ██╔══██╗ ██╔════╝       ██╔══██╗        ${c.reset}`);
-  console.log(`  ${splash}${c.cyan}${c.bold}      ██████╔╝ ██║ ██████╔╝ █████╗  ═════╗ ██████╔╝        ${c.reset}`);
-  console.log(`  ${splash}${c.cyan}      ██╔═══╝  ██║ ██╔═══╝  ██╔══╝  ═════╝ ██╔══██╗        ${c.reset}`);
-  console.log(`  ${splash}${c.dim2}      ██║      ██║ ██║      ███████╗       ██║  ██║        ${c.reset}`);
-  console.log(`  ${splash}${c.dim2}      ╚═╝      ╚═╝ ╚═╝      ╚══════╝       ╚═╝  ╚═╝        ${c.reset}`);
+  console.log(`  ${splash}${c.white}${c.bold}      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”  Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€” Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”  Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”       Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”         ${c.reset}`);
+  console.log(`  ${splash}${c.white}${c.bold}      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€” Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜ Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€” Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â       Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”        ${c.reset}`);
+  console.log(`  ${splash}${c.cyan}${c.bold}      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢Â Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜ Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢Â Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”  Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢â€” Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢Â        ${c.reset}`);
+  console.log(`  ${splash}${c.cyan}      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â  Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜ Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â  Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â  Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”        ${c.reset}`);
+  console.log(`  ${splash}${c.dim2}      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜ Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜      Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€”       Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜  Ã¢â€“Ë†Ã¢â€“Ë†Ã¢â€¢â€˜        ${c.reset}`);
+  console.log(`  ${splash}${c.dim2}      Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢Â      Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢Â Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢Â      Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â       Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢Â  Ã¢â€¢Å¡Ã¢â€¢ÂÃ¢â€¢Â        ${c.reset}`);
   console.log(`  ${splash}${' '.repeat(bw)}${c.reset}`);
-  console.log(`  ${splash}  ${c.white}  ◆ Command Center${c.reset}${splash}                         ${c.dim2}v4.0  ${c.reset}`);
+  console.log(`  ${splash}  ${c.white}  Ã¢â€”â€  Command Center${c.reset}${splash}                         ${c.dim2}v4.0  ${c.reset}`);
   console.log(`  ${splash}${' '.repeat(bw)}${c.reset}`);
-  console.log(`  ${c.dark}${'▀'.repeat(bw)}${c.reset}`);
+  console.log(`  ${c.dark}${'Ã¢â€“â‚¬'.repeat(bw)}${c.reset}`);
   console.log();
   await wait(400);
 
@@ -277,29 +277,29 @@ async function bootSequence() {
     ['Projects', () => { const n = PROJECTS.filter(p => existsSync(p.path)).length; return `${n}/${PROJECTS.length} online`; }],
   ];
 
-  console.log(`  ${c.dim2}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}`);
+  console.log(`  ${c.dim2}Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â${c.reset}`);
   for (const [label, check] of checks) {
-    process.stdout.write(`  ${c.panel}░${c.reset} ${c.dim2}${label}...${c.reset}`);
+    process.stdout.write(`  ${c.panel}Ã¢â€“â€˜${c.reset} ${c.dim2}${label}...${c.reset}`);
     await wait(80);
     const result = check();
-    const icon = result ? `${c.green}●` : `${c.amber}○`;
+    const icon = result ? `${c.green}Ã¢â€”Â` : `${c.amber}Ã¢â€”â€¹`;
     const val = result || 'standby';
     process.stdout.write(`\r  ${icon}${c.reset} ${c.text}${label.padEnd(18)}${c.reset} ${c.dim2}${val}${c.reset}\n`);
   }
-  console.log(`  ${c.dim2}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}`);
+  console.log(`  ${c.dim2}Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â${c.reset}`);
 
   console.log();
 
   // Modern gradient progress bar
   const barW = 40;
-  const gradChars = ['░', '▒', '▓', '█'];
+  const gradChars = ['Ã¢â€“â€˜', 'Ã¢â€“â€™', 'Ã¢â€“â€œ', 'Ã¢â€“Ë†'];
   for (let i = 0; i <= barW; i++) {
     let bar = '';
     for (let j = 0; j < barW; j++) {
-      if (j < i - 2) bar += `${c.cyan}█`;
-      else if (j < i - 1) bar += `${c.blue}▓`;
-      else if (j < i) bar += `${c.panel}▒`;
-      else bar += `${c.dark}░`;
+      if (j < i - 2) bar += `${c.cyan}Ã¢â€“Ë†`;
+      else if (j < i - 1) bar += `${c.blue}Ã¢â€“â€œ`;
+      else if (j < i) bar += `${c.panel}Ã¢â€“â€™`;
+      else bar += `${c.dark}Ã¢â€“â€˜`;
     }
     const pct = Math.round((i / barW) * 100);
     process.stdout.write(`\r  ${c.panel}[${bar}${c.panel}]${c.reset} ${pct < 100 ? c.dim2 : c.green}${String(pct).padStart(3)}%${c.reset}`);
@@ -316,14 +316,14 @@ async function bootSequence() {
     'Systems green. Let\'s get to work.',
     'Good to see you, Commander.',
   ];
-  console.log(`  ${c.green}◆${c.reset} ${c.text}${greetings[Math.floor(Math.random() * greetings.length)]}${c.reset}`);
+  console.log(`  ${c.green}Ã¢â€”â€ ${c.reset} ${c.text}${greetings[Math.floor(Math.random() * greetings.length)]}${c.reset}`);
   console.log();
   await wait(400);
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // MAIN MENU
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 let _booted = false;
 
 async function mainMenu() {
@@ -332,21 +332,21 @@ async function mainMenu() {
     _booted = true;
   }
 
-  winTitle(' Pipe-R v4.0 — Command Center ');
+  winTitle(' Pipe-R v4.0 Ã¢â‚¬â€ Command Center ');
   winMenuBar(['File', 'Projects', 'Tools', 'AI', 'View', 'Help']);
   winTop();
 
-  // Status overview row — modern dashboard strip
+  // Status overview row Ã¢â‚¬â€ modern dashboard strip
   const online = PROJECTS.filter(p => existsSync(p.path)).length;
   const totalFiles = Object.values(DIRS).reduce((s, d) => s + countFiles(d), 0);
   winEmpty();
-  winLine(`${c.green}●${c.reset} ${c.dim2}Projects${c.reset} ${c.white}${c.bold}${online}${c.reset}${c.dim2}/${PROJECTS.length}${c.reset}    ${c.cyan}●${c.reset} ${c.dim2}Files${c.reset} ${c.white}${c.bold}${totalFiles}${c.reset}    ${c.amber}●${c.reset} ${c.dim2}Uptime${c.reset} ${c.white}${getUptime()}${c.reset}    ${c.violet}●${c.reset} ${c.dim2}${getTimestamp()}${c.reset}`, 1);
+  winLine(`${c.green}Ã¢â€”Â${c.reset} ${c.dim2}Projects${c.reset} ${c.white}${c.bold}${online}${c.reset}${c.dim2}/${PROJECTS.length}${c.reset}    ${c.cyan}Ã¢â€”Â${c.reset} ${c.dim2}Files${c.reset} ${c.white}${c.bold}${totalFiles}${c.reset}    ${c.amber}Ã¢â€”Â${c.reset} ${c.dim2}Uptime${c.reset} ${c.white}${getUptime()}${c.reset}    ${c.violet}Ã¢â€”Â${c.reset} ${c.dim2}${getTimestamp()}${c.reset}`, 1);
   winEmpty();
 
-  // Folder status — compact indicator bar
+  // Folder status Ã¢â‚¬â€ compact indicator bar
   const folderStatus = Object.entries(DIRS).map(([name, dir]) => {
     const n = countFiles(dir);
-    return `${n > 0 ? c.green + '▰' : c.dark + '▱'} ${c.dim2}${name}${c.panel}:${n > 0 ? c.white : c.dark}${n}${c.reset}`;
+    return `${n > 0 ? c.green + 'Ã¢â€“Â°' : c.dark + 'Ã¢â€“Â±'} ${c.dim2}${name}${c.panel}:${n > 0 ? c.white : c.dark}${n}${c.reset}`;
   }).join('  ');
   winLine(folderStatus, 2);
   winEmpty();
@@ -420,13 +420,13 @@ async function mainMenu() {
     case 'D': return systemDiag();
     case 'L': return viewLogs();
     case '0': case 'Q': case 'EXIT':
-      hubLog('info', '═══ PIPE-R session ended ═══');
+      hubLog('info', 'Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â PIPE-R session ended Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â');
       cls();
       console.log();
-      console.log(`  ${c.dark}${'▄'.repeat(46)}${c.reset}`);
-      console.log(`  ${c.bgBlue}${c.white}${c.bold}  ◆ Pipe-R shutting down...                      ${c.reset}`);
+      console.log(`  ${c.dark}${'Ã¢â€“â€ž'.repeat(46)}${c.reset}`);
+      console.log(`  ${c.bgBlue}${c.white}${c.bold}  Ã¢â€”â€  Pipe-R shutting down...                      ${c.reset}`);
       console.log(`  ${c.bgBlue}${c.dim2}  Session logged. See you, Commander.              ${c.reset}`);
-      console.log(`  ${c.dark}${'▀'.repeat(46)}${c.reset}`);
+      console.log(`  ${c.dark}${'Ã¢â€“â‚¬'.repeat(46)}${c.reset}`);
       console.log();
       rl.close();
       process.exit(0);
@@ -434,9 +434,9 @@ async function mainMenu() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// [P] PROJECT DASHBOARD — Status board overview
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [P] PROJECT DASHBOARD Ã¢â‚¬â€ Status board overview
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function projectDashboard() {
   winTitle(' Project Dashboard ');
   winMenuBar(['Overview', 'Health', 'Refresh']);
@@ -448,14 +448,14 @@ async function projectDashboard() {
 
   // Header
   winLine(`  ${c.dim2}${pad('Project', 16)} ${pad('Status', 10)} ${pad('Git', 12)} ${pad('LOC', 8)} ${pad('Last Commit', 20)}${c.reset}`, 1);
-  winLine(`  ${c.dark}${'─'.repeat(66)}${c.reset}`, 1);
+  winLine(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(66)}${c.reset}`, 1);
 
   for (const p of PROJECTS) {
     const exists = existsSync(p.path);
-    const statusIcon = exists ? `${c.green}● Online ` : `${c.red}○ Missing`;
-    let gitInfo = `${c.dark}—`;
-    let loc = `${c.dark}—`;
-    let lastCommit = `${c.dark}—`;
+    const statusIcon = exists ? `${c.green}Ã¢â€”Â Online ` : `${c.red}Ã¢â€”â€¹ Missing`;
+    let gitInfo = `${c.dark}Ã¢â‚¬â€`;
+    let loc = `${c.dark}Ã¢â‚¬â€`;
+    let lastCommit = `${c.dark}Ã¢â‚¬â€`;
 
     if (exists) {
       // Git status
@@ -533,9 +533,9 @@ async function projectDashboard() {
   return mainMenu();
 }
 
-// ═══════════════════════════════════════════════════════
-// [T] TASK BOARD — Kanban tracker
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [T] TASK BOARD Ã¢â‚¬â€ Kanban tracker
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 function loadTasks() {
   try { return JSON.parse(readFileSync(TASKS_FILE, 'utf8')); }
   catch { return []; }
@@ -571,12 +571,12 @@ async function taskBoard() {
     if (colTasks.length === 0) continue;
 
     winEmpty();
-    winLine(`${colColors[col]}${c.bold}━━ ${col} (${colTasks.length}) ━━${c.reset}`, 2);
+    winLine(`${colColors[col]}${c.bold}Ã¢â€ÂÃ¢â€Â ${col} (${colTasks.length}) Ã¢â€ÂÃ¢â€Â${c.reset}`, 2);
     colTasks.forEach((t, i) => {
       const pColor = priorityColors[t.priority] || c.dim2;
       const pLabel = `P${t.priority}`;
       const proj = t.project ? `${c.dim2}[${t.project}]` : '';
-      const typeIcon = t.type === 'bug' ? `${c.red}●` : t.type === 'feature' ? `${c.green}◆` : t.type === 'docs' ? `${c.blue}◇` : `${c.dim2}○`;
+      const typeIcon = t.type === 'bug' ? `${c.red}Ã¢â€”Â` : t.type === 'feature' ? `${c.green}Ã¢â€”â€ ` : t.type === 'docs' ? `${c.blue}Ã¢â€”â€¡` : `${c.dim2}Ã¢â€”â€¹`;
       winLine(`  ${typeIcon}${c.reset} ${pColor}${pLabel}${c.reset}  ${c.white}${t.title.substring(0, 42)}${c.reset} ${proj}${c.reset}`, 1);
     });
   }
@@ -629,7 +629,7 @@ async function taskBoard() {
       };
       tasks.push(task);
       saveTasks(tasks);
-      console.log(`  ${c.green}✓ Task added to BACKLOG${c.reset}`);
+      console.log(`  ${c.green}Ã¢Å“â€œ Task added to BACKLOG${c.reset}`);
       hubLog('info', `Task added: ${task.title}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       return taskBoard();
@@ -648,8 +648,8 @@ async function taskBoard() {
       if (newCol) {
         tasks[tIdx].status = newCol;
         saveTasks(tasks);
-        console.log(`  ${c.green}✓ Moved to ${newCol}${c.reset}`);
-        hubLog('info', `Task moved: ${tasks[tIdx].title} → ${newCol}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Moved to ${newCol}${c.reset}`);
+        hubLog('info', `Task moved: ${tasks[tIdx].title} Ã¢â€ â€™ ${newCol}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       return taskBoard();
@@ -665,7 +665,7 @@ async function taskBoard() {
         if (confirm.trim().toLowerCase() === 'y') {
           tasks.splice(dIdx, 1);
           saveTasks(tasks);
-          console.log(`  ${c.green}✓ Deleted${c.reset}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ Deleted${c.reset}`);
         }
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -701,9 +701,9 @@ async function taskBoard() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// [B] BLUEPRINT CENTER — Document management
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [B] BLUEPRINT CENTER Ã¢â‚¬â€ Document management
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function blueprintCenter() {
   winTitle(' Blueprint Center ');
   winMenuBar(['Browse', 'Search', 'Recent']);
@@ -799,7 +799,7 @@ async function blueprintCenter() {
     const doc = docList[num - 1];
     if (doc) {
       console.log();
-      console.log(`  ${c.blue}${c.bold}── ${doc.name} ──${c.reset}`);
+      console.log(`  ${c.blue}${c.bold}Ã¢â€â‚¬Ã¢â€â‚¬ ${doc.name} Ã¢â€â‚¬Ã¢â€â‚¬${c.reset}`);
       console.log();
       try {
         const content = readFileSync(doc.path, 'utf8');
@@ -841,11 +841,11 @@ function timeSince(date) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-// ═══════════════════════════════════════════════════════
-// [C] CUSTOMER CONSOLE — Bird's Nest Integration
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [C] CUSTOMER CONSOLE Ã¢â‚¬â€ Bird's Nest Integration
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function customerConsole() {
-  winTitle(" Customer Console — Bird's Nest ");
+  winTitle(" Customer Console Ã¢â‚¬â€ Bird's Nest ");
   winMenuBar(['Customers', 'Deploy', 'Health']);
   winTop();
 
@@ -867,7 +867,7 @@ async function customerConsole() {
   } else {
     winSection('Bird\'s Nest Status');
     winEmpty();
-    winLine(`${c.green}● Bird's Nest installed${c.reset}`, 3);
+    winLine(`${c.green}Ã¢â€”Â Bird's Nest installed${c.reset}`, 3);
     winLine(`${c.dim2}Path: ${nestPath}${c.reset}`, 3);
     winEmpty();
 
@@ -883,7 +883,7 @@ async function customerConsole() {
       winSection('Customers');
       winEmpty();
       winLine(`  ${c.dim2}${pad('Company', 20)} ${pad('Version', 10)} ${pad('Modules', 10)} ${pad('Status', 12)}${c.reset}`, 1);
-      winLine(`  ${c.dark}${'─'.repeat(56)}${c.reset}`, 1);
+      winLine(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(56)}${c.reset}`, 1);
       customers.forEach((cust, i) => {
         const statusColor = cust.status === 'active' ? c.green : cust.status === 'error' ? c.red : c.amber;
         winLine(`  ${c.cyan}${String(i + 1).padStart(2)}.${c.reset} ${c.white}${pad(cust.company_name, 18)}${c.reset} ${c.dim2}${pad(cust.version || 'N/A', 10)}${c.reset} ${c.dim2}${pad(String((cust.modules_enabled || []).length), 10)}${c.reset} ${statusColor}${cust.status || 'unknown'}${c.reset}`, 1);
@@ -905,15 +905,15 @@ async function customerConsole() {
   const choice = await winPrompt();
   if (choice.trim() === '1' && nestExists) {
     launchTerminal(nestPath, 'node nest.js');
-    console.log(`  ${c.green}✓ Bird's Nest launching...${c.reset}`);
+    console.log(`  ${c.green}Ã¢Å“â€œ Bird's Nest launching...${c.reset}`);
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
   }
   return mainMenu();
 }
 
-// ═══════════════════════════════════════════════════════
-// [S] SEARCH — Unified search
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [S] SEARCH Ã¢â‚¬â€ Unified search
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function searchPanel() {
   winTitle(' Search ');
   winMenuBar(['Files', 'Content', 'Tasks', 'Notes']);
@@ -1044,9 +1044,9 @@ async function searchPanel() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// [F] FILE OPS — File operations center
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [F] FILE OPS Ã¢â‚¬â€ File operations center
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function fileOps() {
   winTitle(' File Operations ');
   winMenuBar(['Zip', 'Rename', 'Scan', 'Clean']);
@@ -1099,8 +1099,8 @@ async function fileOps() {
           const psCmd = `powershell -Command "Compress-Archive -Path '${targetPath.replace(/'/g, "''")}\\*' -DestinationPath '${zipPath.replace(/'/g, "''")}' -Force"`;
           execSync(psCmd, { timeout: 120000, stdio: 'pipe' });
           const size = formatSize(statSync(zipPath).size);
-          console.log(`  ${c.green}✓ Created: output/${zipName} (${size})${c.reset}`);
-          hubLog('info', `Zipped ${targetName} → ${zipName}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ Created: output/${zipName} (${size})${c.reset}`);
+          hubLog('info', `Zipped ${targetName} Ã¢â€ â€™ ${zipName}`);
         } catch (e) { console.log(`  ${c.red}Failed: ${e.message}${c.reset}`); }
       }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
@@ -1198,7 +1198,7 @@ async function fileOps() {
         grandTotal += loc;
         console.log(`  ${c.cyan}${loc.toLocaleString().padStart(8)}${c.reset}  ${c.white}${p.name}${c.reset}`);
       }
-      console.log(`  ${c.dark}${'─'.repeat(30)}${c.reset}`);
+      console.log(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(30)}${c.reset}`);
       console.log(`  ${c.green}${c.bold}${grandTotal.toLocaleString().padStart(8)}${c.reset}  ${c.white}TOTAL${c.reset}`);
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       return fileOps();
@@ -1208,9 +1208,9 @@ async function fileOps() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// [I] BUSINESS INTEL — Revenue, patents, contacts
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [I] BUSINESS INTEL Ã¢â‚¬â€ Revenue, patents, contacts
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 function loadBusiness() {
   try { return JSON.parse(readFileSync(BUSINESS_FILE, 'utf8')); }
   catch {
@@ -1227,7 +1227,7 @@ function loadPatent() {
   try { return JSON.parse(readFileSync(PATENT_FILE, 'utf8')); }
   catch {
     return {
-      title: 'CHERP — Construction Hierarchy, Engagement & Resource Platform',
+      title: 'CHERP Ã¢â‚¬â€ Construction Hierarchy, Engagement & Resource Platform',
       type: 'Provisional Patent',
       filed: '2026-04-04',
       claims: 10,
@@ -1261,13 +1261,13 @@ async function businessIntel() {
 
   if (biz.customers.length > 0) {
     winLine(`  ${c.dim2}${pad('Customer', 25)} ${pad('Tier', 12)} ${pad('MRR', 10)}${c.reset}`, 1);
-    winLine(`  ${c.dark}${'─'.repeat(50)}${c.reset}`, 1);
+    winLine(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(50)}${c.reset}`, 1);
     let totalMRR = 0;
     biz.customers.forEach(cust => {
       totalMRR += cust.mrr || 0;
       winLine(`  ${c.white}${pad(cust.name, 25)}${c.reset} ${c.dim2}${pad(cust.tier, 12)}${c.reset} ${c.green}$${(cust.mrr || 0).toLocaleString()}${c.reset}`, 1);
     });
-    winLine(`  ${c.dark}${'─'.repeat(50)}${c.reset}`, 1);
+    winLine(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(50)}${c.reset}`, 1);
     winLine(`  ${c.white}${pad('Total MRR', 37)}${c.reset} ${c.green}${c.bold}$${totalMRR.toLocaleString()}${c.reset}`, 1);
   } else {
     winLine(`  ${c.dim2}No customers yet. Pre-revenue.${c.reset}`, 1);
@@ -1300,7 +1300,7 @@ async function businessIntel() {
       const mrr = await ask(`  ${c.text}MRR ($): ${c.reset}`);
       biz.customers.push({ name: name.trim(), tier: tier.trim() || 'Free', mrr: parseInt(mrr) || 0 });
       saveBusiness(biz);
-      console.log(`  ${c.green}✓ Customer added${c.reset}`);
+      console.log(`  ${c.green}Ã¢Å“â€œ Customer added${c.reset}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       return businessIntel();
     }
@@ -1311,7 +1311,7 @@ async function businessIntel() {
         const note = await ask(`  ${c.text}Note (or Enter to skip): ${c.reset}`);
         if (note.trim()) patent.notes = note.trim();
         savePatent(patent);
-        console.log(`  ${c.green}✓ Patent updated${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Patent updated${c.reset}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       return businessIntel();
@@ -1321,9 +1321,9 @@ async function businessIntel() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// [A] ACTIVITY FEED — Recent actions log
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [A] ACTIVITY FEED Ã¢â‚¬â€ Recent actions log
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function activityFeed() {
   winTitle(' Activity Feed ');
   winMenuBar(['All', 'Git', 'Files', 'Builds']);
@@ -1363,11 +1363,11 @@ async function activityFeed() {
 
   // Display
   const typeColors = { hub: c.blue, git: c.green, file: c.cyan, build: c.amber, error: c.red };
-  const typeIcons = { hub: '●', git: '◆', file: '◇', build: '▲', error: '✗' };
+  const typeIcons = { hub: 'Ã¢â€”Â', git: 'Ã¢â€”â€ ', file: 'Ã¢â€”â€¡', build: 'Ã¢â€“Â²', error: 'Ã¢Å“â€”' };
 
   activities.slice(0, 40).forEach(a => {
     const color = typeColors[a.type] || c.dim2;
-    const icon = typeIcons[a.type] || '○';
+    const icon = typeIcons[a.type] || 'Ã¢â€”â€¹';
     const ts = new Date(a.ts).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     const levelColor = a.level === 'ERROR' ? c.red : a.level === 'WARN' ? c.amber : c.dim2;
     winLine(`${color}${icon}${c.reset} ${c.dim2}${ts}${c.reset}  ${c.text}${a.msg.substring(0, 50)}${c.reset}`, 2);
@@ -1388,9 +1388,9 @@ async function activityFeed() {
   return mainMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // FILE MANAGER (was Cargo Bay)
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function filesMenu() {
   winTitle(' File Manager ');
   winMenuBar(['Input', 'Output', 'Workspace', 'Staging']);
@@ -1404,7 +1404,7 @@ async function filesMenu() {
     const files = listFiles(dir);
     let totalSize = 0;
     files.forEach(f => { try { if (!f.isDir) totalSize += statSync(f.path).size; } catch {} });
-    const icon = files.length > 0 ? `${c.green}■` : `${c.dark}□`;
+    const icon = files.length > 0 ? `${c.green}Ã¢â€“Â ` : `${c.dark}Ã¢â€“Â¡`;
     winLine(`  ${icon}${c.reset} ${c.white}${pad(name + '/', 14)}${c.reset} ${c.dim2}${String(files.length).padStart(3)} items  ${formatSize(totalSize).padStart(10)}${c.reset}`, 1);
   });
 
@@ -1421,9 +1421,9 @@ async function filesMenu() {
   winEmpty();
   winSep();
   winBtnRow([
-    ['5', 'Transfer input → workspace',   ''],
-    ['6', 'Transfer workspace → staging',  ''],
-    ['7', 'Transfer staging → output',     ''],
+    ['5', 'Transfer input Ã¢â€ â€™ workspace',   ''],
+    ['6', 'Transfer workspace Ã¢â€ â€™ staging',  ''],
+    ['7', 'Transfer staging Ã¢â€ â€™ output',     ''],
     ['8', 'Purge output/',                 ''],
     ['0', 'Back',                           ''],
   ]);
@@ -1452,12 +1452,12 @@ async function showDir(name) {
 
   const files = listFiles(DIRS[name]);
   if (files.length === 0) {
-    winLine(`${c.dim2}Empty — no files found${c.reset}`, 3);
+    winLine(`${c.dim2}Empty Ã¢â‚¬â€ no files found${c.reset}`, 3);
   } else {
     winLine(`  ${c.dim2}${pad('#', 4)} ${pad('Name', 40)} ${pad('Size', 10)}${c.reset}`, 1);
-    winLine(`  ${c.dark}${'─'.repeat(58)}${c.reset}`, 1);
+    winLine(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(58)}${c.reset}`, 1);
     files.forEach((f, i) => {
-      const icon = f.isDir ? `${c.amber}📁` : `${c.cyan}📄`;
+      const icon = f.isDir ? `${c.amber}Ã°Å¸â€œÂ` : `${c.cyan}Ã°Å¸â€œâ€ž`;
       winLine(`  ${c.dim2}${String(i + 1).padStart(3)}.${c.reset} ${icon} ${c.white}${pad(f.name, 38)}${c.reset} ${c.dim2}${f.size}${c.reset}`, 1);
     });
   }
@@ -1471,17 +1471,17 @@ async function showDir(name) {
 async function moveFiles(from, to) {
   const files = listFiles(DIRS[from]);
   if (files.length === 0) {
-    console.log(`\n  ${c.dim2}${from}/ is empty — nothing to transfer${c.reset}`);
+    console.log(`\n  ${c.dim2}${from}/ is empty Ã¢â‚¬â€ nothing to transfer${c.reset}`);
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
     return filesMenu();
   }
   let moved = 0;
   files.forEach(f => {
     try { renameSync(f.path, join(DIRS[to], f.name)); moved++; }
-    catch (e) { console.log(`  ${c.red}✗ ${f.name}: ${e.message}${c.reset}`); }
+    catch (e) { console.log(`  ${c.red}Ã¢Å“â€” ${f.name}: ${e.message}${c.reset}`); }
   });
-  hubLog('info', `Transferred ${moved} item(s): ${from}/ → ${to}/`);
-  console.log(`\n  ${c.green}✓ ${moved} item(s) transferred: ${from}/ → ${to}/${c.reset}`);
+  hubLog('info', `Transferred ${moved} item(s): ${from}/ Ã¢â€ â€™ ${to}/`);
+  console.log(`\n  ${c.green}Ã¢Å“â€œ ${moved} item(s) transferred: ${from}/ Ã¢â€ â€™ ${to}/${c.reset}`);
   await ask(`  ${c.dim2}[Enter]${c.reset} `);
   return filesMenu();
 }
@@ -1493,21 +1493,21 @@ async function cleanDir(name) {
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
     return filesMenu();
   }
-  console.log(`\n  ${c.amber}⚠ Purge ${files.length} item(s) from ${name}/?${c.reset}`);
+  console.log(`\n  ${c.amber}Ã¢Å¡Â  Purge ${files.length} item(s) from ${name}/?${c.reset}`);
   const confirm = await ask(`  ${c.red}[y/N]: ${c.reset}`);
   if (confirm.trim().toLowerCase() === 'y') {
     let deleted = 0;
     files.forEach(f => { try { unlinkSync(f.path); deleted++; } catch {} });
-    console.log(`  ${c.green}✓ ${deleted} item(s) purged${c.reset}`);
+    console.log(`  ${c.green}Ã¢Å“â€œ ${deleted} item(s) purged${c.reset}`);
     hubLog('info', `Purged ${deleted} from ${name}/`);
   }
   await ask(`  ${c.dim2}[Enter]${c.reset} `);
   return filesMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // PROJECTS MENU
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function projectsMenu() {
   winTitle(' Projects ');
   winMenuBar(['All', 'Active', 'New']);
@@ -1519,7 +1519,7 @@ async function projectsMenu() {
 
   PROJECTS.forEach(p => {
     const exists = existsSync(p.path);
-    const status = exists ? `${c.green}● Online` : `${c.red}○ Offline`;
+    const status = exists ? `${c.green}Ã¢â€”Â Online` : `${c.red}Ã¢â€”â€¹ Offline`;
     const url = p.url ? `${c.dim2}${p.url}` : '';
     winLine(`  ${c.cyan}[${p.key}]${c.reset}  ${c.amber}${pad(p.codename, 8)}${c.reset} ${c.white}${c.bold}${pad(p.name, 16)}${c.reset} ${status}${c.reset}  ${url}${c.reset}`, 1);
   });
@@ -1555,7 +1555,7 @@ async function newProjectMenu() {
   winEmpty();
   winBtnRow([
     ['1', 'Vanilla Web App',      'HTML + JS + CSS (PWA ready)'],
-    ['2', 'Capacitor Android',    'Web app → Android'],
+    ['2', 'Capacitor Android',    'Web app Ã¢â€ â€™ Android'],
     ['3', 'Node.js CLI',          'Terminal tool'],
     ['4', 'Python Project',       'Python + requirements'],
     ['5', 'Empty Project',        'Folder + git init'],
@@ -1573,7 +1573,7 @@ async function newProjectMenu() {
   const projPath = join('C:\\Users\\Ken\\Desktop', projName);
 
   if (existsSync(projPath)) {
-    console.log(`  ${c.red}✗ Folder already exists: ${projPath}${c.reset}`);
+    console.log(`  ${c.red}Ã¢Å“â€” Folder already exists: ${projPath}${c.reset}`);
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
     return newProjectMenu();
   }
@@ -1610,7 +1610,7 @@ async function newProjectMenu() {
 
   try { execSync('git init', { cwd: projPath, stdio: 'pipe' }); } catch {}
 
-  console.log(`\n  ${c.green}✓ Project created: ${projPath}${c.reset}`);
+  console.log(`\n  ${c.green}Ã¢Å“â€œ Project created: ${projPath}${c.reset}`);
   hubLog('info', `New project: ${projName}`);
 
   const openIt = await ask(`  ${c.text}Open in Explorer? [Y/n]: ${c.reset}`);
@@ -1626,7 +1626,7 @@ async function backupAll() {
   let backed = 0;
   for (const p of PROJECTS) {
     if (!existsSync(p.path)) {
-      console.log(`  ${c.dim2}○ ${p.name} — skipped (missing)${c.reset}`);
+      console.log(`  ${c.dim2}Ã¢â€”â€¹ ${p.name} Ã¢â‚¬â€ skipped (missing)${c.reset}`);
       continue;
     }
     process.stdout.write(`  ${c.text}Zipping ${p.name}...${c.reset} `);
@@ -1650,19 +1650,19 @@ async function backupAll() {
       console.log(`${c.red}FAILED${c.reset}`);
     }
   }
-  console.log(`\n  ${c.green}✓ ${backed} project(s) backed up to output/${c.reset}`);
+  console.log(`\n  ${c.green}Ã¢Å“â€œ ${backed} project(s) backed up to output/${c.reset}`);
   hubLog('info', `Backup all: ${backed} projects archived`);
   await ask(`  ${c.dim2}[Enter]${c.reset} `);
   return projectsMenu();
 }
 
 async function projectDetail(proj) {
-  winTitle(` ${proj.name} — ${proj.codename} `);
+  winTitle(` ${proj.name} Ã¢â‚¬â€ ${proj.codename} `);
   winTop();
 
   if (!existsSync(proj.path)) {
     winEmpty();
-    winLine(`${c.red}✗ Project directory not found${c.reset}`, 3);
+    winLine(`${c.red}Ã¢Å“â€” Project directory not found${c.reset}`, 3);
     winLine(`${c.dim2}${proj.path}${c.reset}`, 3);
     winBottom();
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -1680,7 +1680,7 @@ async function projectDetail(proj) {
   try {
     const status = execSync('git status --short', { cwd: proj.path, encoding: 'utf8' });
     const lines = status.trim().split('\n').filter(Boolean);
-    winLine(`  ${c.dim2}Git:${c.reset}     ${lines.length > 0 ? `${c.amber}${lines.length} modified files` : `${c.green}Clean — all synced`}${c.reset}`, 1);
+    winLine(`  ${c.dim2}Git:${c.reset}     ${lines.length > 0 ? `${c.amber}${lines.length} modified files` : `${c.green}Clean Ã¢â‚¬â€ all synced`}${c.reset}`, 1);
     if (lines.length > 0 && lines.length <= 6) {
       lines.forEach(l => winLine(`           ${c.dim2}${l}${c.reset}`, 1));
     }
@@ -1742,7 +1742,7 @@ async function projectDetail(proj) {
       break;
     case '3':
       launchTerminal(proj.path, 'claude');
-      console.log(`  ${c.green}✓ Claude Code deploying to ${proj.name}...${c.reset}`);
+      console.log(`  ${c.green}Ã¢Å“â€œ Claude Code deploying to ${proj.name}...${c.reset}`);
       break;
     case '4':
       try {
@@ -1775,8 +1775,8 @@ async function projectDetail(proj) {
           st.lastUpdate = new Date().toISOString();
           writeFileSync(stateFile, JSON.stringify(st, null, 2));
           launchTerminal(proj.path, `ollama run ${models[mi]}`);
-          console.log(`  ${c.green}✓ ${models[mi]} deployed to ${proj.name}${c.reset}`);
-          hubLog('info', `Quick deploy: ${models[mi]} → ${proj.name}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ ${models[mi]} deployed to ${proj.name}${c.reset}`);
+          hubLog('info', `Quick deploy: ${models[mi]} Ã¢â€ â€™ ${proj.name}`);
         }
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -1790,7 +1790,7 @@ async function projectDetail(proj) {
 }
 
 async function deepScan(proj) {
-  winTitle(` Deep Scan — ${proj.name} `);
+  winTitle(` Deep Scan Ã¢â‚¬â€ ${proj.name} `);
   winTop();
   winEmpty();
   winSection('Analyzing...');
@@ -1849,7 +1849,7 @@ async function deepScan(proj) {
   sorted.forEach(([lang, data]) => {
     const pct = Math.round((data.loc / totalLOC) * 100);
     const barLen = Math.round(pct / 5);
-    const bar = `${c.cyan}${'█'.repeat(barLen)}${c.dark}${'░'.repeat(20 - barLen)}`;
+    const bar = `${c.cyan}${'Ã¢â€“Ë†'.repeat(barLen)}${c.dark}${'Ã¢â€“â€˜'.repeat(20 - barLen)}`;
     winLine(`  ${c.white}${pad(lang, 14)}${c.reset} ${bar}${c.reset} ${c.cyan}${String(pct).padStart(3)}%${c.reset} ${c.dim2}${data.loc.toLocaleString()} LOC${c.reset}`, 1);
   });
 
@@ -1884,7 +1884,7 @@ async function deepScan(proj) {
   if (existsSync(join(proj.path, 'requirements.txt'))) stack.push('Python');
   if (existsSync(join(proj.path, 'netlify.toml'))) stack.push('Netlify');
   if (existsSync(join(proj.path, 'Modelfile'))) stack.push('Ollama');
-  winLine(`  ${c.cyan}${stack.join(' → ') || 'Unknown'}${c.reset}`, 1);
+  winLine(`  ${c.cyan}${stack.join(' Ã¢â€ â€™ ') || 'Unknown'}${c.reset}`, 1);
 
   // Recent commits
   try {
@@ -1902,7 +1902,7 @@ async function deepScan(proj) {
   winEmpty();
   winBottom();
 
-  hubLog('info', `Deep scan: ${proj.name} — ${totalLOC} LOC, ${totalFiles} files`);
+  hubLog('info', `Deep scan: ${proj.name} Ã¢â‚¬â€ ${totalLOC} LOC, ${totalFiles} files`);
   await winPrompt();
   return projectDetail(proj);
 }
@@ -1927,20 +1927,20 @@ async function backupProject(proj) {
       `"`;
     execSync(psCmd, { timeout: 120000, stdio: 'pipe' });
     const zipSize = formatSize(statSync(zipPath).size);
-    console.log(`  ${c.green}✓ Backup saved: output/${zipName} (${zipSize})${c.reset}`);
-    hubLog('info', `Backup: ${proj.name} → ${zipName} (${zipSize})`);
+    console.log(`  ${c.green}Ã¢Å“â€œ Backup saved: output/${zipName} (${zipSize})${c.reset}`);
+    hubLog('info', `Backup: ${proj.name} Ã¢â€ â€™ ${zipName} (${zipSize})`);
   } catch (e) {
-    console.log(`  ${c.red}✗ Backup failed: ${e.message}${c.reset}`);
+    console.log(`  ${c.red}Ã¢Å“â€” Backup failed: ${e.message}${c.reset}`);
   }
   await ask(`  ${c.dim2}[Enter]${c.reset} `);
   return projectDetail(proj);
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // AI CORE (Ollama)
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function ollamaMenu() {
-  winTitle(' AI Core — Ollama ');
+  winTitle(' AI Core Ã¢â‚¬â€ Ollama ');
   winMenuBar(['Models', 'Agents', 'Chat']);
   winTop();
 
@@ -1955,10 +1955,10 @@ async function ollamaMenu() {
   winEmpty();
   winSection('Status');
   winEmpty();
-  winLine(`  ${c.dim2}Engine:${c.reset}  ${running ? `${c.green}● Online` : `${c.red}○ Offline`}${c.reset}`, 1);
+  winLine(`  ${c.dim2}Engine:${c.reset}  ${running ? `${c.green}Ã¢â€”Â Online` : `${c.red}Ã¢â€”â€¹ Offline`}${c.reset}`, 1);
   if (running) {
     winLine(`  ${c.dim2}Models:${c.reset}  ${c.white}${models.length} installed${c.reset}`, 1);
-    models.forEach(m => winLine(`           ${c.cyan}▸${c.reset} ${c.text}${m}${c.reset}`, 1));
+    models.forEach(m => winLine(`           ${c.cyan}Ã¢â€“Â¸${c.reset} ${c.text}${m}${c.reset}`, 1));
   }
 
   // Show deployed agents
@@ -1973,7 +1973,7 @@ async function ollamaMenu() {
     winEmpty();
     agents.forEach(a => {
       const stColor = a.status === 'running' ? c.green : a.status === 'stopped' ? c.red : c.amber;
-      winLine(`  ${stColor}${a.status === 'running' ? '●' : '○'}${c.reset} ${c.white}${pad(a.model, 22)}${c.reset} ${stColor}${a.status.toUpperCase()}${c.reset} ${c.dim2}→ ${a.projectName || ''}${c.reset}`, 1);
+      winLine(`  ${stColor}${a.status === 'running' ? 'Ã¢â€”Â' : 'Ã¢â€”â€¹'}${c.reset} ${c.white}${pad(a.model, 22)}${c.reset} ${stColor}${a.status.toUpperCase()}${c.reset} ${c.dim2}Ã¢â€ â€™ ${a.projectName || ''}${c.reset}`, 1);
     });
   }
 
@@ -2001,17 +2001,17 @@ async function ollamaMenu() {
         console.log();
         if (models.length) models.forEach((m, i) => console.log(`  ${c.cyan}${i + 1}.${c.reset} ${c.white}${m}${c.reset}`));
         else console.log(`  ${c.dim2}No models. Use [4] to pull one.${c.reset}`);
-      } else { console.log(`\n  ${c.red}AI Core offline — start first [2]${c.reset}`); }
+      } else { console.log(`\n  ${c.red}AI Core offline Ã¢â‚¬â€ start first [2]${c.reset}`); }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       break;
     case '2':
-      if (running) { console.log(`\n  ${c.green}✓ AI Core already online${c.reset}`); }
+      if (running) { console.log(`\n  ${c.green}Ã¢Å“â€œ AI Core already online${c.reset}`); }
       else {
         try {
           execSync('start "Ollama Server" cmd /k "ollama serve"', { shell: 'cmd.exe', stdio: 'ignore' });
           hubLog('info', 'Ollama started');
-          console.log(`\n  ${c.green}✓ AI Core starting...${c.reset}`);
-        } catch (e) { console.log(`\n  ${c.red}✗ Failed: ${e.message}${c.reset}`); }
+          console.log(`\n  ${c.green}Ã¢Å“â€œ AI Core starting...${c.reset}`);
+        } catch (e) { console.log(`\n  ${c.red}Ã¢Å“â€” Failed: ${e.message}${c.reset}`); }
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2025,8 +2025,8 @@ async function ollamaMenu() {
       console.log(`\n  ${c.blue}Pinging ${testModel}...${c.reset}`);
       try {
         const resp = execSync(`ollama run ${testModel} "Say hello in one creative sentence."`, { encoding: 'utf8', timeout: 30000 });
-        console.log(`\n  ${c.green}◆ ${testModel}:${c.reset} ${resp.trim()}`);
-      } catch (e) { console.log(`  ${c.red}✗ ${e.message}${c.reset}`); }
+        console.log(`\n  ${c.green}Ã¢â€”â€  ${testModel}:${c.reset} ${resp.trim()}`);
+      } catch (e) { console.log(`  ${c.red}Ã¢Å“â€” ${e.message}${c.reset}`); }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       break;
     case '4':
@@ -2036,7 +2036,7 @@ async function ollamaMenu() {
       const modelName = await ask(`\n  ${c.text}Model to pull: ${c.reset}`);
       if (modelName.trim()) {
         launchTerminal(ROOT, `ollama pull ${modelName.trim()}`);
-        console.log(`  ${c.green}✓ Pull started in new terminal${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Pull started in new terminal${c.reset}`);
         hubLog('info', `Pulling model: ${modelName.trim()}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -2051,7 +2051,7 @@ async function ollamaMenu() {
         var chatModel = models[parseInt(chatPick) - 1] || models[0];
       } else { var chatModel = models[0]; }
       launchTerminal(ROOT, `ollama run ${chatModel}`);
-      console.log(`\n  ${c.green}✓ Chat session opened with ${chatModel}${c.reset}`);
+      console.log(`\n  ${c.green}Ã¢Å“â€œ Chat session opened with ${chatModel}${c.reset}`);
       hubLog('info', `Chat: ${chatModel}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2111,8 +2111,8 @@ async function deployAgentMenu(models, running) {
   state.lastUpdate = new Date().toISOString();
   writeFileSync(stateFile, JSON.stringify(state, null, 2));
 
-  console.log(`\n  ${c.green}✓ Agent deployed: ${selectedModel} → ${selectedProj.name}${c.reset}`);
-  hubLog('info', `Agent deployed: ${selectedModel} → ${selectedProj.name}`);
+  console.log(`\n  ${c.green}Ã¢Å“â€œ Agent deployed: ${selectedModel} Ã¢â€ â€™ ${selectedProj.name}${c.reset}`);
+  hubLog('info', `Agent deployed: ${selectedModel} Ã¢â€ â€™ ${selectedProj.name}`);
 
   const launch = await ask(`  ${c.text}Launch now? [Y/n]: ${c.reset}`);
   if (launch.trim().toLowerCase() !== 'n') {
@@ -2145,7 +2145,7 @@ async function agentControlMenu() {
 
   agents.forEach((a, i) => {
     const stColor = a.status === 'running' ? c.green : a.status === 'stopped' ? c.red : c.amber;
-    winLine(`${c.cyan}[${i + 1}]${c.reset} ${stColor}${a.status === 'running' ? '●' : '○'}${c.reset} ${c.white}${c.bold}${pad(a.model, 20)}${c.reset} ${c.dim2}→${c.reset} ${c.amber}${a.projectName || ''}${c.reset}`, 2);
+    winLine(`${c.cyan}[${i + 1}]${c.reset} ${stColor}${a.status === 'running' ? 'Ã¢â€”Â' : 'Ã¢â€”â€¹'}${c.reset} ${c.white}${c.bold}${pad(a.model, 20)}${c.reset} ${c.dim2}Ã¢â€ â€™${c.reset} ${c.amber}${a.projectName || ''}${c.reset}`, 2);
     winLine(`    ${c.dim2}${a.task.substring(0, 50)}${c.reset}`, 2);
     winLine(`    ${c.dim2}Status: ${stColor}${a.status}${c.reset} ${c.dim2}| ID: ${a.id}${c.reset}`, 2);
     winEmpty();
@@ -2178,19 +2178,19 @@ async function agentControlMenu() {
         launchTerminal(agent.project, `ollama run ${agent.model}`);
         state.agents[idx].status = 'running';
         writeFileSync(stateFile, JSON.stringify(state, null, 2));
-        console.log(`  ${c.green}✓ ${agent.model} launched${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ ${agent.model} launched${c.reset}`);
         break;
       case 'S':
         state.agents[idx].status = 'stopped';
         writeFileSync(stateFile, JSON.stringify(state, null, 2));
-        console.log(`  ${c.amber}● ${agent.model} stopped${c.reset}`);
+        console.log(`  ${c.amber}Ã¢â€”Â ${agent.model} stopped${c.reset}`);
         break;
       case 'T':
         const newTask = await ask(`  ${c.text}New task: ${c.reset}`);
         if (newTask.trim()) {
           state.agents[idx].task = newTask.trim();
           writeFileSync(stateFile, JSON.stringify(state, null, 2));
-          console.log(`  ${c.green}✓ Task assigned${c.reset}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ Task assigned${c.reset}`);
         }
         break;
       case 'X':
@@ -2198,7 +2198,7 @@ async function agentControlMenu() {
         if (confirm.trim().toLowerCase() === 'y') {
           state.agents.splice(idx, 1);
           writeFileSync(stateFile, JSON.stringify(state, null, 2));
-          console.log(`  ${c.green}✓ Agent removed${c.reset}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ Agent removed${c.reset}`);
         }
         break;
     }
@@ -2207,9 +2207,9 @@ async function agentControlMenu() {
   return agentControlMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // TRAINING LAB
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function trainingMenu() {
   winTitle(' Training Lab ');
   winMenuBar(['Create', 'Harvest', 'Build', 'Templates']);
@@ -2236,9 +2236,9 @@ async function trainingMenu() {
   try { modelfiles = readdirSync(modelsDir).filter(f => f.startsWith('Modelfile.')); } catch {}
 
   winLine(`  ${c.dim2}Datasets:${c.reset}     ${datasets.length > 0 ? `${c.white}${datasets.length} available` : `${c.dim2}none`}${c.reset}`, 1);
-  datasets.forEach(d => winLine(`              ${c.cyan}▸${c.reset} ${c.text}${pad(d.name, 30)}${c.reset} ${c.dim2}${d.count} examples${c.reset}`, 1));
+  datasets.forEach(d => winLine(`              ${c.cyan}Ã¢â€“Â¸${c.reset} ${c.text}${pad(d.name, 30)}${c.reset} ${c.dim2}${d.count} examples${c.reset}`, 1));
   winLine(`  ${c.dim2}Modelfiles:${c.reset}   ${modelfiles.length > 0 ? `${c.white}${modelfiles.length} created` : `${c.dim2}none`}${c.reset}`, 1);
-  modelfiles.forEach(m => winLine(`              ${c.cyan}▸${c.reset} ${c.text}${m}${c.reset}`, 1));
+  modelfiles.forEach(m => winLine(`              ${c.cyan}Ã¢â€“Â¸${c.reset} ${c.text}${m}${c.reset}`, 1));
 
   winEmpty();
   winSep();
@@ -2365,13 +2365,13 @@ async function createModelMenu() {
           if (q && a) content += `MESSAGE user ${q}\nMESSAGE assistant ${a}\n\n`;
         } catch {}
       });
-      console.log(`  ${c.green}✓ Loaded ${lines.length} training examples${c.reset}`);
+      console.log(`  ${c.green}Ã¢Å“â€œ Loaded ${lines.length} training examples${c.reset}`);
     } catch {}
   }
 
   const mfPath = join(modelsDir, `Modelfile.${modelName.trim()}`);
   writeFileSync(mfPath, content);
-  console.log(`\n  ${c.green}✓ Modelfile created${c.reset}`);
+  console.log(`\n  ${c.green}Ã¢Å“â€œ Modelfile created${c.reset}`);
   hubLog('info', `Modelfile created: ${modelName.trim()}`);
 
   const build = await ask(`  ${c.text}Build now? [Y/n]: ${c.reset}`);
@@ -2379,7 +2379,7 @@ async function createModelMenu() {
     console.log(`\n  ${c.blue}Building ${modelName.trim()}...${c.reset}`);
     try {
       execSync(`ollama create ${modelName.trim()} -f "${mfPath}"`, { encoding: 'utf8', timeout: 300000, stdio: 'inherit' });
-      console.log(`\n  ${c.green}✓ Model created!${c.reset}`);
+      console.log(`\n  ${c.green}Ã¢Å“â€œ Model created!${c.reset}`);
       hubLog('info', `Model built: ${modelName.trim()}`);
     } catch (e) { console.log(`\n  ${c.red}Build failed: ${e.message}${c.reset}`); }
   }
@@ -2395,7 +2395,7 @@ async function harvestMenu() {
   winEmpty();
   PROJECTS.forEach(p => {
     const exists = existsSync(p.path);
-    winLine(`  ${c.cyan}[${p.key}]${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${exists ? `${c.green}●` : `${c.red}○`}${c.reset}`, 1);
+    winLine(`  ${c.cyan}[${p.key}]${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${exists ? `${c.green}Ã¢â€”Â` : `${c.red}Ã¢â€”â€¹`}${c.reset}`, 1);
   });
   winEmpty();
   winSep();
@@ -2453,7 +2453,7 @@ async function harvestMenu() {
   const outPath = join(dsDir, dsName + '.jsonl');
   writeFileSync(outPath, dataset.map(d => JSON.stringify(d)).join('\n'));
 
-  console.log(`  ${c.green}✓ Harvested ${dataset.length} training pairs${c.reset}`);
+  console.log(`  ${c.green}Ã¢Å“â€œ Harvested ${dataset.length} training pairs${c.reset}`);
   console.log(`  ${c.dim2}Saved to: datasets/${dsName}.jsonl${c.reset}`);
   hubLog('info', `Harvested ${dataset.length} pairs from ${proj.name}`);
 
@@ -2478,7 +2478,7 @@ async function buildModelMenu(modelfiles) {
   console.log(`\n  ${c.blue}Building ${modelName}...${c.reset}`);
   try {
     execSync(`ollama create ${modelName} -f "${mfPath}"`, { encoding: 'utf8', timeout: 300000, stdio: 'inherit' });
-    console.log(`\n  ${c.green}✓ Model ${modelName} created!${c.reset}`);
+    console.log(`\n  ${c.green}Ã¢Å“â€œ Model ${modelName} created!${c.reset}`);
     hubLog('info', `Model built: ${modelName}`);
   } catch (e) { console.log(`\n  ${c.red}Build failed: ${e.message}${c.reset}`); }
   await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -2508,9 +2508,9 @@ async function templatesMenu() {
   return trainingMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // GIT CONTROL
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function gitMenu() {
   winTitle(' Git Control ');
   winMenuBar(['Status', 'Log', 'Commit', 'Push']);
@@ -2529,7 +2529,7 @@ async function gitMenu() {
   const choice = await winPrompt();
   switch (choice.trim()) {
     case '1':
-      try { const s = execSync('git status --short', { encoding: 'utf8' }); console.log(`\n${s || `  ${c.green}✓ All clear${c.reset}`}`); }
+      try { const s = execSync('git status --short', { encoding: 'utf8' }); console.log(`\n${s || `  ${c.green}Ã¢Å“â€œ All clear${c.reset}`}`); }
       catch { console.log(`  ${c.red}Not a git repo${c.reset}`); }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2544,14 +2544,14 @@ async function gitMenu() {
         try {
           execSync('git add -A', { encoding: 'utf8' });
           execSync(`git commit -m "${msg.trim().replace(/"/g, '\\"')}"`, { encoding: 'utf8' });
-          console.log(`  ${c.green}✓ Committed${c.reset}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ Committed${c.reset}`);
           hubLog('info', `Git commit: ${msg.trim()}`);
         } catch (e) { console.log(`  ${c.red}${e.message}${c.reset}`); }
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
     case '4':
-      try { execSync('git push', { encoding: 'utf8' }); console.log(`  ${c.green}✓ Pushed to remote${c.reset}`); hubLog('info', 'Git push'); }
+      try { execSync('git push', { encoding: 'utf8' }); console.log(`  ${c.green}Ã¢Å“â€œ Pushed to remote${c.reset}`); hubLog('info', 'Git push'); }
       catch (e) { console.log(`  ${c.red}${e.message}${c.reset}`); }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2560,9 +2560,9 @@ async function gitMenu() {
   return gitMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // CLAUDE CODE
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function claudeMenu() {
   winTitle(' Claude Code ');
   winMenuBar(['Deploy', 'Sessions']);
@@ -2582,14 +2582,14 @@ async function claudeMenu() {
   if (choice.trim() === '1') {
     launchTerminal(ROOT, 'claude');
     hubLog('info', 'Claude deployed to hub root');
-    console.log(`  ${c.green}✓ Claude Code launching...${c.reset}`);
+    console.log(`  ${c.green}Ã¢Å“â€œ Claude Code launching...${c.reset}`);
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
   } else {
     const proj = PROJECTS.find(p => String(parseInt(p.key) + 1) === choice.trim());
     if (proj && existsSync(proj.path)) {
       launchTerminal(proj.path, 'claude');
       hubLog('info', `Claude deployed to ${proj.name}`);
-      console.log(`  ${c.green}✓ Claude Code deploying to ${proj.name}...${c.reset}`);
+      console.log(`  ${c.green}Ã¢Å“â€œ Claude Code deploying to ${proj.name}...${c.reset}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
     }
   }
@@ -2597,9 +2597,9 @@ async function claudeMenu() {
   return claudeMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // QUICK LAUNCH
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function quickLaunch() {
   winTitle(' Quick Launch ');
   winTop();
@@ -2618,14 +2618,14 @@ async function quickLaunch() {
 
   const choice = await winPrompt();
   switch (choice.trim()) {
-    case '1': try { execSync('explorer "C:\\Users\\Ken\\Desktop"'); } catch {} console.log(`  ${c.green}✓ Explorer opened${c.reset}`); break;
-    case '2': try { execSync('start "" "C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} console.log(`  ${c.green}✓ Android Studio launching${c.reset}`); break;
+    case '1': try { execSync('explorer "C:\\Users\\Ken\\Desktop"'); } catch {} console.log(`  ${c.green}Ã¢Å“â€œ Explorer opened${c.reset}`); break;
+    case '2': try { execSync('start "" "C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} console.log(`  ${c.green}Ã¢Å“â€œ Android Studio launching${c.reset}`); break;
     case '3': try { execSync('start "" "https://cherp.live"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} break;
     case '4': try { execSync('start "" "https://github.com/HesKenY"', { shell: 'cmd.exe', stdio: 'ignore' }); } catch {} break;
     case '5':
       if (existsSync('C:\\Users\\Ken\\Desktop\\CHERP-Worker')) {
         launchTerminal('C:\\Users\\Ken\\Desktop\\CHERP-Worker', 'npx serve www');
-        console.log(`  ${c.green}✓ Serving CHERP Worker...${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Serving CHERP Worker...${c.reset}`);
       } else { console.log(`  ${c.red}CHERP-Worker not found${c.reset}`); }
       break;
     case '6': launchTerminal('C:\\Users\\Ken\\Desktop'); break;
@@ -2635,9 +2635,9 @@ async function quickLaunch() {
   return quickLaunch();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // REMOTE SERVER
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function remoteMenu() {
   winTitle(' Remote Server ');
   winTop();
@@ -2652,7 +2652,7 @@ async function remoteMenu() {
     if (ipOut) localIP = ipOut;
   } catch {}
 
-  winLine(`  ${c.dim2}Status:${c.reset}    ${serverOnline ? `${c.green}● Online (port 7777)` : `${c.red}○ Offline`}${c.reset}`, 1);
+  winLine(`  ${c.dim2}Status:${c.reset}    ${serverOnline ? `${c.green}Ã¢â€”Â Online (port 7777)` : `${c.red}Ã¢â€”â€¹ Offline`}${c.reset}`, 1);
   if (localIP !== 'unknown') winLine(`  ${c.dim2}Phone URL:${c.reset} ${c.cyan}http://${localIP}:7777${c.reset}`, 1);
 
   winEmpty();
@@ -2669,11 +2669,11 @@ async function remoteMenu() {
   const choice = await winPrompt();
   switch (choice.trim()) {
     case '1':
-      if (serverOnline) { console.log(`  ${c.green}✓ Already running${c.reset}`); }
+      if (serverOnline) { console.log(`  ${c.green}Ã¢Å“â€œ Already running${c.reset}`); }
       else {
         launchTerminal(ROOT, 'node server.js');
         hubLog('info', 'Remote server started');
-        console.log(`  ${c.green}✓ Server starting on :7777${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Server starting on :7777${c.reset}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2691,9 +2691,9 @@ async function remoteMenu() {
   return remoteMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // BATCH OPERATIONS
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function batchMenu() {
   winTitle(' Batch Operations ');
   winTop();
@@ -2713,12 +2713,12 @@ async function batchMenu() {
     case '1':
       console.log();
       for (const p of PROJECTS) {
-        if (!existsSync(p.path)) { console.log(`  ${c.red}○${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${c.red}MISSING${c.reset}`); continue; }
+        if (!existsSync(p.path)) { console.log(`  ${c.red}Ã¢â€”â€¹${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${c.red}MISSING${c.reset}`); continue; }
         try {
           const s = execSync('git status --short', { cwd: p.path, encoding: 'utf8', timeout: 5000 });
           const lines = s.trim().split('\n').filter(Boolean);
-          console.log(`  ${lines.length > 0 ? c.amber + '●' : c.green + '●'}${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${lines.length > 0 ? `${c.amber}${lines.length} changed` : `${c.green}clean`}${c.reset}`);
-        } catch { console.log(`  ${c.dim2}○${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${c.dim2}no git${c.reset}`); }
+          console.log(`  ${lines.length > 0 ? c.amber + 'Ã¢â€”Â' : c.green + 'Ã¢â€”Â'}${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${lines.length > 0 ? `${c.amber}${lines.length} changed` : `${c.green}clean`}${c.reset}`);
+        } catch { console.log(`  ${c.dim2}Ã¢â€”â€¹${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${c.dim2}no git${c.reset}`); }
       }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2759,14 +2759,14 @@ async function batchMenu() {
         grandTotal += loc;
         console.log(`  ${c.cyan}${loc.toLocaleString().padStart(8)}${c.reset}  ${c.white}${p.name}${c.reset}`);
       }
-      console.log(`  ${c.dark}${'─'.repeat(24)}${c.reset}`);
+      console.log(`  ${c.dark}${'Ã¢â€â‚¬'.repeat(24)}${c.reset}`);
       console.log(`  ${c.green}${c.bold}${grandTotal.toLocaleString().padStart(8)}${c.reset}  ${c.white}TOTAL${c.reset}`);
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       break;
     case '4':
       console.log(`\n  ${c.blue}Health check...${c.reset}\n`);
       for (const p of PROJECTS) {
-        if (!existsSync(p.path)) { console.log(`  ${c.red}✗${c.reset} ${c.white}${p.name}${c.reset} ${c.red}— missing${c.reset}`); continue; }
+        if (!existsSync(p.path)) { console.log(`  ${c.red}Ã¢Å“â€”${c.reset} ${c.white}${p.name}${c.reset} ${c.red}Ã¢â‚¬â€ missing${c.reset}`); continue; }
         let issues = [];
         try {
           const s = execSync('git status --short', { cwd: p.path, encoding: 'utf8', timeout: 5000 });
@@ -2774,7 +2774,7 @@ async function batchMenu() {
         } catch { issues.push('no git'); }
         if (existsSync(join(p.path, 'package.json')) && !existsSync(join(p.path, 'node_modules'))) issues.push('npm install needed');
         if (existsSync(join(p.path, '.env.example')) && !existsSync(join(p.path, '.env'))) issues.push('.env missing');
-        console.log(`  ${issues.length ? c.amber + '!' : c.green + '✓'}${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${issues.length ? `${c.amber}${issues.join(', ')}` : `${c.green}healthy`}${c.reset}`);
+        console.log(`  ${issues.length ? c.amber + '!' : c.green + 'Ã¢Å“â€œ'}${c.reset} ${c.white}${pad(p.name, 15)}${c.reset} ${issues.length ? `${c.amber}${issues.join(', ')}` : `${c.green}healthy`}${c.reset}`);
       }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2783,9 +2783,9 @@ async function batchMenu() {
   return batchMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // DIAGNOSTICS
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function systemDiag() {
   winTitle(' System Diagnostics ');
   winTop();
@@ -2799,12 +2799,12 @@ async function systemDiag() {
     ['Git', () => { try { return execSync('git --version', { encoding: 'utf8' }).trim().replace('git version ', ''); } catch { return 'NOT FOUND'; } }],
     ['Ollama', () => { try { execSync('ollama list', { encoding: 'utf8', timeout: 3000 }); return 'Online'; } catch { try { execSync('ollama --version', { encoding: 'utf8', timeout: 3000 }); return 'Installed (not running)'; } catch { return 'Not installed'; } } }],
     ['Claude Code', () => { try { execSync('claude --version', { encoding: 'utf8', timeout: 3000 }); return 'Installed'; } catch { return 'Not found'; } }],
-    ['Android Studio', () => existsSync('C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe') ? 'Installed' : '—'],
+    ['Android Studio', () => existsSync('C:\\Program Files\\Android\\Android Studio\\bin\\studio64.exe') ? 'Installed' : 'Ã¢â‚¬â€'],
   ];
 
   checks.forEach(([label, check]) => {
     const result = check();
-    const color = result.includes('NOT') || result === '—' || result.includes('Not') ? c.amber : c.green;
+    const color = result.includes('NOT') || result === 'Ã¢â‚¬â€' || result.includes('Not') ? c.amber : c.green;
     winLine(`  ${c.dim2}${pad(label + ':', 18)}${c.reset} ${color}${result}${c.reset}`, 1);
   });
 
@@ -2817,7 +2817,7 @@ async function systemDiag() {
     const files = listFiles(dir);
     let totalSize = 0;
     files.forEach(f => { try { totalSize += statSync(f.path).size; } catch {} });
-    const icon = files.length > 0 ? `${c.green}■` : `${c.dark}□`;
+    const icon = files.length > 0 ? `${c.green}Ã¢â€“Â ` : `${c.dark}Ã¢â€“Â¡`;
     winLine(`  ${icon}${c.reset} ${c.white}${name.padEnd(12)}${c.reset} ${c.dim2}${String(files.length).padStart(3)} files  ${formatSize(totalSize).padStart(10)}${c.reset}`, 1);
   });
 
@@ -2828,7 +2828,7 @@ async function systemDiag() {
 
   for (const p of PROJECTS) {
     if (!existsSync(p.path)) {
-      winLine(`  ${c.red}○${c.reset} ${c.white}${p.name.padEnd(15)}${c.reset} ${c.red}MISSING${c.reset}`, 1);
+      winLine(`  ${c.red}Ã¢â€”â€¹${c.reset} ${c.white}${p.name.padEnd(15)}${c.reset} ${c.red}MISSING${c.reset}`, 1);
       continue;
     }
     let gitInfo = '';
@@ -2837,7 +2837,7 @@ async function systemDiag() {
       const changes = status.trim().split('\n').filter(Boolean).length;
       gitInfo = changes > 0 ? `${c.amber}${changes} uncommitted` : `${c.green}clean`;
     } catch { gitInfo = `${c.dim2}no git`; }
-    winLine(`  ${c.green}●${c.reset} ${c.white}${p.name.padEnd(15)}${c.reset} ${gitInfo}${c.reset}`, 1);
+    winLine(`  ${c.green}Ã¢â€”Â${c.reset} ${c.white}${p.name.padEnd(15)}${c.reset} ${gitInfo}${c.reset}`, 1);
   }
 
   winEmpty();
@@ -2850,9 +2850,9 @@ async function systemDiag() {
   return mainMenu();
 }
 
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // FLIGHT RECORDER (Logs)
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function viewLogs() {
   winTitle(' Flight Recorder ');
   winTop();
@@ -2889,15 +2889,15 @@ async function viewLogs() {
   if (choice.trim() === '1') {
     writeFileSync(LOG_FILE, '');
     hubLog('info', 'Logs wiped');
-    console.log(`  ${c.green}✓ Logs cleared${c.reset}`);
+    console.log(`  ${c.green}Ã¢Å“â€œ Logs cleared${c.reset}`);
     await ask(`  ${c.dim2}[Enter]${c.reset} `);
   }
   return mainMenu();
 }
 
-// ═══════════════════════════════════════════════════════
-// COMMANDER'S LOG — Notes
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// COMMANDER'S LOG Ã¢â‚¬â€ Notes
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 const NOTES_FILE = join(ROOT, 'agents', 'notes.json');
 
 function loadNotes() {
@@ -2946,7 +2946,7 @@ async function notesMenu() {
         const notes = loadNotes();
         notes.push({ text: text.trim(), ts: new Date().toISOString(), tag: '' });
         saveNotes(notes);
-        console.log(`  ${c.green}✓ Saved${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Saved${c.reset}`);
         hubLog('info', 'Note added');
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -2959,7 +2959,7 @@ async function notesMenu() {
         const notes = loadNotes();
         notes.push({ text: text.trim(), ts: new Date().toISOString(), tag: (tag.trim() || '').toUpperCase() });
         saveNotes(notes);
-        console.log(`  ${c.green}✓ Saved [${tag.trim().toUpperCase()}]${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Saved [${tag.trim().toUpperCase()}]${c.reset}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2982,7 +2982,7 @@ async function notesMenu() {
       const confirm = await ask(`  ${c.red}Clear all notes? [y/N]: ${c.reset}`);
       if (confirm.trim().toLowerCase() === 'y') {
         saveNotes([]);
-        console.log(`  ${c.green}✓ Notes cleared${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Notes cleared${c.reset}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       break;
@@ -2992,9 +2992,9 @@ async function notesMenu() {
   return notesMenu();
 }
 
-// ═══════════════════════════════════════════════════════
-// [G] GOOGLE SHEETS SYNC — Backup & Reference System
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+// [G] GOOGLE SHEETS SYNC Ã¢â‚¬â€ Backup & Reference System
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 async function sheetsMenu() {
   let sync, auth;
   try {
@@ -3018,13 +3018,13 @@ async function sheetsMenu() {
   const crews = sync.getConfiguredCrews();
   const status = sync.getSyncStatus();
 
-  winTitle(' Google Sheets Sync — CHERP Backup ');
+  winTitle(' Google Sheets Sync Ã¢â‚¬â€ CHERP Backup ');
   winMenuBar(['Sync', 'Crews', 'Config']);
   winTop();
   winEmpty();
 
   // Auth status
-  const authIcon = hasAuth ? `${c.green}●${c.reset}` : `${c.red}○${c.reset}`;
+  const authIcon = hasAuth ? `${c.green}Ã¢â€”Â${c.reset}` : `${c.red}Ã¢â€”â€¹${c.reset}`;
   const authLabel = hasAuth ? 'Connected' : 'Not authorized';
   winLine(`${authIcon} ${c.white}Google Auth:${c.reset} ${hasAuth ? c.green : c.red}${authLabel}${c.reset}    ${c.dim2}Crews linked: ${crews.length}${c.reset}`, 1);
   winEmpty();
@@ -3050,8 +3050,8 @@ async function sheetsMenu() {
   winSection('Actions');
   winEmpty();
   winBtnRow([
-    ['1', 'Sync Now',           'Push CHERP → Sheets (all crews)'],
-    ['2', 'Pull Changes',       'Import Sheet edits → CHERP'],
+    ['1', 'Sync Now',           'Push CHERP Ã¢â€ â€™ Sheets (all crews)'],
+    ['2', 'Pull Changes',       'Import Sheet edits Ã¢â€ â€™ CHERP'],
     ['3', 'Create Crew Sheet',  'New spreadsheet for a crew'],
     ['4', 'Sync Status',        'Detailed last-sync report'],
     ['5', 'Open in Browser',    'View crew spreadsheet'],
@@ -3080,10 +3080,10 @@ async function sheetsMenu() {
         const results = await sync.pushSyncAll();
         for (const [code, res] of Object.entries(results)) {
           if (res.error) {
-            console.log(`  ${c.red}✗ ${code}: ${res.error}${c.reset}`);
+            console.log(`  ${c.red}Ã¢Å“â€” ${code}: ${res.error}${c.reset}`);
           } else {
             const tabSummary = Object.entries(res.tabs).map(([name, t]) => `${name}:${t.rows}`).join(', ');
-            console.log(`  ${c.green}✓ ${code}${c.reset} — ${c.dim2}${tabSummary}${c.reset}`);
+            console.log(`  ${c.green}Ã¢Å“â€œ ${code}${c.reset} Ã¢â‚¬â€ ${c.dim2}${tabSummary}${c.reset}`);
           }
         }
         hubLog('info', `Sheets push sync: ${crews.length} crew(s)`);
@@ -3104,7 +3104,7 @@ async function sheetsMenu() {
         for (const code of crews) {
           const result = await sync.pullSync(code);
           const changed = result.changes;
-          const icon = changed > 0 ? `${c.amber}↓` : `${c.green}✓`;
+          const icon = changed > 0 ? `${c.amber}Ã¢â€ â€œ` : `${c.green}Ã¢Å“â€œ`;
           console.log(`  ${icon}${c.reset} ${code}: ${changed} change(s) imported`);
           if (result.errors.length) {
             result.errors.forEach(e => console.log(`    ${c.red}${e}${c.reset}`));
@@ -3130,14 +3130,14 @@ async function sheetsMenu() {
         try {
           const id = await sync.createCrewSheet(teamCode.trim(), crewName.trim());
           const url = `https://docs.google.com/spreadsheets/d/${id}`;
-          console.log(`  ${c.green}✓ Created!${c.reset}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ Created!${c.reset}`);
           console.log(`  ${c.blue}${url}${c.reset}`);
           hubLog('info', `Created crew sheet: ${teamCode.trim()}`);
           // Auto-push data
           console.log(`  ${c.cyan}Pushing initial data...${c.reset}`);
           const pushResult = await sync.pushSync(teamCode.trim());
           const tabSummary = Object.entries(pushResult.tabs).map(([name, t]) => `${name}:${t.rows}`).join(', ');
-          console.log(`  ${c.green}✓ ${tabSummary}${c.reset}`);
+          console.log(`  ${c.green}Ã¢Å“â€œ ${tabSummary}${c.reset}`);
         } catch (e) {
           console.log(`  ${c.red}Failed: ${e.message}${c.reset}`);
         }
@@ -3188,7 +3188,7 @@ async function sheetsMenu() {
       console.log(`\n  ${c.cyan}Opening Google authorization in browser...${c.reset}`);
       try {
         await auth.authorizeInteractive();
-        console.log(`  ${c.green}✓ Authorized! Token saved.${c.reset}`);
+        console.log(`  ${c.green}Ã¢Å“â€œ Authorized! Token saved.${c.reset}`);
         hubLog('info', 'Google Sheets authorized');
       } catch (e) {
         console.log(`  ${c.red}Auth failed: ${e.message}${c.reset}`);
@@ -3201,11 +3201,97 @@ async function sheetsMenu() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// [M] AGENT MODE — Hybrid AI Framework
-// ═══════════════════════════════════════════════════════
+// Goal 2 and Goal 5: trainer-party Agent Mode deck plus heal and Ollama status actions - see CHANGES.md
+function getPartyAccent(agent) {
+  const map = {
+    TR:  { color: c.yellow, role: c.amber, pokemon: 'TRAINER', flair: 'LEAD' },
+    SCZ: { color: c.mint, role: c.green, pokemon: '5C1Z0R', flair: 'BUILD' },
+    ROT: { color: c.amber, role: c.orange, pokemon: 'R0T0M', flair: 'WIRE' },
+    DEC: { color: c.green, role: c.mint, pokemon: 'D3C1D', flair: 'SCOUT' },
+    PGN: { color: c.cyan, role: c.blue, pokemon: 'P0RYG', flair: 'LOG' },
+    UMB: { color: c.violet, role: c.mag, pokemon: 'UMBR3', flair: 'QA' },
+    ALK: { color: c.pink, role: c.yellow, pokemon: '4L4K4', flair: 'MEM' },
+    M3W: { color: c.pink, role: c.yellow, pokemon: 'M3W', flair: 'LEARN' },
+  };
+  return map[agent?.partyBadge] || { color: c.white, role: c.dim2, pokemon: 'PARTY', flair: 'GEN' };
+}
+
+async function ollamaStatusScreen(orch) {
+  while (true) {
+    const agents = orch.registry.list();
+    let installed = [];
+    const loaded = new Map();
+
+    try {
+      installed = execSync('ollama list', { encoding: 'utf8', timeout: 4000 })
+        .trim()
+        .split('\n')
+        .slice(1)
+        .map(line => line.split(/\s+/)[0])
+        .filter(Boolean);
+    } catch {}
+
+    try {
+      const ps = execSync('ollama ps', { encoding: 'utf8', timeout: 4000 }).trim().split('\n').slice(1);
+      ps.forEach(line => {
+        const parts = line.trim().split(/\s+/);
+        if (!parts[0]) return;
+        loaded.set(parts[0], {
+          size: parts[2] || '',
+          until: parts.slice(4).join(' '),
+        });
+      });
+    } catch {}
+
+    winTitle(' Agent Mode - Ollama Party Status ');
+    winMenuBar(['Trainer', 'Models', 'RAM']);
+    winTop();
+    winEmpty();
+    winLine(`${c.cyan}${c.bold}Workbench:${c.reset} ${c.white}Model Pokedex${c.reset}    ${c.cyan}${c.bold}Installed:${c.reset} ${c.white}${installed.length}${c.reset}    ${c.cyan}${c.bold}Loaded:${c.reset} ${c.white}${loaded.size}${c.reset}`, 1);
+    winEmpty();
+    winSep();
+    winSection('Model Health Grid');
+    winEmpty();
+
+    agents.forEach(agent => {
+      const accent = getPartyAccent(agent);
+      const available = installed.includes(agent.base) || installed.includes(agent.id);
+      const loadedInfo = loaded.get(agent.base) || loaded.get(agent.id);
+      const roleTag = agent.teamRole === 'trainer'
+        ? `${c.yellow}${c.bold}[TR]${c.reset}`
+        : `${accent.color}${c.bold}[${agent.partyBadge || 'P?'}]${c.reset}`;
+      const stateTag = agent.status === 'unhealthy'
+        ? `${c.red}[SICK]${c.reset}`
+        : loadedInfo
+          ? `${c.green}[RAM ]${c.reset}`
+          : available
+            ? `${c.cyan}[RDY ]${c.reset}`
+            : `${c.dark}[MISS]${c.reset}`;
+      const loadText = loadedInfo?.size ? loadedInfo.size : '-';
+      const dexTag = `${accent.role}${pad(accent.pokemon, 6)}${c.reset}`;
+      winLine(`  ${roleTag} ${accent.color}${pad(agent.displayName, 18)}${c.reset} ${dexTag} ${stateTag} ${c.dim2}${pad(loadText, 8)}${c.reset} ${c.green}${String(agent.tasksCompleted || 0).padStart(3)} ok${c.reset}`, 1);
+    });
+
+    winEmpty();
+    winSep();
+    winBtnRow([
+      ['R', 'Refresh', 'Run ollama list + ps again'],
+      ['ESC', 'Back', 'Return to Agent Mode'],
+    ]);
+    winEmpty();
+    winBottom();
+    winStatusBar(' Ollama Party Status', `${loaded.size} loaded | ${agents.length} tracked`);
+
+    const choice = (await winPrompt()).trim().toUpperCase();
+    if (!choice || choice === 'R') continue;
+    if (choice === 'ESC' || choice === '\u001B' || choice === '0') return;
+  }
+}
+
+// ---------------------------------------------------------------
+// [M] AGENT MODE - Hybrid AI Framework
+// ---------------------------------------------------------------
 async function agentMode() {
-  // Dynamic import of agent_mode core
   let Orchestrator;
   try {
     const mod = await import('./agent_mode/core/orchestrator.js');
@@ -3228,34 +3314,69 @@ async function agentMode() {
   const orch = new Orchestrator();
   const detection = orch.init();
   const dash = orch.dashboard();
+  const q = dash.queue;
+  const agents = dash.agents;
+  const trainer = dash.trainer;
+  const companion = dash.companion;
+  const party = dash.party;
+  const theme = dash.theme || {};
+  const workbenchLabel = theme.workbenchLabel || 'Game Boy Advance Field Kit';
+  const partyLabel = theme.partyLabel || 'P0K3M0N-Style Dev Party';
 
-  winTitle(' Agent Mode — Hybrid AI Framework ');
-  winMenuBar(['Agents', 'Tasks', 'Offline', 'Review', 'Logs']);
+  winTitle(' Agent Mode - Ken AI Trainer Deck ');
+  winMenuBar(['Trainer', 'Party', 'Queue', 'Review', 'Field']);
   winTop();
-
-  // Mode status
   winEmpty();
+
   const modeColor = detection.mode === 'hybrid' ? c.green : c.amber;
   const modeLabel = detection.mode === 'hybrid' ? 'HYBRID' : 'OFFLINE';
-  winLine(`${modeColor}●${c.reset} ${c.white}${c.bold}Mode: ${modeLabel}${c.reset}    ${detection.claude ? `${c.green}●${c.reset} Claude` : `${c.red}○${c.reset} Claude`}    ${detection.ollama ? `${c.green}●${c.reset} Ollama` : `${c.red}○${c.reset} Ollama`}`, 1);
+  const claudeTag = detection.claude ? `${c.green}[OK]${c.reset} Claude` : `${c.red}[NO]${c.reset} Claude`;
+  const ollamaTag = detection.ollama ? `${c.green}[OK]${c.reset} Ollama` : `${c.red}[NO]${c.reset} Ollama`;
+  winLine(`${c.cyan}${c.bold}${workbenchLabel}${c.reset}`, 1);
+  winLine(`${modeColor}[${modeLabel}]${c.reset} ${claudeTag}    ${ollamaTag}    ${c.dim2}Ken AI calls the plays and the party executes.${c.reset}`, 1);
   winEmpty();
 
-  // Queue summary
-  const q = dash.queue;
-  winLine(`${c.dim2}Tasks:${c.reset} ${c.white}${q.total}${c.reset}  ${c.dim2}Queued:${c.reset} ${c.cyan}${q.queued || 0}${c.reset}  ${c.dim2}Running:${c.reset} ${c.green}${q.in_progress || 0}${c.reset}  ${c.dim2}Review:${c.reset} ${c.amber}${q.pendingReview}${c.reset}  ${c.dim2}Offline:${c.reset} ${c.blue}${q.offlineReady}${c.reset}`, 1);
+  winLine(`${c.dim2}Tasks:${c.reset} ${c.white}${q.total}${c.reset}  ${c.dim2}Queued:${c.reset} ${c.cyan}${q.queued || 0}${c.reset}  ${c.dim2}Running:${c.reset} ${c.green}${q.in_progress || 0}${c.reset}  ${c.dim2}Review:${c.reset} ${c.amber}${q.pendingReview}${c.reset}  ${c.dim2}Failed:${c.reset} ${c.red}${q.failed || 0}${c.reset}`, 1);
   winSep();
 
-  // Agent cards
   winEmpty();
-  winSection('Registered Agents');
+  winSection('Trainer Bench');
   winEmpty();
 
-  const agents = dash.agents;
-  agents.forEach((a, i) => {
-    const stColor = a.status === 'running' ? c.green : a.status === 'failed' ? c.red : a.status === 'idle' ? c.dim2 : c.amber;
-    const stIcon = a.status === 'running' ? '●' : a.status === 'failed' ? '✗' : '○';
-    const avail = a.available ? `${c.green}▰` : `${c.red}▱`;
-    winLine(`  ${c.cyan}${String(i + 1).padStart(2)}.${c.reset} ${stColor}${stIcon}${c.reset} ${c.white}${pad(a.displayName, 22)}${c.reset} ${c.dim2}${pad(a.role, 16)}${c.reset} ${avail}${c.reset} ${c.dim2}${a.base}${c.reset}`, 1);
+  if (trainer) {
+    const trainerState = trainer.status === 'pending_build'
+      ? `${c.amber}[PEND]${c.reset}`
+      : trainer.available
+        ? `${c.green}[RDY ]${c.reset}`
+        : `${c.red}[MISS]${c.reset}`;
+    winLine(`  ${c.yellow}${c.bold}[TR]${c.reset} ${c.white}${c.bold}${pad(trainer.displayName, 18)}${c.reset} ${c.yellow}${pad(trainer.role, 22)}${c.reset} ${trainerState} ${c.dim2}${trainer.base}${c.reset}`, 1);
+    winLine(`      ${c.dim2}Trainer voice owns routing, review, and Ken-style architecture calls.${c.reset}`, 1);
+    if (companion) {
+      const companionAccent = getPartyAccent(companion);
+      const companionState = companion.status === 'pending_build'
+        ? `${c.amber}[PEND]${c.reset}`
+        : companion.available
+          ? `${c.green}[RDY ]${c.reset}`
+          : `${c.red}[MISS]${c.reset}`;
+      winLine(`      ${companionAccent.color}${c.bold}[CP]${c.reset} ${companionAccent.color}${pad(companion.displayName, 18)}${c.reset} ${companionAccent.role}${pad(companion.battleRole || companion.role, 22)}${c.reset} ${companionState}`, 1);
+    }
+    winEmpty();
+  }
+
+  winSection(partyLabel);
+  winEmpty();
+  party.forEach((agent, index) => {
+    const accent = getPartyAccent(agent);
+    const statusColor = agent.status === 'unhealthy' ? c.red : agent.status === 'running' ? c.green : agent.available ? c.cyan : c.dark;
+    const statusMark = agent.status === 'unhealthy' ? '[!!]' : agent.status === 'running' ? '[GO]' : agent.available ? '[RDY]' : '[NO]';
+    const slot = `${accent.color}${c.bold}[${agent.partyBadge || String(index + 1).padStart(2, '0')}]${c.reset}`;
+    const health = agent.status === 'unhealthy'
+      ? `${c.red}SICK${c.reset}`
+      : `${c.green}${Math.round((agent.successRate || 0) * 100).toString().padStart(3)}%${c.reset}`;
+    const dexTag = `${accent.role}${pad(accent.pokemon, 6)}${c.reset}`;
+    const roleTag = `${accent.role}${pad(agent.specialistTrack || agent.role, 14)}${c.reset}`;
+    const pairTag = agent.preferredPartnerName ? `${c.dim2}${pad(agent.preferredPartnerName.split(' ')[0], 8)}${c.reset}` : `${c.dim2}${pad('-', 8)}${c.reset}`;
+    winLine(`  ${slot} ${statusColor}${statusMark}${c.reset} ${accent.color}${pad(agent.displayName, 18)}${c.reset} ${dexTag} ${roleTag} ${pairTag} ${health}`, 1);
   });
 
   winEmpty();
@@ -3271,17 +3392,19 @@ async function agentMode() {
     ['6', 'Assign Task',         'Manually assign task to agent'],
     ['7', 'Build Review Packet', 'Package work for Claude re-entry'],
     ['8', 'Switch Mode',         `Currently: ${modeLabel}`],
+    ['H', 'Heal Agent',          'Reset an unhealthy party slot'],
+    ['O', 'Ollama Status',       'See which models are alive and loaded'],
     ['T', 'Training Stats',      'Curate training log + show keep rate'],
-    ['0', 'Back',                 ''],
+    ['0', 'Back',                ''],
   ]);
   winEmpty();
   winBottom();
-  winStatusBar(` Agent Mode — ${modeLabel}`, `${agents.length} agents | ${q.total} tasks `);
+  winStatusBar(` Trainer Deck - ${modeLabel}`, `${agents.length} slots | ${q.total} tasks | ${q.failed || 0} failed `);
 
   const choice = await winPrompt();
-  switch (choice.trim()) {
+  switch (choice.trim().toUpperCase()) {
     case '1': {
-      console.log(`\n  ${c.text}Task types: scan, index, draft_patch, draft_test, summarize, memory_extract, general${c.reset}`);
+      console.log(`\n  ${c.text}Task types: scan, index, draft_patch, draft_test, summarize, memory_extract, learn, prompt_tune, decision, orchestrate, general${c.reset}`);
       const type = await ask(`  ${c.text}Type: ${c.reset}`);
       const objective = await ask(`  ${c.text}Objective: ${c.reset}`);
       const scope = await ask(`  ${c.text}File scope (comma-sep, or Enter for any): ${c.reset}`);
@@ -3291,7 +3414,9 @@ async function agentMode() {
           objective: objective.trim(),
           scope: scope.trim() ? scope.trim().split(',').map(s => s.trim()) : [],
         });
-        console.log(`  ${c.green}✓ Task ${task.id} created${task.assignedAgent ? ` → assigned to ${task.assignedAgent}` : ''}${c.reset}`);
+        const pairLabel = task.supportAgent ? ` + ${task.supportAgent}` : '';
+        console.log(`  ${c.green}[OK] Task ${task.id} created${task.assignedAgent ? ` -> assigned to ${task.assignedAgent}${pairLabel}` : ''}${c.reset}`);
+        if (task.routingLane) console.log(`  ${c.dim2}Lane: ${task.routingLane}${task.routingReason ? ' | ' + task.routingReason : ''}${c.reset}`);
         hubLog('info', `Agent task: ${task.objective}`);
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -3300,26 +3425,28 @@ async function agentMode() {
     case '2': {
       console.log(`\n  ${c.blue}Running offline batch...${c.reset}`);
       const results = await orch.runOfflineBatch();
-      console.log(`  ${c.green}✓ ${results.length} tasks executed${c.reset}`);
-      results.forEach(r => {
-        if (r.success) console.log(`    ${c.green}●${c.reset} ${r.agent}: ${r.task?.objective?.substring(0, 40) || ''}${c.reset}`);
-        else console.log(`    ${c.red}✗${c.reset} ${r.agent || '?'}: ${r.error?.substring(0, 40) || ''}${c.reset}`);
+      console.log(`  ${c.green}[OK] ${results.length} tasks processed${c.reset}`);
+      results.forEach(result => {
+        if (result.success) console.log(`    ${c.green}[OK]${c.reset} ${result.agent}: ${result.task?.objective?.substring(0, 40) || ''}${c.reset}`);
+        else console.log(`    ${c.red}[NO]${c.reset} ${result.agent || '?'}: ${result.error?.substring(0, 60) || ''}${c.reset}`);
       });
-      hubLog('info', `Offline batch: ${results.filter(r => r.success).length}/${results.length} succeeded`);
+      hubLog('info', `Offline batch: ${results.filter(result => result.success).length}/${results.length} succeeded`);
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       return agentMode();
     }
     case '3': {
       const all = orch.queue.tasks;
-      const statuses = ['queued', 'in_progress', 'waiting_for_claude', 'approved_for_merge', 'archived'];
+      const statuses = ['queued', 'in_progress', 'waiting_for_claude', 'approved_for_merge', 'failed', 'archived'];
       console.log();
-      for (const st of statuses) {
-        const tasks = all.filter(t => t.status === st);
+      for (const status of statuses) {
+        const tasks = all.filter(task => task.status === status);
         if (tasks.length === 0) continue;
-        const stColor = st === 'queued' ? c.dim2 : st === 'in_progress' ? c.cyan : st === 'waiting_for_claude' ? c.amber : st === 'approved_for_merge' ? c.green : c.dark;
-        console.log(`  ${stColor}${c.bold}━━ ${st.toUpperCase()} (${tasks.length}) ━━${c.reset}`);
-        tasks.forEach(t => {
-          console.log(`    ${c.dim2}${t.id}${c.reset} ${c.white}${t.objective.substring(0, 45)}${c.reset} ${c.dim2}[${t.type}]${c.reset}`);
+        const statusColor = status === 'queued' ? c.dim2 : status === 'in_progress' ? c.cyan : status === 'waiting_for_claude' ? c.amber : status === 'approved_for_merge' ? c.green : status === 'failed' ? c.red : c.dark;
+        console.log(`  ${statusColor}${c.bold}[Q] ${status.toUpperCase()} (${tasks.length})${c.reset}`);
+        tasks.forEach(task => {
+          const retryText = task.maxRetries ? ` ${c.dim2}[${task.retries || 0}/${task.maxRetries}]${c.reset}` : '';
+          const wingText = task.supportAgent ? ` ${c.dim2}{wing:${task.supportAgent}}${c.reset}` : '';
+          console.log(`    ${c.dim2}${task.id}${c.reset} ${c.white}${task.objective.substring(0, 45)}${c.reset} ${c.dim2}[${task.type}]${c.reset}${retryText}${wingText}`);
         });
       }
       if (all.length === 0) console.log(`  ${c.dim2}No tasks in queue${c.reset}`);
@@ -3332,28 +3459,29 @@ async function agentMode() {
         console.log(`\n  ${c.dim2}No tasks waiting for review${c.reset}`);
       } else {
         console.log(`\n  ${c.amber}${pending.length} task(s) pending review:${c.reset}`);
-        pending.forEach((t, i) => {
-          console.log(`  ${c.cyan}${i + 1}.${c.reset} ${c.white}${t.objective.substring(0, 45)}${c.reset}`);
-          if (t.output) console.log(`     ${c.dim2}Output: ${t.output.substring(0, 60)}...${c.reset}`);
+        pending.forEach((task, index) => {
+          console.log(`  ${c.cyan}${index + 1}.${c.reset} ${c.white}${task.objective.substring(0, 45)}${c.reset}`);
+          if (task.output) console.log(`     ${c.dim2}Output: ${task.output.substring(0, 60)}...${c.reset}`);
         });
         const pick = await ask(`\n  ${c.text}Review # (or Enter to skip): ${c.reset}`);
         const idx = parseInt(pick) - 1;
         if (idx >= 0 && idx < pending.length) {
-          const t = pending[idx];
-          console.log(`\n  ${c.blue}Task: ${t.objective}${c.reset}`);
-          console.log(`  ${c.dim2}Type: ${t.type} | Agent: ${t.assignedAgent}${c.reset}`);
-          if (t.output) {
+          const task = pending[idx];
+          console.log(`\n  ${c.blue}Task: ${task.objective}${c.reset}`);
+          console.log(`  ${c.dim2}Type: ${task.type} | Lead: ${task.assignedAgent}${task.supportAgent ? ' | Wing: ' + task.supportAgent : ''}${c.reset}`);
+          if (task.routingLane || task.routingReason) console.log(`  ${c.dim2}Lane: ${task.routingLane || 'n/a'}${task.routingReason ? ' | ' + task.routingReason : ''}${c.reset}`);
+          if (task.output) {
             console.log(`\n  ${c.text}Output:${c.reset}`);
-            console.log(`  ${c.dim2}${t.output.substring(0, 500)}${c.reset}`);
+            console.log(`  ${c.dim2}${task.output.substring(0, 500)}${c.reset}`);
           }
           const verdict = await ask(`\n  ${c.text}Approve? [Y/n]: ${c.reset}`);
           if (verdict.trim().toUpperCase() === 'N') {
             const reason = await ask(`  ${c.text}Reason: ${c.reset}`);
-            orch.reviewTask(t.id, false, reason.trim());
-            console.log(`  ${c.red}✗ Rejected — back to queue${c.reset}`);
+            orch.reviewTask(task.id, false, reason.trim());
+            console.log(`  ${c.red}[NO] Rejected - back to queue${c.reset}`);
           } else {
-            orch.reviewTask(t.id, true);
-            console.log(`  ${c.green}✓ Approved${c.reset}`);
+            orch.reviewTask(task.id, true);
+            console.log(`  ${c.green}[OK] Approved${c.reset}`);
           }
         }
       }
@@ -3362,10 +3490,12 @@ async function agentMode() {
     }
     case '5': {
       console.log();
-      agents.forEach((a, i) => {
-        console.log(`  ${c.cyan}${i + 1}.${c.reset} ${c.white}${c.bold}${a.displayName}${c.reset}`);
-        console.log(`     ${c.dim2}Model: ${a.base} | Role: ${a.role} | Personality: ${a.personality || 'none'}${c.reset}`);
-        console.log(`     ${c.dim2}Status: ${a.status} | Mode: ${a.modeEligibility} | Available: ${a.available ? 'yes' : 'no'}${c.reset}`);
+      agents.forEach((agent, index) => {
+        console.log(`  ${c.cyan}${index + 1}.${c.reset} ${c.white}${c.bold}${agent.displayName}${c.reset}`);
+        console.log(`     ${c.dim2}Model: ${agent.base} | Role: ${agent.role} | P0K3M0N: ${agent.pokemon || 'n/a'}${agent.pokemonType ? ' [' + agent.pokemonType + ']' : ''}${c.reset}`);
+        console.log(`     ${c.dim2}Track: ${agent.specialistTrack || 'general'} | Team: ${agent.teamRole === 'trainer' ? 'trainer' : agent.partyBadge || 'party'} | Success: ${Math.round((agent.successRate || 0) * 100)}%${c.reset}`);
+        if (agent.preferredPartnerName) console.log(`     ${c.dim2}Best with: ${agent.preferredPartnerName}${agent.preferredPartnerReason ? ' | ' + agent.preferredPartnerReason : ''}${c.reset}`);
+        if (agent.charterFile) console.log(`     ${c.dim2}Charter: ${agent.charterFile}${c.reset}`);
         console.log();
       });
       const agentPick = await ask(`  ${c.text}Agent # to edit (or Enter to skip): ${c.reset}`);
@@ -3375,15 +3505,15 @@ async function agentMode() {
         const action = await ask(`  ${c.text}Action: ${c.reset}`);
         if (action.trim() === '1') {
           const name = await ask(`  ${c.text}New name: ${c.reset}`);
-          if (name.trim()) { orch.registry.rename(agents[ai].id, name.trim()); console.log(`  ${c.green}✓ Renamed${c.reset}`); }
+          if (name.trim()) { orch.registry.rename(agents[ai].id, name.trim()); console.log(`  ${c.green}[OK] Renamed${c.reset}`); }
         } else if (action.trim() === '2') {
-          console.log(`  ${c.dim2}Roles: Repo Scanner, Patch Drafter, Diff Reviewer, Test Builder, Log Summarizer, Memory Curator, General Worker, Offline Prep Worker${c.reset}`);
+          console.log(`  ${c.dim2}Roles: Trainer Orchestrator, Repo Scanner, Patch Drafter, Test Builder, Log Summarizer, Memory Curator, General Worker${c.reset}`);
           const role = await ask(`  ${c.text}Role: ${c.reset}`);
-          if (role.trim()) { orch.registry.setRole(agents[ai].id, role.trim()); console.log(`  ${c.green}✓ Role set${c.reset}`); }
+          if (role.trim()) { orch.registry.setRole(agents[ai].id, role.trim()); console.log(`  ${c.green}[OK] Role set${c.reset}`); }
         } else if (action.trim() === '3') {
-          console.log(`  ${c.dim2}Personalities: primary-coder, conservative-coder, fast-scanner, test-writer, summarizer, curator${c.reset}`);
+          console.log(`  ${c.dim2}Personalities: ken-coder, primary-coder, conservative-coder, fast-scanner, summarizer, curator${c.reset}`);
           const pers = await ask(`  ${c.text}Personality: ${c.reset}`);
-          if (pers.trim()) { orch.registry.setPersonality(agents[ai].id, pers.trim()); console.log(`  ${c.green}✓ Personality set${c.reset}`); }
+          if (pers.trim()) { orch.registry.setPersonality(agents[ai].id, pers.trim()); console.log(`  ${c.green}[OK] Personality set${c.reset}`); }
         }
       }
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
@@ -3391,29 +3521,35 @@ async function agentMode() {
     }
     case '6': {
       const pending = orch.queue.listByStatus('queued');
-      if (pending.length === 0) { console.log(`  ${c.dim2}No queued tasks${c.reset}`); await ask(`  ${c.dim2}[Enter]${c.reset} `); return agentMode(); }
+      if (pending.length === 0) {
+        console.log(`  ${c.dim2}No queued tasks${c.reset}`);
+        await ask(`  ${c.dim2}[Enter]${c.reset} `);
+        return agentMode();
+      }
       console.log(`\n  ${c.text}Queued tasks:${c.reset}`);
-      pending.forEach((t, i) => console.log(`  ${c.cyan}${i + 1}.${c.reset} ${c.white}${t.objective.substring(0, 45)}${c.reset}`));
+      pending.forEach((task, index) => console.log(`  ${c.cyan}${index + 1}.${c.reset} ${c.white}${task.objective.substring(0, 45)}${c.reset}`));
       const tPick = await ask(`  ${c.text}Task #: ${c.reset}`);
       const tIdx = parseInt(tPick) - 1;
       if (tIdx >= 0 && tIdx < pending.length) {
         console.log(`\n  ${c.text}Agents:${c.reset}`);
-        agents.forEach((a, i) => console.log(`  ${c.cyan}${i + 1}.${c.reset} ${c.white}${a.displayName}${c.reset} ${c.dim2}(${a.status})${c.reset}`));
+        agents.forEach((agent, index) => console.log(`  ${c.cyan}${index + 1}.${c.reset} ${c.white}${agent.displayName}${c.reset} ${c.dim2}(${agent.status})${c.reset}`));
         const aPick = await ask(`  ${c.text}Agent #: ${c.reset}`);
         const aIdx = parseInt(aPick) - 1;
         if (aIdx >= 0 && aIdx < agents.length) {
           orch.assignTask(pending[tIdx].id, agents[aIdx].id);
-          console.log(`  ${c.green}✓ Assigned${c.reset}`);
+          const updated = orch.queue.get(pending[tIdx].id);
+          console.log(`  ${c.green}[OK] Assigned${updated?.assignedAgent ? ' -> ' + updated.assignedAgent : ''}${updated?.supportAgent ? ' + ' + updated.supportAgent : ''}${c.reset}`);
+          if (updated?.routingLane) console.log(`  ${c.dim2}Lane: ${updated.routingLane}${updated.routingReason ? ' | ' + updated.routingReason : ''}${c.reset}`);
 
           const runNow = await ask(`  ${c.text}Execute now? [Y/n]: ${c.reset}`);
           if (runNow.trim().toUpperCase() !== 'N') {
             console.log(`  ${c.blue}Executing...${c.reset}`);
             const result = await orch.executeTask(pending[tIdx].id);
             if (result.success) {
-              console.log(`  ${c.green}✓ Complete${c.reset}`);
+              console.log(`  ${c.green}[OK] Complete${c.reset}`);
               console.log(`  ${c.dim2}${result.output?.substring(0, 200) || ''}${c.reset}`);
             } else {
-              console.log(`  ${c.red}✗ ${result.error}${c.reset}`);
+              console.log(`  ${c.red}[NO] ${result.error}${c.reset}`);
             }
           }
         }
@@ -3423,9 +3559,11 @@ async function agentMode() {
     }
     case '7': {
       const packet = orch.buildClaudeReentryPacket();
-      const packetPath = join(ROOT, 'agent_mode', 'offline', 'review_queue', `packet-${Date.now().toString(36)}.json`);
+      const packetDir = join(ROOT, 'agent_mode', 'offline', 'review_queue');
+      if (!existsSync(packetDir)) mkdirSync(packetDir, { recursive: true });
+      const packetPath = join(packetDir, `packet-${Date.now().toString(36)}.json`);
       writeFileSync(packetPath, JSON.stringify(packet, null, 2));
-      console.log(`\n  ${c.green}✓ Review packet built${c.reset}`);
+      console.log(`\n  ${c.green}[OK] Review packet built${c.reset}`);
       console.log(`  ${c.dim2}${packet.pendingReviewCount} tasks packaged${c.reset}`);
       console.log(`  ${c.dim2}Saved: ${packetPath}${c.reset}`);
       hubLog('info', `Review packet: ${packet.pendingReviewCount} tasks`);
@@ -3433,25 +3571,49 @@ async function agentMode() {
       return agentMode();
     }
     case '8': {
-      const current = orch.mode.getMode();
+      const current = orch.getMode();
       const newMode = current === 'hybrid' ? 'offline' : 'hybrid';
-      orch.mode.setMode(newMode);
-      console.log(`  ${c.green}✓ Switched to ${newMode.toUpperCase()} mode${c.reset}`);
+      orch.setMode(newMode);
+      console.log(`  ${c.green}[OK] Switched to ${newMode.toUpperCase()} mode${c.reset}`);
       hubLog('info', `Mode: ${newMode}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
       return agentMode();
     }
-    case 'T': case 't': {
+    case 'H': {
+      const healable = agents.filter(agent => agent.status === 'unhealthy');
+      if (healable.length === 0) {
+        console.log(`\n  ${c.dim2}No unhealthy agents to heal${c.reset}`);
+        await ask(`  ${c.dim2}[Enter]${c.reset} `);
+        return agentMode();
+      }
+      console.log(`\n  ${c.text}Unhealthy party slots:${c.reset}`);
+      healable.forEach((agent, index) => console.log(`  ${c.cyan}${index + 1}.${c.reset} ${c.white}${agent.displayName}${c.reset} ${c.red}[${agent.status}]${c.reset}`));
+      const pick = await ask(`  ${c.text}Heal #: ${c.reset}`);
+      const idx = parseInt(pick) - 1;
+      if (idx >= 0 && idx < healable.length) {
+        orch.healAgent(healable[idx].id);
+        console.log(`  ${c.green}[OK] ${healable[idx].displayName} healed${c.reset}`);
+      }
+      await ask(`  ${c.dim2}[Enter]${c.reset} `);
+      return agentMode();
+    }
+    case 'O': {
+      await ollamaStatusScreen(orch);
+      return agentMode();
+    }
+    case 'T': {
       // Run curate.js and stream its output directly into the hub terminal.
-      // Also offer the approved-only pass so Ken can see both numbers in one shot.
+      // Runs both the default pass (all clean success entries) and the
+      // approved-only pass (only reviewed + approved) so Ken can see raw
+      // clean count vs vetted count side by side.
       console.log();
       try {
         const { execSync } = await import('child_process');
-        const all = execSync('node agent_mode/training/curate.js', { cwd: ROOT, encoding: 'utf8' });
-        console.log(all.replace(/^/gm, '  '));
+        const allPass = execSync('node agent_mode/training/curate.js', { cwd: ROOT, encoding: 'utf8' });
+        console.log(allPass.replace(/^/gm, '  '));
         const approvedOnly = execSync('node agent_mode/training/curate.js --approved-only', { cwd: ROOT, encoding: 'utf8' });
         console.log();
-        console.log(`  ${c.dim2}── approved-only pass ──${c.reset}`);
+        console.log(`  ${c.dim2}-- approved-only pass --${c.reset}`);
         console.log(approvedOnly.replace(/^/gm, '  '));
         hubLog('info', 'Training curate run from hub');
       } catch (err) {
@@ -3464,8 +3626,7 @@ async function agentMode() {
     default: return agentMode();
   }
 }
-
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 // LAUNCH
-// ═══════════════════════════════════════════════════════
+// Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
 mainMenu();

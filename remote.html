@@ -1,0 +1,1017 @@
+<!-- Goal 3: added the PIN-gated remote control web UI with the P0K3M0N-style GBA field-kit theme - see CHANGES.md -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipe-R Remote Deck</title>
+  <style>
+    :root {
+      --text: #f7f8e8;
+      --muted: #5f735d;
+      --pixel: #f8ed9d;
+      --cyan: #7ac8a7;
+      --amber: #d8b45c;
+      --ok: #4da463;
+      --danger: #c66d5b;
+      --shadow: 0 18px 34px rgba(25, 56, 35, 0.24);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Consolas", "Courier New", monospace;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(248, 237, 157, 0.18), transparent 26%),
+        radial-gradient(circle at top right, rgba(122, 200, 167, 0.16), transparent 28%),
+        linear-gradient(180deg, #7fac60 0%, #5d8c4b 34%, #38714f 72%, #2d5f45 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.09) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.09) 1px, transparent 1px);
+      background-size: 18px 18px;
+      opacity: 0.3;
+    }
+
+    .frame {
+      width: min(980px, calc(100vw - 20px));
+      margin: 12px auto 20px;
+      background:
+        linear-gradient(180deg, rgba(39, 104, 71, 0.98), rgba(24, 73, 54, 0.98)),
+        linear-gradient(135deg, rgba(255,255,255,0.04), transparent 36%);
+      border: 2px solid rgba(215, 220, 143, 0.46);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border: 2px solid rgba(248, 237, 157, 0.18);
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    .frame::after {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      pointer-events: none;
+    }
+
+    .hero {
+      padding: 22px 18px 18px;
+      background:
+        linear-gradient(180deg, rgba(61, 140, 89, 0.96), rgba(41, 102, 67, 0.96)),
+        linear-gradient(90deg, rgba(255,255,255,0.06), transparent 55%);
+      border-bottom: 3px solid rgba(248, 237, 157, 0.34);
+    }
+
+    .eyebrow {
+      color: var(--pixel);
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+      text-shadow: 0 1px 0 rgba(20, 52, 35, 0.28);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.45rem, 5vw, 2.5rem);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-shadow: 0 2px 0 rgba(26, 58, 40, 0.34);
+    }
+
+    .hero-copy,
+    .panel-copy,
+    .status-bar,
+    .empty,
+    .task-copy,
+    .pin-note {
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .hero-copy {
+      margin-top: 10px;
+      color: rgba(240, 246, 219, 0.86);
+    }
+
+    .hero-status,
+    .pin-dots,
+    .keypad,
+    .button-row,
+    .type-grid,
+    .template-grid,
+    .agent-grid,
+    .queue-grid,
+    .quick-grid,
+    .task-meta,
+    .card-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .hero-status { margin-top: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .badge {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(67, 116, 87, 0.24);
+      background: linear-gradient(180deg, rgba(247, 244, 220, 0.96), rgba(220, 229, 194, 0.96));
+      color: #284138;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+    }
+
+    .badge.ok { color: #2d7b48; }
+    .badge.warn { color: #9a6b19; }
+    .badge.danger { color: #a34f41; }
+    .badge.pixel { color: #6b6419; }
+
+    .screen { padding: 16px; display: grid; gap: 16px; }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(240, 239, 209, 0.98), rgba(210, 222, 182, 0.98));
+      border: 2px solid rgba(67, 116, 87, 0.30);
+      border-radius: 18px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.22), transparent 28%, transparent 72%, rgba(122, 200, 167, 0.10)),
+        linear-gradient(180deg, rgba(255,255,255,0.12), transparent 24%);
+      pointer-events: none;
+    }
+
+    .panel::after,
+    .agent-preview::before,
+    .task-card::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(67, 116, 87, 0.16);
+      pointer-events: none;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-title {
+      margin: 0;
+      color: #346049;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 1rem;
+    }
+
+    .panel-kicker {
+      color: #5d735d;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 0.76rem;
+      margin-bottom: 4px;
+    }
+
+    .pin-dots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .pin-dot {
+      min-height: 64px;
+      border-radius: 18px;
+      border: 2px solid rgba(67, 116, 87, 0.24);
+      background: linear-gradient(180deg, rgba(250, 246, 215, 0.98), rgba(207, 224, 176, 0.98));
+      display: grid;
+      place-items: center;
+      font-size: 1.8rem;
+      color: #6b6419;
+    }
+
+    .keypad { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    button,
+    textarea { font: inherit; }
+
+    button {
+      appearance: none;
+      border: 2px solid rgba(215, 220, 143, 0.36);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(58, 128, 81, 0.98), rgba(39, 90, 61, 0.98));
+      color: var(--text);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+
+    button:hover,
+    button:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(248, 237, 157, 0.72);
+      box-shadow: 0 0 0 2px rgba(248, 237, 157, 0.18);
+      outline: none;
+    }
+
+    button.secondary { background: linear-gradient(180deg, rgba(86, 123, 60, 0.98), rgba(56, 86, 38, 0.98)); }
+    button.danger { background: linear-gradient(180deg, rgba(151, 74, 63, 0.98), rgba(107, 48, 39, 0.98)); }
+    button.ghost { background: linear-gradient(180deg, rgba(96, 135, 69, 0.94), rgba(67, 101, 47, 0.94)); }
+    button.active { border-color: rgba(248, 237, 157, 0.72); color: #fff5bf; box-shadow: 0 0 0 2px rgba(248, 237, 157, 0.16); }
+
+    .agent-option {
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      gap: 10px;
+      align-items: center;
+      text-align: left;
+      min-height: 84px;
+    }
+
+    .agent-option.auto {
+      grid-template-columns: 1fr;
+      min-height: 64px;
+    }
+
+    .agent-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+    }
+
+    .agent-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 6px 8px rgba(0,0,0,0.22));
+    }
+
+    .agent-fallback {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #eef9f1;
+      background: linear-gradient(180deg, rgba(42, 87, 101, 0.96), rgba(22, 50, 62, 0.96));
+    }
+
+    .agent-copy {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .agent-copy strong,
+    .task-assigned strong {
+      display: block;
+      font-size: 0.92rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .agent-copy span,
+    .task-assigned span {
+      color: var(--muted);
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .task-assigned {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .task-assigned .agent-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+    }
+
+    .agent-preview {
+      margin-top: 12px;
+      border-radius: 18px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(249, 246, 220, 0.98), rgba(214, 226, 184, 0.98));
+      border: 2px solid rgba(67, 116, 87, 0.26);
+      color: #243446;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.30);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .agent-preview-card {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .agent-preview-portrait {
+      width: 96px;
+      height: 96px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      padding: 8px;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,0.38), transparent 32%),
+        linear-gradient(180deg, rgba(129, 165, 162, 0.98), rgba(68, 94, 108, 0.98));
+      border: 3px solid rgba(36, 56, 74, 0.24);
+      overflow: hidden;
+    }
+
+    .agent-preview-portrait img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 10px rgba(0,0,0,0.22));
+    }
+
+    .agent-preview-meta {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .agent-preview-meta h3 {
+      margin: 0;
+      color: #203245;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.98rem;
+    }
+
+    .agent-preview-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .agent-preview-copy {
+      color: #566a62;
+      line-height: 1.55;
+      font-size: 0.88rem;
+    }
+
+    .quick-grid,
+    .template-grid,
+    .type-grid,
+    .agent-grid,
+    .button-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(67, 116, 87, 0.24);
+      background: rgba(255,255,255,0.52);
+      color: #284138;
+      resize: vertical;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: rgba(248, 237, 157, 0.58);
+      box-shadow: 0 0 0 2px rgba(248, 237, 157, 0.14);
+    }
+
+    .task-card {
+      border-radius: 16px;
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(246, 244, 220, 0.98), rgba(222, 232, 194, 0.98));
+      border: 1px solid rgba(67, 116, 87, 0.18);
+      position: relative;
+      overflow: hidden;
+      color: #253849;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22);
+    }
+
+    .task-card.failed { border-color: rgba(255, 127, 107, 0.36); }
+    .task-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .task-title { margin: 0; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.98rem; }
+    .mono { color: #627661; font-size: 0.78rem; word-break: break-word; }
+    .status-bar { min-height: 24px; font-size: 0.9rem; color: #1c3b30; }
+    .status-bar.ok { color: var(--ok); }
+    .status-bar.warn { color: var(--amber); }
+    .status-bar.danger { color: var(--danger); }
+    .hidden { display: none !important; }
+    .small { font-size: 0.8rem; }
+    .empty { padding: 14px 0 4px; }
+
+    @media (max-width: 720px) {
+      .frame { width: min(100vw - 8px, 100%); margin: 4px auto 12px; border-radius: 18px; }
+      .hero { padding: 18px 14px 14px; }
+      .screen { padding: 12px; }
+      .hero-status,
+      .quick-grid,
+      .template-grid,
+      .type-grid,
+      .agent-grid,
+      .button-row { grid-template-columns: 1fr; }
+      .agent-preview-card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="frame">
+    <section class="hero">
+      <div class="eyebrow">Pipe-R Remote Deck</div>
+      <h1 id="remote-title">Ken AI Trainer Remote</h1>
+      <div class="hero-copy" id="remote-copy">Phone-first trainer control for the party queue, Sheets sync, and kill orders.</div>
+      <div class="hero-status" id="hero-status"></div>
+    </section>
+
+    <section class="screen">
+      <section class="panel" id="lock-panel">
+        <div class="panel-header">
+          <div><div class="panel-kicker">Entry Gate</div><h2 class="panel-title">Trainer PIN</h2></div>
+          <span class="badge pixel">4-digit lock</span>
+        </div>
+        <div class="pin-note">Enter the runtime PIN to unlock the trainer deck. The queue, kill order, and Sheets sync buttons fire through PIN-checked remote endpoints.</div>
+        <div class="pin-dots" id="pin-dots"></div>
+        <div class="status-bar" id="lock-status"></div>
+        <div class="keypad" id="keypad"></div>
+        <div class="button-row">
+          <button id="pin-clear" class="ghost">Clear</button>
+          <button id="pin-submit" class="secondary">Unlock</button>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="remote-panel">
+        <div class="panel-header">
+          <div><div class="panel-kicker">Quick Orders</div><h2 class="panel-title">Field Controls</h2></div>
+          <span class="badge ok" id="remote-mode">Unlocked</span>
+        </div>
+        <div class="quick-grid">
+          <button id="remote-refresh">Refresh Field State</button>
+          <button id="remote-sync" class="secondary">Run Sheets Sync</button>
+          <button id="back-dashboard" class="ghost">Open Main Dashboard</button>
+          <button id="relock" class="danger">Relock Remote</button>
+        </div>
+        <div class="status-bar" id="remote-status"></div>
+      </section>
+
+      <section class="panel hidden" id="compose-panel">
+        <div class="panel-header">
+          <div><div class="panel-kicker">Trainer Orders</div><h2 class="panel-title">Queue Task</h2></div>
+          <span class="badge" id="queue-live-count">0 tracked</span>
+        </div>
+        <div class="panel-copy small">Quick templates</div>
+        <div class="template-grid" id="template-grid"></div>
+        <div class="panel-copy small">Task type</div>
+        <div class="type-grid" id="type-grid"></div>
+        <div class="panel-copy small">Assigned slot</div>
+        <div class="agent-grid" id="agent-grid"></div>
+        <div id="agent-preview"></div>
+        <div class="panel-copy small">Objective</div>
+        <textarea id="objective-input" placeholder="Example: summarize the last failed tasks and hand Ken a short review packet."></textarea>
+        <div class="button-row">
+          <button id="queue-task" class="secondary">Queue Trainer Order</button>
+          <button id="clear-task" class="ghost">Clear Order</button>
+        </div>
+      </section>
+
+      <section class="panel hidden" id="queue-panel">
+        <div class="panel-header">
+          <div><div class="panel-kicker">Kill Switch</div><h2 class="panel-title">Active Queue</h2></div>
+          <span class="badge" id="kill-count">0 candidates</span>
+        </div>
+        <div class="queue-grid" id="queue-grid"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      pin: sessionStorage.getItem('pipe-r-remote-pin') || '',
+      unlocked: false,
+      dashboard: null,
+      selectedType: 'general',
+      selectedAgent: '',
+      templates: [
+        { label: 'Queue Scan', type: 'scan', objective: 'Scan the current workspace and summarize what changed.' },
+        { label: 'Queue Patch', type: 'draft_patch', objective: 'Draft the next patch needed to move the highest-priority queue item forward.' },
+        { label: 'Queue Summary', type: 'summarize', objective: 'Summarize recent activity and the queue for Ken in plain English.' },
+        { label: 'Queue Memory', type: 'memory_extract', objective: 'Extract durable memory from the latest queue and activity log.' },
+        { label: 'Prompt Learn', type: 'learn', objective: 'Study recent tasks and return the highest-value learning loop improvements for the party.' },
+        { label: 'Tune Prompt', type: 'prompt_tune', objective: 'Improve the prompt or operating guidance for the specialist lane that is struggling.' },
+        { label: 'Trainer Review', type: 'decision', objective: 'Review the current queue and decide the next best move as Ken AI.' },
+        { label: 'Offline Batch', type: 'orchestrate', objective: 'Prepare the next offline-safe batch plan for the party.' },
+      ],
+    };
+
+    const themeFallback = {
+      trainerLabel: 'Ken AI',
+        partyLabel: 'P0K3M0N-Style Dev Party',
+      workbenchLabel: 'Hoenn Emerald Field Kit',
+    };
+
+    const els = {
+      remoteTitle: document.getElementById('remote-title'),
+      remoteCopy: document.getElementById('remote-copy'),
+      heroStatus: document.getElementById('hero-status'),
+      lockPanel: document.getElementById('lock-panel'),
+      remotePanel: document.getElementById('remote-panel'),
+      composePanel: document.getElementById('compose-panel'),
+      queuePanel: document.getElementById('queue-panel'),
+      pinDots: document.getElementById('pin-dots'),
+      lockStatus: document.getElementById('lock-status'),
+      keypad: document.getElementById('keypad'),
+      pinClear: document.getElementById('pin-clear'),
+      pinSubmit: document.getElementById('pin-submit'),
+      remoteMode: document.getElementById('remote-mode'),
+      remoteStatus: document.getElementById('remote-status'),
+      remoteRefresh: document.getElementById('remote-refresh'),
+      remoteSync: document.getElementById('remote-sync'),
+      backDashboard: document.getElementById('back-dashboard'),
+      relock: document.getElementById('relock'),
+      queueLiveCount: document.getElementById('queue-live-count'),
+      killCount: document.getElementById('kill-count'),
+      templateGrid: document.getElementById('template-grid'),
+      typeGrid: document.getElementById('type-grid'),
+      agentGrid: document.getElementById('agent-grid'),
+      agentPreview: document.getElementById('agent-preview'),
+      objectiveInput: document.getElementById('objective-input'),
+      queueTask: document.getElementById('queue-task'),
+      clearTask: document.getElementById('clear-task'),
+      queueGrid: document.getElementById('queue-grid'),
+    };
+
+    const taskTypes = [
+      { key: 'general', label: 'General' },
+      { key: 'scan', label: 'Scan' },
+      { key: 'draft_patch', label: 'Patch' },
+      { key: 'summarize', label: 'Summarize' },
+      { key: 'memory_extract', label: 'Memory' },
+      { key: 'learn', label: 'Learn' },
+      { key: 'prompt_tune', label: 'Prompt' },
+      { key: 'decision', label: 'Decision' },
+    ];
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options,
+      });
+      let data = {};
+      try { data = await response.json(); } catch {}
+      if (!response.ok) throw new Error(data.error || data.result || `Request failed (${response.status})`);
+      return data;
+    }
+
+    async function postRemote(url, payload = {}) {
+      return fetchJson(url, { method: 'POST', body: JSON.stringify({ ...payload, pin: state.pin }) });
+    }
+
+    function setStatus(target, message, tone = 'ok') {
+      target.textContent = message || '';
+      target.className = `status-bar ${tone}`;
+    }
+
+    function badge(label, tone = '') { return `<span class="badge ${tone}">${escapeHtml(label)}</span>`; }
+
+    function getAgentAccent(agent) {
+      const map = {
+        TR:  { border: 'rgba(246, 201, 108, 0.40)', bg: 'rgba(72, 50, 12, 0.82)', text: '#f6df8e' },
+        SCZ: { border: 'rgba(129, 219, 149, 0.34)', bg: 'rgba(23, 58, 30, 0.82)', text: '#baf1b3' },
+        ROT: { border: 'rgba(255, 193, 92, 0.34)', bg: 'rgba(77, 46, 7, 0.82)', text: '#ffd88c' },
+        DEC: { border: 'rgba(104, 225, 176, 0.34)', bg: 'rgba(14, 53, 37, 0.82)', text: '#9df0c7' },
+        PGN: { border: 'rgba(118, 224, 248, 0.34)', bg: 'rgba(15, 45, 67, 0.82)', text: '#a5f0ff' },
+        UMB: { border: 'rgba(184, 143, 255, 0.34)', bg: 'rgba(35, 22, 56, 0.82)', text: '#dec6ff' },
+        ALK: { border: 'rgba(255, 143, 214, 0.34)', bg: 'rgba(67, 20, 54, 0.82)', text: '#ffd0f2' },
+        M3W: { border: 'rgba(255, 184, 213, 0.34)', bg: 'rgba(74, 28, 49, 0.82)', text: '#ffe2ee' },
+      };
+      return map[agent?.partyBadge] || map.TR;
+    }
+
+    const POKEDEX_MEDIA = {
+      TR: { icon: '', portrait: '', alias: 'Ken AI' },
+      SCZ: { icon: '0212-icon.png', portrait: '0212.png', alias: '5c1z0r' },
+      ROT: { icon: '0479-icon.png', portrait: '0479.png', alias: 'R0t0m' },
+      DEC: { icon: '0724-icon.png', portrait: '0724.png', alias: 'D3c1du3y3' },
+      PGN: { icon: '0474-icons.png', portrait: '0474.png', alias: 'P0ryg0n' },
+      UMB: { icon: '0197-icon.png', portrait: '0197.png', alias: 'Umbr30n' },
+      ALK: { icon: '0065-icon.png', portrait: '0065.png', alias: '4l4k4z4m' },
+      M3W: { icon: '0151-icon.png', portrait: '0151.png', alias: 'M3w' },
+    };
+
+    function getAgentMedia(agent) {
+      const media = POKEDEX_MEDIA[agent?.partyBadge] || POKEDEX_MEDIA.TR;
+      return {
+        ...media,
+        iconUrl: media.icon ? `/assets/pokedex/${encodeURIComponent(media.icon)}` : '',
+        portraitUrl: media.portrait ? `/assets/pokedex/${encodeURIComponent(media.portrait)}` : '',
+      };
+    }
+
+    function buttonAccentStyle(agent) {
+      if (!agent) return '';
+      const accent = getAgentAccent(agent);
+      return `border-color:${accent.border};background:${accent.bg};color:${accent.text}`;
+    }
+
+    function findAgentById(agentId) {
+      const dashboard = state.dashboard || {};
+      const pool = [dashboard.trainer, dashboard.companion, ...(dashboard.party || [])].filter(Boolean);
+      return pool.find(agent => agent.id === agentId) || null;
+    }
+
+    function getPreviewAgent() {
+      if (!state.dashboard) return null;
+      if (state.selectedAgent) return findAgentById(state.selectedAgent);
+      return state.dashboard.trainer || state.dashboard.companion || (state.dashboard.party || [])[0] || null;
+    }
+
+    function renderAgentPreview() {
+      const agent = getPreviewAgent();
+      if (!agent) {
+        els.agentPreview.innerHTML = '<div class="empty">Choose a slot to inspect before you queue the order.</div>';
+        return;
+      }
+      const media = getAgentMedia(agent);
+      const accent = getAgentAccent(agent);
+      const standing = agent.status === 'unhealthy'
+        ? badge('Needs Heal', 'danger')
+        : agent.status === 'pending_build'
+          ? badge('Pending Build', 'warn')
+          : badge(agent.available ? 'Ready' : 'Offline', agent.available ? 'ok' : 'warn');
+      const lane = agent.teamRole === 'trainer'
+        ? 'Trainer Bench'
+        : agent.teamRole === 'companion'
+          ? 'Companion Lane'
+          : `Party Slot ${agent.partySlot || '?'}`;
+      const copy = agent.teamRole === 'trainer'
+        ? 'Ken AI handles command decisions and lead routing from the remote deck.'
+        : agent.teamRole === 'companion'
+          ? 'M3w keeps the learning loop close to Ken and is ideal for memory-driven orders.'
+          : `${agent.displayName} owns the ${agent.specialistTrack || 'specialist'} lane and can be called directly from the phone deck.`;
+      els.agentPreview.innerHTML = `
+        <section class="agent-preview" style="border-color:${accent.border}">
+          <div class="agent-preview-card">
+            <div class="agent-preview-portrait">
+              ${media.portraitUrl ? `<img src="${media.portraitUrl}" alt="${escapeHtml(agent.displayName)} portrait" />` : `<div class="agent-fallback">${escapeHtml(agent.partyBadge || 'AI')}</div>`}
+            </div>
+            <div class="agent-preview-meta">
+              <div>
+                <h3>${escapeHtml(agent.displayName)}</h3>
+                <div class="mono">${escapeHtml(agent.base || 'No base model recorded')}</div>
+              </div>
+              <div class="agent-preview-badges">
+                ${standing}
+                ${badge(lane, 'pixel')}
+                ${badge(agent.specialistTrack || agent.teamRole || 'general')}
+              </div>
+              <div class="agent-preview-copy">${escapeHtml(copy)}</div>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderPinDots() {
+      const chars = state.pin.slice(0, 4).split('');
+      els.pinDots.innerHTML = Array.from({ length: 4 }, (_, index) => `<div class="pin-dot">${chars[index] ? '•' : ' '}</div>`).join('');
+    }
+
+    function renderHero() {
+      const dashboard = state.dashboard;
+      const theme = { ...themeFallback, ...(dashboard?.theme || {}) };
+      els.remoteTitle.textContent = `${theme.trainerLabel} Remote Deck`;
+      els.remoteCopy.textContent = `${theme.workbenchLabel}. Queue orders, run Sheets sync, and kill stuck tasks from the phone deck.`;
+      const system = dashboard?.system || {};
+      els.heroStatus.innerHTML = [
+        badge(theme.partyLabel, 'pixel'),
+        badge((system.mode || 'hybrid').toUpperCase(), system.mode === 'offline' ? 'warn' : 'ok'),
+        badge(system.claudeStatus || 'Claude ?', system.claudeStatus === 'available' ? 'ok' : 'warn'),
+        badge(system.ollamaStatus || 'Ollama ?', system.ollamaStatus === 'online' ? 'ok' : 'danger'),
+      ].join('');
+    }
+
+    function renderTypeButtons() {
+      els.typeGrid.innerHTML = taskTypes.map(item => `<button class="${state.selectedType === item.key ? 'active' : ''}" data-type="${escapeHtml(item.key)}">${escapeHtml(item.label)}</button>`).join('');
+      els.typeGrid.querySelectorAll('[data-type]').forEach(button => button.addEventListener('click', () => {
+        state.selectedType = button.dataset.type;
+        renderTypeButtons();
+      }));
+    }
+
+    function renderTemplates() {
+      els.templateGrid.innerHTML = state.templates.map((template, index) => `<button data-template="${index}" class="ghost">${escapeHtml(template.label)}</button>`).join('');
+      els.templateGrid.querySelectorAll('[data-template]').forEach(button => button.addEventListener('click', () => {
+        const template = state.templates[Number(button.dataset.template)];
+        state.selectedType = template.type;
+        els.objectiveInput.value = template.objective;
+        renderTypeButtons();
+        setStatus(els.remoteStatus, `${template.label} loaded into the order pad.`, 'ok');
+      }));
+    }
+
+    function renderAgents() {
+      const dashboard = state.dashboard || {};
+      const options = [
+        { id: '', label: 'Auto Assign', meta: null },
+        ...(dashboard.trainer ? [{ id: dashboard.trainer.id, label: `Trainer: ${dashboard.trainer.displayName}`, meta: dashboard.trainer }] : []),
+        ...(dashboard.companion ? [{ id: dashboard.companion.id, label: `Companion: ${dashboard.companion.displayName}`, meta: dashboard.companion }] : []),
+        ...((dashboard.party || []).map(agent => ({
+          id: agent.id,
+          label: `${agent.partyBadge || 'P?'} ${agent.displayName}${agent.preferredPartnerName ? ` x ${agent.preferredPartnerName}` : ''}`,
+          meta: agent,
+        }))),
+      ];
+      els.agentGrid.innerHTML = options.map(option => {
+        const media = getAgentMedia(option.meta);
+        const accentStyle = buttonAccentStyle(option.meta);
+        const isAuto = !option.meta;
+        return `
+          <button class="agent-option ${isAuto ? 'auto' : ''} ${state.selectedAgent === option.id ? 'active' : ''}" data-agent="${escapeHtml(option.id)}" style="${accentStyle}">
+            ${isAuto ? `
+              <div class="agent-copy">
+                <strong>${escapeHtml(option.label)}</strong>
+                <span>Let Ken route the order</span>
+              </div>
+            ` : `
+              <div class="agent-icon">
+                ${media.iconUrl ? `<img src="${media.iconUrl}" alt="${escapeHtml(option.meta.displayName)} icon" />` : `<div class="agent-fallback">${escapeHtml(option.meta.partyBadge || 'AI')}</div>`}
+              </div>
+              <div class="agent-copy">
+                <strong>${escapeHtml(option.label)}</strong>
+                <span>${escapeHtml(option.meta.specialistTrack || option.meta.teamRole || 'specialist lane')}</span>
+              </div>
+            `}
+          </button>
+        `;
+      }).join('');
+      els.agentGrid.querySelectorAll('[data-agent]').forEach(button => button.addEventListener('click', () => {
+        state.selectedAgent = button.dataset.agent;
+        renderAgents();
+        renderAgentPreview();
+      }));
+    }
+
+    function renderQueue() {
+      const tasks = (state.dashboard?.tasks || []).filter(task => !['approved_for_merge', 'archived'].includes(task.status));
+      els.queueLiveCount.textContent = `${tasks.length} tracked`;
+      els.killCount.textContent = `${tasks.length} candidates`;
+      if (!tasks.length) {
+        els.queueGrid.innerHTML = '<div class="empty">No live queue items to control right now.</div>';
+        return;
+      }
+      els.queueGrid.innerHTML = tasks.map(task => `
+        <article class="task-card ${task.status === 'failed' ? 'failed' : ''}" style="${(() => {
+          const assigned = findAgentById(task.assignedAgent);
+          if (!assigned) return '';
+          const accent = getAgentAccent(assigned);
+          return `border-color:${accent.border};box-shadow:inset 0 0 0 1px ${accent.border.replace('0.34', '0.12')}`;
+        })()}">
+          <div class="task-top">
+            <div><h3 class="task-title">${escapeHtml(task.type || 'general')}</h3><div class="mono">${escapeHtml(task.id)}</div></div>
+            <span class="badge ${task.status === 'failed' ? 'danger' : (task.status === 'waiting_for_claude' ? 'warn' : 'ok')}">${escapeHtml(task.status || 'queued')}</span>
+          </div>
+          <div class="task-copy">${escapeHtml(task.objective || '')}</div>
+          <div class="task-meta small">
+            ${badge(task.assignedAgentName || task.assignedAgent || 'auto')}
+            ${task.supportAgentName ? badge(`Wing ${task.supportAgentName}`) : ''}
+            ${task.routingLane ? badge(task.routingLane) : ''}
+            ${badge(task.nextRetryAt ? `Retry ${new Date(task.nextRetryAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Live now', task.nextRetryAt ? 'warn' : '')}
+            ${badge(task.failureReason ? task.failureReason.slice(0, 28) : `Retries ${task.retries || 0}/${task.maxRetries || 0}`, task.failureReason ? 'danger' : '')}
+          </div>
+          ${(() => {
+            const assigned = findAgentById(task.assignedAgent);
+            if (!assigned) return '';
+            const media = getAgentMedia(assigned);
+            return `
+              <div class="task-assigned">
+                <div class="agent-icon">
+                  ${media.iconUrl ? `<img src="${media.iconUrl}" alt="${escapeHtml(assigned.displayName)} icon" />` : `<div class="agent-fallback">${escapeHtml(assigned.partyBadge || 'AI')}</div>`}
+                </div>
+                <div>
+                  <strong>${escapeHtml(assigned.displayName)}</strong>
+                  <span>${escapeHtml(assigned.specialistTrack || assigned.teamRole || 'assigned slot')}</span>
+                </div>
+              </div>
+            `;
+          })()}
+          ${task.routingReason ? `<div class="task-copy">${escapeHtml(task.routingReason)}</div>` : ''}
+          <div class="card-actions"><button class="danger" data-kill="${escapeHtml(task.id)}">Kill Task</button></div>
+        </article>
+      `).join('');
+      els.queueGrid.querySelectorAll('[data-kill]').forEach(button => button.addEventListener('click', () => killTask(button.dataset.kill)));
+    }
+
+    function renderRemoteDeck() {
+      renderHero();
+      renderTemplates();
+      renderTypeButtons();
+      renderAgents();
+      renderAgentPreview();
+      renderQueue();
+      els.remoteMode.textContent = state.dashboard?.system?.autoExecutePaused ? 'Unlocked / Auto Paused' : 'Unlocked / Auto Live';
+      els.remoteMode.className = `badge ${state.dashboard?.system?.autoExecutePaused ? 'warn' : 'ok'}`;
+    }
+
+    async function loadDashboard(silent = false) {
+      try {
+        state.dashboard = await fetchJson('/api/dashboard');
+        renderRemoteDeck();
+        if (!silent) setStatus(els.remoteStatus, 'Field state refreshed.', 'ok');
+      } catch (error) {
+        setStatus(els.remoteStatus, error.message, 'danger');
+      }
+    }
+
+    async function unlock() {
+      if (state.pin.length !== 4) {
+        setStatus(els.lockStatus, 'Enter all four digits first.', 'warn');
+        return;
+      }
+      try {
+        const result = await fetchJson('/api/remote/auth', { method: 'POST', body: JSON.stringify({ pin: state.pin }) });
+        if (!result.ok) throw new Error('PIN rejected.');
+        state.unlocked = true;
+        sessionStorage.setItem('pipe-r-remote-pin', state.pin);
+        els.lockPanel.classList.add('hidden');
+        els.remotePanel.classList.remove('hidden');
+        els.composePanel.classList.remove('hidden');
+        els.queuePanel.classList.remove('hidden');
+        await loadDashboard(true);
+        setStatus(els.remoteStatus, 'Remote deck unlocked.', 'ok');
+      } catch (error) {
+        setStatus(els.lockStatus, error.message, 'danger');
+      }
+    }
+
+    function relock() {
+      state.unlocked = false;
+      state.pin = '';
+      sessionStorage.removeItem('pipe-r-remote-pin');
+      renderPinDots();
+      els.lockPanel.classList.remove('hidden');
+      els.remotePanel.classList.add('hidden');
+      els.composePanel.classList.add('hidden');
+      els.queuePanel.classList.add('hidden');
+      setStatus(els.lockStatus, 'Remote relocked.', 'ok');
+      setStatus(els.remoteStatus, '', 'ok');
+    }
+
+    async function runRemoteSync() {
+      try {
+        setStatus(els.remoteStatus, 'Running Sheets sync...', 'warn');
+        await postRemote('/api/remote/sheets/sync');
+        await loadDashboard(true);
+        setStatus(els.remoteStatus, 'Sheets sync triggered from the phone deck.', 'ok');
+      } catch (error) {
+        setStatus(els.remoteStatus, error.message, 'danger');
+      }
+    }
+
+    async function queueTask() {
+      const objective = els.objectiveInput.value.trim();
+      if (!objective) {
+        setStatus(els.remoteStatus, 'Write the trainer order first.', 'warn');
+        return;
+      }
+      try {
+        const result = await postRemote('/api/remote/dispatch', {
+          type: state.selectedType,
+          objective,
+          agent: state.selectedAgent || null,
+          execute: false,
+          priority: 2,
+        });
+        els.objectiveInput.value = '';
+        await loadDashboard(true);
+        setStatus(els.remoteStatus, `Queued ${result.task?.id || 'task'} from the remote deck.`, 'ok');
+      } catch (error) {
+        setStatus(els.remoteStatus, error.message, 'danger');
+      }
+    }
+
+    async function killTask(taskId) {
+      try {
+        await postRemote('/api/remote/task/kill', { taskId, reason: 'Killed from trainer remote deck' });
+        await loadDashboard(true);
+        setStatus(els.remoteStatus, `Kill order sent for ${taskId}.`, 'ok');
+      } catch (error) {
+        setStatus(els.remoteStatus, error.message, 'danger');
+      }
+    }
+
+    function addDigit(digit) {
+      if (state.pin.length >= 4) return;
+      state.pin += String(digit);
+      renderPinDots();
+      setStatus(els.lockStatus, '', 'ok');
+    }
+
+    function removeDigit() {
+      state.pin = state.pin.slice(0, -1);
+      renderPinDots();
+    }
+
+    function clearDigits() {
+      state.pin = '';
+      renderPinDots();
+      setStatus(els.lockStatus, '', 'ok');
+    }
+
+    function buildKeypad() {
+      const labels = ['1','2','3','4','5','6','7','8','9','BK','0','OK'];
+      els.keypad.innerHTML = labels.map(label => `<button data-key="${label}">${label === 'BK' ? 'Back' : label === 'OK' ? 'Unlock' : label}</button>`).join('');
+      els.keypad.querySelectorAll('[data-key]').forEach(button => button.addEventListener('click', async () => {
+        const key = button.dataset.key;
+        if (key === 'BK') removeDigit();
+        else if (key === 'OK') await unlock();
+        else addDigit(key);
+      }));
+    }
+
+    els.pinClear.addEventListener('click', clearDigits);
+    els.pinSubmit.addEventListener('click', unlock);
+    els.remoteRefresh.addEventListener('click', () => loadDashboard());
+    els.remoteSync.addEventListener('click', runRemoteSync);
+    els.backDashboard.addEventListener('click', () => { window.location.href = '/'; });
+    els.relock.addEventListener('click', relock);
+    els.queueTask.addEventListener('click', queueTask);
+    els.clearTask.addEventListener('click', () => {
+      els.objectiveInput.value = '';
+      state.selectedType = 'general';
+      state.selectedAgent = '';
+      renderTypeButtons();
+      renderAgents();
+      setStatus(els.remoteStatus, 'Order pad cleared.', 'ok');
+    });
+
+    buildKeypad();
+    renderPinDots();
+    renderHero();
+    renderTemplates();
+    renderTypeButtons();
+
+    if (state.pin.length === 4) unlock().catch(() => {});
+  </script>
+</body>
+</html>

@@ -922,6 +922,44 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // Shell runner — executes a PowerShell command and streams the result.
+  // Local-only usage: server binds to 0.0.0.0 but assumption is LAN trust.
+  if (url === '/api/shell/run' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { command } = JSON.parse(body || '{}');
+      if (!command || typeof command !== 'string') {
+        return jsonResp(res, { ok: false, error: 'command required' }, 400);
+      }
+      const trimmed = command.slice(0, 4000); // hard cap
+      const started = Date.now();
+      let out = '';
+      let err = '';
+      let exitCode = 0;
+      try {
+        out = execSync(
+          `powershell -NoProfile -ExecutionPolicy Bypass -Command ${JSON.stringify(trimmed)}`,
+          { encoding: 'utf8', timeout: 30000, maxBuffer: 4 * 1024 * 1024, cwd: ROOT }
+        );
+      } catch (e) {
+        err = (e.stderr || '') + (e.stdout || '');
+        exitCode = e.status || 1;
+        out = e.stdout || '';
+      }
+      const elapsed = Date.now() - started;
+      log(`Shell: ${trimmed.slice(0, 60)} → ${exitCode === 0 ? 'ok' : 'err ' + exitCode} (${elapsed}ms)`);
+      return jsonResp(res, {
+        ok: exitCode === 0,
+        exitCode,
+        elapsed,
+        stdout: String(out || '').slice(0, 200000),
+        stderr: String(err || '').slice(0, 50000),
+      });
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
   // Wallpaper color extraction — pulls dominant colors from the current
   // Windows desktop wallpaper so the deck can auto-theme off it. Cached 60s.
   if (url === '/api/wallpaper-colors' && req.method === 'GET') {

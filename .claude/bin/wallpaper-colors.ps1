@@ -10,13 +10,17 @@
 try {
     Add-Type -AssemblyName System.Drawing
 
-    $wallpaperPath = (Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name WallPaper -ErrorAction Stop).WallPaper
-    if (-not $wallpaperPath -or -not (Test-Path $wallpaperPath)) {
-        # Fallback: TranscodedWallpaper (Windows caches the active wallpaper here)
-        $fallback = Join-Path $env:APPDATA 'Microsoft\Windows\Themes\TranscodedWallpaper'
-        if (Test-Path $fallback) { $wallpaperPath = $fallback }
-        else { throw "wallpaper not found: $wallpaperPath" }
+    # Prefer TranscodedWallpaper — Windows caches the active main-display
+    # wallpaper here, and it follows Wallpaper Engine overrides too.
+    $wallpaperPath = $null
+    $transcoded = Join-Path $env:APPDATA 'Microsoft\Windows\Themes\TranscodedWallpaper'
+    if (Test-Path $transcoded) {
+        $wallpaperPath = $transcoded
+    } else {
+        $fromReg = (Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name WallPaper -ErrorAction SilentlyContinue).WallPaper
+        if ($fromReg -and (Test-Path $fromReg)) { $wallpaperPath = $fromReg }
     }
+    if (-not $wallpaperPath) { throw 'no wallpaper source found' }
 
     $bmp = [System.Drawing.Bitmap]::FromFile($wallpaperPath)
     try {

@@ -1328,6 +1328,104 @@
     body.deck[data-deck-tab="steam"] .steam-panel { display: flex; flex-direction: column; }
     body.deck[data-deck-tab="steam"] .grid { display: none; }
     body.deck[data-deck-tab="steam"] .metrics-panel { display: none; }
+    body.deck[data-deck-tab="steam"] .shell-panel { display: none; }
+
+    /* === Shell tab ==================================================== */
+    .shell-panel { display: none; }
+    body.deck[data-deck-tab="shell"] .shell-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    body.deck[data-deck-tab="shell"] .grid { display: none; }
+    body.deck[data-deck-tab="shell"] .metrics-panel { display: none; }
+    body.deck[data-deck-tab="shell"] .steam-panel { display: none; }
+    body.deck[data-deck-tab="main"] .shell-panel,
+    body.deck[data-deck-tab="board"] .shell-panel,
+    body.deck[data-deck-tab="metrics"] .shell-panel,
+    body.deck[data-deck-tab="steam"] .shell-panel { display: none; }
+
+    .shell-log {
+      flex: 1 1 auto;
+      min-height: 200px;
+      overflow-y: auto;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(6, 1, 14, 0.96), rgba(3, 0, 8, 0.98));
+      border: 1px solid rgba(var(--sw-cyan-rgb), 0.3);
+      color: #baf1b3;
+      font-family: "JetBrains Mono", "Consolas", monospace;
+      font-size: 0.82rem;
+      line-height: 1.48;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    body.deck .shell-log { max-height: calc(100vh - 280px); font-size: 0.76rem; }
+    .shell-empty { color: rgba(var(--sw-lavender-rgb), 0.48); font-style: italic; }
+    .shell-entry {
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed rgba(var(--sw-cyan-rgb), 0.16);
+    }
+    .shell-entry:last-child { border-bottom: none; }
+    .shell-entry .shell-cmd {
+      color: #ffd6f6;
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-shadow: 0 0 8px rgba(var(--sw-magenta-rgb), 0.45);
+    }
+    .shell-entry .shell-cmd::before {
+      content: 'PS> ';
+      color: #00f5ff;
+      font-weight: 700;
+    }
+    .shell-entry .shell-out {
+      color: #d4f5ff;
+      white-space: pre-wrap;
+    }
+    .shell-entry .shell-err {
+      color: #ff99b5;
+      white-space: pre-wrap;
+    }
+    .shell-entry .shell-meta {
+      color: rgba(var(--sw-lavender-rgb), 0.42);
+      font-size: 0.66rem;
+      margin-top: 4px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .shell-form {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.96), rgba(10, 2, 22, 0.98));
+      border: 2px solid rgba(var(--sw-cyan-rgb), 0.4);
+    }
+    .shell-prompt {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      color: #00f5ff;
+      text-shadow: 0 0 8px rgba(var(--sw-cyan-rgb), 0.6);
+    }
+    .shell-input {
+      appearance: none;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #ffd6f6;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.94rem;
+      width: 100%;
+    }
+    .shell-input::placeholder { color: rgba(var(--sw-lavender-rgb), 0.38); }
+    body.deck .shell-form { padding: 8px 12px; }
+    body.deck .shell-input { font-size: 0.86rem; }
 
     .steam-grid {
       display: grid;
@@ -2803,6 +2901,7 @@
         <button id="tab-board-btn" class="deck-tab-btn" type="button">Board</button>
         <button id="tab-metrics-btn" class="deck-tab-btn" type="button">Metrics</button>
         <button id="tab-steam-btn" class="deck-tab-btn" type="button">Steam</button>
+        <button id="tab-shell-btn" class="deck-tab-btn" type="button">Shell</button>
         <button id="refresh-btn">Refresh Now</button>
         <button id="run-queue-btn" class="secondary">Run Queue</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
@@ -3063,6 +3162,28 @@
         </div>
       </section>
 
+      <!-- SHELL TAB — full-width PowerShell console. local execution. -->
+      <section class="panel shell-panel" id="shell-panel-section">
+        <div class="panel-header">
+          <div>
+            <div class="panel-kicker">Local Shell</div>
+            <h2 class="panel-title">PowerShell</h2>
+          </div>
+          <div class="metrics-head-meta">
+            <span class="badge" id="shell-cwd">C:\Users\Ken\Desktop\Claude</span>
+            <button id="shell-clear-btn" class="secondary" type="button">Clear</button>
+          </div>
+        </div>
+        <div class="shell-log" id="shell-log">
+          <div class="shell-empty">PowerShell console ready. Type a command and press Enter. ↑/↓ cycles history.</div>
+        </div>
+        <form class="shell-form" id="shell-form" autocomplete="off">
+          <span class="shell-prompt">PS&gt;</span>
+          <input type="text" id="shell-input" class="shell-input" placeholder="Get-Process node | Select-Object Id,ProcessName" spellcheck="false" />
+          <button id="shell-run-btn" type="submit">Run</button>
+        </form>
+      </section>
+
       <!-- STEAM TAB — full-width view, hidden unless data-deck-tab="steam" -->
       <section class="panel steam-panel" id="steam-panel-section">
         <div class="panel-header">
@@ -3192,7 +3313,9 @@
   </div>
 
   <script>
-    const THEME_LS_KEY = 'pipe-r.theme';
+    // v2 forces the default back to 'wallpaper' even for existing users
+    // who had 'vaporwave' cached under the v1 key.
+    const THEME_LS_KEY = 'pipe-r.theme.v2';
     const REFRESH_LS_KEY = 'pipe-r.refresh-sec';
     const AUDIO_LS_KEY = 'pipe-r.audio-source';
     let _dashTimer = null;
@@ -3201,7 +3324,9 @@
       sheets: {},
       selectedFocus: null,
       selectedSummaryTab: 'info',
-      theme: localStorage.getItem(THEME_LS_KEY) || 'vaporwave',
+      // Wallpaper auto-sync is the default. Every purple/cyan accent matches
+      // the current main-display wallpaper. Override via Settings > Color theme.
+      theme: localStorage.getItem(THEME_LS_KEY) || 'wallpaper',
       refreshSec: parseInt(localStorage.getItem(REFRESH_LS_KEY) || '5', 10),
       audioSource: localStorage.getItem(AUDIO_LS_KEY) || 'system',
       chats: {},            // agentId -> [{ role, content, ts }]
@@ -3296,6 +3421,12 @@
       tabBoardBtn: document.getElementById('tab-board-btn'),
       tabMetricsBtn: document.getElementById('tab-metrics-btn'),
       tabSteamBtn: document.getElementById('tab-steam-btn'),
+      tabShellBtn: document.getElementById('tab-shell-btn'),
+      shellPanel: document.getElementById('shell-panel-section'),
+      shellLog: document.getElementById('shell-log'),
+      shellForm: document.getElementById('shell-form'),
+      shellInput: document.getElementById('shell-input'),
+      shellClearBtn: document.getElementById('shell-clear-btn'),
       steamPanel: document.getElementById('steam-panel-section'),
       steamGrid: document.getElementById('steam-grid'),
       steamCount: document.getElementById('steam-count'),
@@ -4755,13 +4886,14 @@
 
     function setDeckTab(tab) {
       if (!document.body.classList.contains('deck')) return;
-      const valid = ['main', 'board', 'metrics', 'steam'];
+      const valid = ['main', 'board', 'metrics', 'steam', 'shell'];
       const next = valid.includes(tab) ? tab : 'main';
       document.body.dataset.deckTab = next;
       els.tabMainBtn?.classList.toggle('active', next === 'main');
       els.tabBoardBtn?.classList.toggle('active', next === 'board');
       els.tabMetricsBtn?.classList.toggle('active', next === 'metrics');
       els.tabSteamBtn?.classList.toggle('active', next === 'steam');
+      els.tabShellBtn?.classList.toggle('active', next === 'shell');
       if (next === 'metrics') {
         loadMetrics();
         startMetricsPolling();
@@ -4771,11 +4903,109 @@
       if (next === 'steam') {
         loadSteamLibrary();
       }
+      if (next === 'shell') {
+        setTimeout(() => els.shellInput?.focus(), 100);
+      }
     }
     els.tabMainBtn?.addEventListener('click', () => setDeckTab('main'));
     els.tabBoardBtn?.addEventListener('click', () => setDeckTab('board'));
     els.tabMetricsBtn?.addEventListener('click', () => setDeckTab('metrics'));
     els.tabSteamBtn?.addEventListener('click', () => setDeckTab('steam'));
+    els.tabShellBtn?.addEventListener('click', () => setDeckTab('shell'));
+
+    // === PowerShell tab ================================================
+    const SHELL_HISTORY_KEY = 'pipe-r.shell-history';
+    let _shellHistory = [];
+    let _shellHistoryIdx = -1;
+    try { _shellHistory = JSON.parse(localStorage.getItem(SHELL_HISTORY_KEY) || '[]'); } catch {}
+
+    function appendShellEntry({ command, stdout, stderr, exitCode, elapsed }) {
+      if (els.shellLog.querySelector('.shell-empty')) els.shellLog.innerHTML = '';
+      const article = document.createElement('article');
+      article.className = 'shell-entry';
+      const cmdDiv = document.createElement('div');
+      cmdDiv.className = 'shell-cmd';
+      cmdDiv.textContent = command;
+      article.appendChild(cmdDiv);
+      if (stdout && stdout.trim()) {
+        const out = document.createElement('div');
+        out.className = 'shell-out';
+        out.textContent = stdout.trimEnd();
+        article.appendChild(out);
+      }
+      if (stderr && stderr.trim()) {
+        const err = document.createElement('div');
+        err.className = 'shell-err';
+        err.textContent = stderr.trimEnd();
+        article.appendChild(err);
+      }
+      const meta = document.createElement('div');
+      meta.className = 'shell-meta';
+      meta.textContent = `exit ${exitCode} · ${elapsed}ms`;
+      article.appendChild(meta);
+      els.shellLog.appendChild(article);
+      els.shellLog.scrollTop = els.shellLog.scrollHeight;
+    }
+
+    async function runShellCommand(command) {
+      try {
+        const data = await fetchJson('/api/shell/run', {
+          method: 'POST',
+          body: JSON.stringify({ command }),
+        });
+        appendShellEntry({
+          command,
+          stdout: data.stdout || '',
+          stderr: data.stderr || '',
+          exitCode: data.exitCode,
+          elapsed: data.elapsed || 0,
+        });
+      } catch (e) {
+        appendShellEntry({
+          command,
+          stdout: '',
+          stderr: '(request failed: ' + e.message + ')',
+          exitCode: 1,
+          elapsed: 0,
+        });
+      }
+    }
+
+    if (els.shellForm) {
+      els.shellForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const cmd = els.shellInput.value.trim();
+        if (!cmd) return;
+        els.shellInput.value = '';
+        els.shellInput.disabled = true;
+        _shellHistory.push(cmd);
+        _shellHistory = _shellHistory.slice(-50);
+        _shellHistoryIdx = _shellHistory.length;
+        localStorage.setItem(SHELL_HISTORY_KEY, JSON.stringify(_shellHistory));
+        await runShellCommand(cmd);
+        els.shellInput.disabled = false;
+        els.shellInput.focus();
+      });
+      els.shellInput?.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowUp') {
+          if (_shellHistoryIdx > 0) _shellHistoryIdx--;
+          els.shellInput.value = _shellHistory[_shellHistoryIdx] || '';
+          event.preventDefault();
+        } else if (event.key === 'ArrowDown') {
+          if (_shellHistoryIdx < _shellHistory.length - 1) {
+            _shellHistoryIdx++;
+            els.shellInput.value = _shellHistory[_shellHistoryIdx] || '';
+          } else {
+            _shellHistoryIdx = _shellHistory.length;
+            els.shellInput.value = '';
+          }
+          event.preventDefault();
+        }
+      });
+    }
+    els.shellClearBtn?.addEventListener('click', () => {
+      els.shellLog.innerHTML = '<div class="shell-empty">Cleared. History preserved (↑/↓).</div>';
+    });
     els.metricsRefreshBtn?.addEventListener('click', () => loadMetrics());
     els.steamRefreshBtn?.addEventListener('click', () => loadSteamLibrary(true));
 

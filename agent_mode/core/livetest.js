@@ -509,4 +509,268 @@ export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8
   return round;
 }
 
+// === Live Test Mode v1 — 6-agent dual-team split ====================
+//
+// v0: one observer reads the op log and writes a debrief.
+// v1: six specialists split into Team A (Crew Roleplay) and Team B
+//     (Ops + Maint). Ken AI refs + M3w proposes improvements.
+//
+// After the v0 engine finishes the real Supabase operations, we fan
+// out the operation log to each agent in their specific role:
+//
+//   Team A (roleplays the crew from inside the workload)
+//     - D3c1du3y3 (cherp-piper)  Foreman — end-of-day site report
+//     - 5c1z0r    (qwen2.5)      Worker 1 — how-did-today-go note
+//     - P0ryg0n   (llama3.1)     Apprentice — site anomaly report
+//
+//   Team B (watches the instance from outside)
+//     - R0t0m     (forgeagent)   Integration ops — HTTP/schema audit
+//     - Umbr30n   (jeffery…)     QA — top regression risks + fixes
+//     - 4l4k4z4m  (jefferferson) Memory curator — durable round memory
+//
+//   Trainer + companion
+//     - Ken AI    — pass/retry/fix decision
+//     - M3w       — exactly one prompt/notes update proposal
+
+const V1_ROSTER = {
+  teamA: [
+    {
+      id: 'cherp-piper:latest',
+      persona: 'D3c1du3y3 Foreman',
+      title: 'Foreman end-of-day site report',
+      promptBody: (ctx) => [
+        'You are D3c1du3y3 Pathfinder, cherp-piper, playing the FOREMAN on',
+        `the "${ctx.scenarioName}" live test round against CHERP.`,
+        'In under 100 words, write your end-of-day site report in first',
+        'person. Reference at least 2 real tasks from the operation log',
+        'by their text. Mention which worker finished what. End with the',
+        'next-day priorities.',
+      ].join('\n'),
+    },
+    {
+      id: 'qwen2.5-coder:14b',
+      persona: '5c1z0r Worker 1',
+      title: 'Worker how-did-today-go note',
+      promptBody: (ctx) => [
+        'You are 5c1z0r Patchsmith, playing Sim Worker 1 on this CHERP',
+        'live test round. You handled the cabinets-demo / bracing tasks.',
+        'In under 60 words, write a 3-line note for the foreman. First',
+        'person. What got done, what blocked you, what you need tomorrow.',
+        'No greeting, no signoff.',
+      ].join('\n'),
+    },
+    {
+      id: 'llama3.1:8b',
+      persona: 'P0ryg0n Apprentice',
+      title: 'Apprentice anomaly report',
+      promptBody: (ctx) => [
+        'You are P0ryg0n Logdex, playing the apprentice + incident reporter',
+        'on this CHERP live test round. Read the operation log and list any',
+        'anomalies you noticed from inside the app — slow saves, weird',
+        'behavior, failed calls, stale data. Under 80 words, bullets.',
+        'If the round was clean, say so in one line.',
+      ].join('\n'),
+    },
+  ],
+  teamB: [
+    {
+      id: 'forgeagent:latest',
+      persona: 'R0t0m Integration',
+      title: 'HTTP + schema audit',
+      promptBody: (ctx) => [
+        'You are R0t0m Relay, integration + ops engineer. Audit the live',
+        'CHERP operation log from the outside. Call out any schema drift,',
+        'non-2xx responses, PostgREST quirks, and latency hot spots you',
+        'can see. Under 80 words. Lead with the worst finding.',
+      ].join('\n'),
+    },
+    {
+      id: 'jefferyjefferferson:latest',
+      persona: 'Umbr30n QA',
+      title: 'Top regression risks',
+      promptBody: (ctx) => [
+        'You are Umbr30n Safeguard, QA + release warden. Given Team A\'s',
+        'reports and the operation log, list the top 3 regression risks',
+        'for CHERP\'s next release. For each: ROOT_CAUSE (one line) +',
+        'SMALLEST_SAFE_FIX (one line). Under 120 words total.',
+      ].join('\n'),
+    },
+    {
+      id: 'jefferferson:latest',
+      persona: '4l4k4z4m Archive',
+      title: 'Durable round memory',
+      promptBody: (ctx) => [
+        'You are 4l4k4z4m Archive, memory curator. Write a 3-bullet',
+        'durable memory entry for this round: (1) what worked, (2) what',
+        'broke, (3) what the team should remember next time. Under 100',
+        'words. Bullet format. No preamble.',
+      ].join('\n'),
+    },
+  ],
+  trainer: {
+    id: 'ken-ai:latest',
+    persona: 'Ken AI',
+    title: 'Trainer decision',
+    promptBody: (ctx) => [
+      'you are ken. read team a narration + team b audit + the operation',
+      'log. make one decision: pass, retry, or fix-and-rerun. one line.',
+      'then list the next concrete step. under 40 words total. lowercase.',
+    ].join('\n'),
+  },
+  companion: {
+    id: 'm3w-learning:latest',
+    persona: 'M3w Promptdex',
+    title: 'Prompt improvement proposal',
+    promptBody: (ctx) => [
+      'You are M3w Promptdex, learning companion. Propose EXACTLY ONE',
+      'prompt / notes.md update that would make the next round better.',
+      'Cite the specific task id or log line as evidence. Keep the',
+      'proposed change shorter than what it replaces. Under 80 words.',
+    ].join('\n'),
+  },
+};
+
+function buildV1AgentPrompt(ctx, body, opsHeader) {
+  return [
+    body,
+    '',
+    '=== ROUND CONTEXT ===',
+    `Scenario: ${ctx.scenarioName}`,
+    `Team code: ${ctx.teamCode}`,
+    `Target instance: ${ctx.instanceUrl}`,
+    '',
+    '=== OPERATION LOG ===',
+    opsHeader,
+    '',
+    'Respond now in the format requested above.',
+  ].join('\n');
+}
+
+async function dispatchV1Agent(slot, ctx, opsHeader, timeoutMs = 120000) {
+  const prompt = buildV1AgentPrompt(ctx, slot.promptBody(ctx), opsHeader);
+  const start = Date.now();
+  try {
+    const output = runOllama(slot.id, prompt, timeoutMs);
+    return {
+      id: slot.id,
+      persona: slot.persona,
+      title: slot.title,
+      ok: true,
+      elapsedMs: Date.now() - start,
+      output,
+    };
+  } catch (e) {
+    return {
+      id: slot.id,
+      persona: slot.persona,
+      title: slot.title,
+      ok: false,
+      elapsedMs: Date.now() - start,
+      error: e.message,
+    };
+  }
+}
+
+// Public v1 runner: runs the v0 operation engine first, then fans out to
+// the 6-agent split, then lets Ken AI + M3w finalize.
+export async function runRoundV1({ scenarioId, instanceUrl, cleanup = true, teamCode: forcedTeamCode } = {}) {
+  // Re-use the v0 engine to do the real Supabase work. Pass a bogus
+  // observer we'll ignore since v1 generates its own trainer decision.
+  const base = await runRound({
+    scenarioId,
+    instanceUrl,
+    cleanup,
+    teamCode: forcedTeamCode,
+    observer: 'llama3.1:8b',
+  });
+
+  const opsHeader = (base.operations || []).map((op, i) => {
+    const head = `${String(i + 1).padStart(2)}. [${op.ok ? 'OK ' : 'ERR'}] ${op.kind}`;
+    const extra = op.ok
+      ? (op.summary ? ` — ${op.summary}` : '')
+      : ` — ${op.errorCode || op.status} · ${String(op.errorMsg || '').slice(0, 120)}`;
+    return head + extra;
+  }).join('\n');
+
+  const ctx = {
+    scenarioName: base.scenarioName || scenarioId,
+    teamCode: base.teamCode,
+    instanceUrl: base.instanceUrl || 'https://cherp.live/demo.html',
+  };
+
+  // Team A + Team B fan-out. Sequential per-team (Ollama serializes on
+  // GPU anyway) but concurrent across teams where the scheduler allows.
+  const teamA = [];
+  for (const slot of V1_ROSTER.teamA) {
+    teamA.push(await dispatchV1Agent(slot, ctx, opsHeader));
+  }
+  const teamB = [];
+  for (const slot of V1_ROSTER.teamB) {
+    // Alakazam has a slow cold start — give it more room.
+    const tout = slot.id === 'jefferferson:latest' ? 180000 : 120000;
+    teamB.push(await dispatchV1Agent(slot, ctx, opsHeader, tout));
+  }
+
+  // Build a condensed handoff for trainer + companion: they see Team A +
+  // Team B outputs but not the raw op log twice.
+  const handoff = [
+    '=== TEAM A (CREW ROLEPLAY) ===',
+    ...teamA.map(r => `--- ${r.persona} · ${r.title} ---\n${r.output || '(error: ' + (r.error || 'no output') + ')'}`),
+    '',
+    '=== TEAM B (OPS + MAINT) ===',
+    ...teamB.map(r => `--- ${r.persona} · ${r.title} ---\n${r.output || '(error: ' + (r.error || 'no output') + ')'}`),
+  ].join('\n\n');
+
+  const trainerCtx = { ...ctx };
+  const trainerPrompt = [
+    V1_ROSTER.trainer.promptBody(trainerCtx),
+    '',
+    '=== ROUND CONTEXT ===',
+    `Scenario: ${ctx.scenarioName}`,
+    `Team code: ${ctx.teamCode}`,
+    `Ops summary: ${(base.operations || []).length} operations, ${(base.operations || []).filter(o => !o.ok).length} failures`,
+    '',
+    '=== TEAM REPORTS ===',
+    handoff,
+  ].join('\n');
+
+  let trainerResult, companionResult;
+  try {
+    const out = runOllama(V1_ROSTER.trainer.id, trainerPrompt, 120000);
+    trainerResult = { id: V1_ROSTER.trainer.id, persona: 'Ken AI', ok: true, output: out };
+  } catch (e) {
+    trainerResult = { id: V1_ROSTER.trainer.id, persona: 'Ken AI', ok: false, error: e.message };
+  }
+
+  const companionPrompt = [
+    V1_ROSTER.companion.promptBody(trainerCtx),
+    '',
+    '=== TRAINER DECISION ===',
+    trainerResult.output || '(unavailable)',
+    '',
+    '=== TEAM REPORTS ===',
+    handoff,
+  ].join('\n');
+  try {
+    const out = runOllama(V1_ROSTER.companion.id, companionPrompt, 120000);
+    companionResult = { id: V1_ROSTER.companion.id, persona: 'M3w', ok: true, output: out };
+  } catch (e) {
+    companionResult = { id: V1_ROSTER.companion.id, persona: 'M3w', ok: false, error: e.message };
+  }
+
+  // Write a v1 round file that extends the v0 record.
+  const v1Record = {
+    ...base,
+    id: 'ltv1-' + base.id.replace(/^lt-/, ''),
+    mode: 'v1',
+    teamA,
+    teamB,
+    trainer: trainerResult,
+    companion: companionResult,
+  };
+  const outFile = join(ROUNDS_DIR, `${v1Record.id}.json`);
+  writeFileSync(outFile, JSON.stringify(v1Record, null, 2));
+  return v1Record;
+}
+
 export { listScenarios, loadScenario, listRounds, getRound };

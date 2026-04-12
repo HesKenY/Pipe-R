@@ -1208,9 +1208,33 @@
       animation: emeraldTextboxArrow 620ms steps(2, end) infinite;
     }
 
-    .status-banner.ok { color: var(--ok); }
-    .status-banner.warn { color: var(--amber); }
-    .status-banner.danger { color: var(--danger); }
+    .status-banner {
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.94), rgba(10, 2, 22, 0.96));
+      border: 1px solid rgba(var(--sw-cyan-rgb), 0.42);
+      color: #e4f0cf;
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      box-shadow: 0 0 18px rgba(var(--sw-magenta-rgb), 0.22);
+      z-index: 120;
+      max-width: calc(100vw - 40px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0;
+      transition: opacity 220ms ease;
+      pointer-events: none;
+    }
+    .status-banner:not(:empty) { opacity: 1; }
+    .status-banner.ok { color: #baf1b3; }
+    .status-banner.warn { color: #ffd88c; }
+    .status-banner.danger { color: #ffa0b8; }
 
     .small { font-size: 0.8rem; }
     .empty { padding: 14px 0 4px; }
@@ -2349,12 +2373,20 @@
       --sw-lavender-dim: rgba(var(--sw-lavender-rgb), 0.62);
       --sw-text: #f1ecff;
       --sw-grid: rgba(var(--sw-magenta-rgb), 0.12);
+      /* Body background stops — overridden by applyWallpaperColors() so
+         the whole deck base re-tints from the desktop wallpaper. */
+      --sw-bg-0: #09020f;
+      --sw-bg-1: #16002a;
+      --sw-bg-2: #0b0318;
+      --sw-shell-0: rgba(30, 8, 58, 0.92);
+      --sw-shell-1: rgba(15, 2, 30, 0.96);
     }
     body {
       background:
-        linear-gradient(180deg, #09020f 0%, #16002a 52%, #0b0318 100%) fixed,
+        linear-gradient(180deg, var(--sw-bg-0) 0%, var(--sw-bg-1) 52%, var(--sw-bg-2) 100%) fixed,
         radial-gradient(ellipse at bottom, rgba(var(--sw-magenta-rgb),0.22), transparent 60%) fixed;
       color: var(--sw-text);
+      transition: background 600ms ease;
     }
     body::before {
       background:
@@ -2370,12 +2402,13 @@
 
     .shell {
       background:
-        linear-gradient(180deg, rgba(30, 8, 58, 0.92), rgba(15, 2, 30, 0.96)),
+        linear-gradient(180deg, var(--sw-shell-0), var(--sw-shell-1)),
         linear-gradient(135deg, rgba(var(--sw-magenta-rgb),0.05), transparent 40%);
       border: 2px solid var(--sw-magenta-dim);
       box-shadow:
         0 0 50px rgba(var(--sw-magenta-rgb),0.22),
         inset 0 0 80px rgba(var(--sw-cyan-rgb),0.08);
+      transition: background 600ms ease;
     }
     .shell::before { border-color: var(--sw-cyan-dim); }
     .shell::after { border-color: rgba(var(--sw-lavender-rgb),0.18); }
@@ -2771,12 +2804,11 @@
         <button id="tab-metrics-btn" class="deck-tab-btn" type="button">Metrics</button>
         <button id="tab-steam-btn" class="deck-tab-btn" type="button">Steam</button>
         <button id="refresh-btn">Refresh Now</button>
+        <button id="run-queue-btn" class="secondary">Run Queue</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
         <button id="pause-btn">Agent Mode: ON</button>
         <button id="remote-btn">Open Remote Deck</button>
       </div>
-      <div class="status-banner" id="banner"></div>
-
       <div class="grid">
         <div class="stack">
           <section class="panel">
@@ -3052,6 +3084,10 @@
     </section>
   </main>
 
+  <!-- Status banner — fixed to the bottom of the viewport in deck mode.
+       Used to be inline above the grid which cluttered the top. -->
+  <div class="status-banner" id="banner"></div>
+
   <!-- Settings modal — theme, polling, PIN, audio source -->
   <div class="modal-scrim" id="settings-modal" hidden>
     <div class="modal-card">
@@ -3211,6 +3247,7 @@
       activityGrid: document.getElementById('activity-grid'),
       modeBadge: document.getElementById('mode-badge'),
       refreshBtn: document.getElementById('refresh-btn'),
+      runQueueBtn: document.getElementById('run-queue-btn'),
       syncBtn: document.getElementById('sync-btn'),
       pauseBtn: document.getElementById('pause-btn'),
       remoteBtn: document.getElementById('remote-btn'),
@@ -4379,6 +4416,34 @@
 
     els.refreshBtn.addEventListener('click', () => loadAll());
     els.syncBtn.addEventListener('click', runSheetsSync);
+
+    // Run Queue — punches queued tasks through the executor without
+    // waiting for the 30s auto-exec loop.
+    async function runQueueNow() {
+      if (!els.runQueueBtn) return;
+      const btn = els.runQueueBtn;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Running…';
+      setBanner('Running queued tasks through the squad…', 'warn');
+      try {
+        const data = await fetchJson('/api/queue/run', { method: 'POST', body: JSON.stringify({}) });
+        const ok = (data.ran || []).filter(r => r.ok).length;
+        const fail = (data.ran || []).length - ok;
+        if (!data.count) {
+          setBanner('Queue is empty — nothing to run.', 'ok');
+        } else {
+          setBanner(`Queue run: ${ok} ok, ${fail} failed, ${data.count} total.`, fail ? 'warn' : 'ok');
+        }
+        await loadAll(true);
+      } catch (e) {
+        setBanner('Queue run failed: ' + e.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+    els.runQueueBtn?.addEventListener('click', runQueueNow);
     els.pauseBtn.addEventListener('click', toggleAutoExec);
     els.remoteBtn.addEventListener('click', () => { window.location.href = '/remote'; });
     window.addEventListener('keydown', handleDeckKeydown);
@@ -4565,6 +4630,22 @@
       const secondary = brighten(second.hex, 0.62);
       const lavender  = brighten(first.hex, 0.86);
 
+      // Derive 3 dark background stops from the primary hue so the deck
+      // base re-tints with the wallpaper. Each is the primary hue with
+      // saturation ~0.7 and a crushed luminance.
+      const darken = (hex, l) => {
+        const rgb = hexToRgb(hex);
+        if (!rgb) return hex;
+        const [h] = rgbToHsl(...rgb);
+        const [r, g, b] = hslToRgb(h, 0.7, l);
+        return rgbToHex(r, g, b);
+      };
+      const bg0 = darken(first.hex, 0.04);
+      const bg1 = darken(second.hex, 0.09);
+      const bg2 = darken(first.hex, 0.05);
+      const shell0 = darken(first.hex, 0.12);
+      const shell1 = darken(first.hex, 0.06);
+
       const rgbStr = (hex) => {
         const rgb = hexToRgb(hex);
         return rgb ? `${rgb[0]}, ${rgb[1]}, ${rgb[2]}` : '255, 43, 184';
@@ -4576,10 +4657,16 @@
       root.setProperty('--sw-cyan-rgb', rgbStr(secondary));
       root.setProperty('--sw-lavender', lavender);
       root.setProperty('--sw-lavender-rgb', rgbStr(lavender));
-      return { primary, secondary, lavender };
+      root.setProperty('--sw-bg-0', bg0);
+      root.setProperty('--sw-bg-1', bg1);
+      root.setProperty('--sw-bg-2', bg2);
+      root.setProperty('--sw-shell-0', `${shell0}eb`);  // 0.92 alpha in hex8
+      root.setProperty('--sw-shell-1', `${shell1}f5`);  // 0.96 alpha
+      return { primary, secondary, lavender, bg0, bg1 };
     }
     function clearWallpaperColors() {
-      ['--sw-magenta','--sw-magenta-rgb','--sw-cyan','--sw-cyan-rgb','--sw-lavender','--sw-lavender-rgb']
+      ['--sw-magenta','--sw-magenta-rgb','--sw-cyan','--sw-cyan-rgb','--sw-lavender','--sw-lavender-rgb',
+       '--sw-bg-0','--sw-bg-1','--sw-bg-2','--sw-shell-0','--sw-shell-1']
         .forEach(k => document.documentElement.style.removeProperty(k));
     }
     async function loadAndApplyWallpaperTheme(force = false) {

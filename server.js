@@ -818,6 +818,32 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
   }
 
+  // Run everything sitting in the queue — processes queued tasks through
+  // the executor one at a time and returns a compact summary. Wired to the
+  // deck's "Run Queue" button so Ken can punch the work forward manually
+  // instead of waiting for the 30s auto-exec loop.
+  if (url === '/api/queue/run' && req.method === 'POST') {
+    try {
+      const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+      const orch = new Orchestrator();
+      const dash = orch.dashboard();
+      const queued = (dash.tasks || []).filter(t => t.status === 'queued');
+      const ran = [];
+      for (const t of queued.slice(0, 10)) { // cap 10 per click
+        try {
+          const result = await orch.executeTask(t.id);
+          ran.push({ id: t.id, agent: t.assignedAgent, ok: true, elapsed: result?.elapsed });
+        } catch (e) {
+          ran.push({ id: t.id, agent: t.assignedAgent, ok: false, error: e.message });
+        }
+      }
+      log(`Queue run: ${ran.length} task(s) processed, ${ran.filter(r => r.ok).length} ok`);
+      return jsonResp(res, { count: ran.length, ran });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
   // === Live Test Mode ================================================
   // v0: runs a scripted scenario against a real CHERP instance, captures
   // the REST API responses, asks an observer agent for a debrief, and

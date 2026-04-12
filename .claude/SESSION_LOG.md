@@ -87,6 +87,185 @@ freshly seeded). No Ken, no duplicates, no superuser entries.
   2026-04-12 session note about Ken using "continuity" correctly and
   independently prioritizing the field-bug fix before continuing Ken AI.
 
+### Pipe-R — agent mode dispatch bug fixed
+Discovered during the Ken AI smoke test: every orchestrator dispatch
+was producing garbage outputs regardless of which agent was picked.
+Three combined bugs:
+
+1. `queue.js add()` hardcoded `assignedAgent: null`, silently dropping
+   the agent parameter from /api/dispatch.
+2. `orchestrator.js createTask()` didn't forward `opts.assignedAgent`
+   to `queue.add()`, so `_tryAutoAssign()` always ran and routed to
+   whatever the auto-assigner preferred.
+3. `executor.js` used `execSync` with the prompt passed as a quoted
+   shell arg. Windows cmd.exe has an 8191-char limit and double-quote
+   escaping corrupts multi-line SYSTEM prompts — Ken's 6 KB profile
+   was arriving at the model as shell noise. This is why cherp-piper
+   kept answering every task like a plumbing inspector regardless of
+   the objective.
+
+Fixed in Pipe-R commit `02d0d6f`:
+- queue.js honors opts.assignedAgent
+- orchestrator.js passes it through
+- executor.js switched to `spawnSync('ollama', ['run', model], { input: prompt })`
+  so the prompt goes through stdin — no length limit, no shell escaping
+
+After `STOP SERVER.bat` + `START SESSION.bat`, verified end-to-end:
+dispatch with `agent: "ken-ai:latest"` correctly routes and produces
+real Ken-voice output on the first try. All 6 legacy stuck tasks from
+earlier this week are still in `waiting_for_claude` — they should
+either be re-dispatched now that the executor works or closed out.
+
+### Pipe-R — Ken AI v1 voice rewrite (drop plumber analogies)
+First run of Ken AI via the fixed dispatch produced polished
+metaphorical outputs like *"schema drift is like a poorly maintained
+plumbing system where pipes become misaligned."* Ken rejected it:
+
+  "i want ken-ai to respond as if its me, not in plumber amalogies"
+  "i want ken-aai to have the same tone and speak the same way i
+   speak to you"
+
+Two sources of truth were out of sync:
+- `profile.md` (loaded as executor prompt prefix)
+- `Modelfile` SYSTEM block (baked into the Ollama model at create time)
+
+The Modelfile had its OWN copy of the instructions — including the
+"use construction analogies" line — and `ollama create` was reusing
+cached layers, so profile.md edits alone didn't change the baked
+SYSTEM prompt. Rewrote BOTH with Ken's actual typed voice (lowercase,
+3–10 words, typos left in, no pleasantries, no analogies, no trailing
+summaries, answer-first-reason-second) and included literal examples
+from this session's messages as anchors. Rebuilt → new layer hash
+`aa07f11c74497f310abb5e25e6695e8c9f4ed0175bfc0cb326db3b4afd90a0cc`.
+
+Verification dispatches:
+- Q: "why is schema drift dangerous?"
+  A: "schema drift is dangerous because the code writes columns the
+      db doesnt have. every insert 400s. silent data loss."
+- Q: "service workers or indexeddb for cherp offline?"
+  A: "service workers are better for caching assets and handling fetch
+      requests. [...] for cherp, service workers provide a more robust
+      offline experience with less code changes needed."
+
+Lowercase, no analogies, direct, typo `doesnt` preserved. Voice is at
+about 80% — still a touch more polished than Ken's real keyboard tone,
+will tighten as training-log.jsonl accumulates real Ken-in-the-loop
+responses.
+
+Feedback memory saved at `memory/feedback_ken_ai_voice.md` so the
+rule survives future profile rewrites. MEMORY.md index updated.
+
+### CHERP — user_profiles drift fix + superuser viewing-crew refactor
+Ken's first field test after the earlier fixes hit two more bugs: the
+Manage tab was empty, and superuser still saw "Join a Crew to Get
+Started" even though the guard had shipped. Root-caused to user_profiles
+schema drift: JS reads/writes `team_code` in ~15 places but the live
+table only had a legacy `crew` column, so every user_profiles select
+that enumerated team_code was 400'ing.
+
+Fixed in two layers:
+- **Code-side drift resilience** (commit `fe7778d`): every SELECT
+  switched to `select=*`, every filter switched from `team_code=eq.`
+  to `crew=eq.`, every write to `crew` instead of `team_code`. Auth
+  launchApp() normalizes `profile.team_code ||= profile.crew`.
+- **Schema migration** (`2026-04-12_user_profiles_team_code.sql`): adds
+  `team_code` + `foreman_id` columns, backfills from `crew`, and
+  installs a bidirectional BEFORE INSERT/UPDATE trigger so legacy
+  `crew` writers and modern `team_code` writers stay in sync.
+
+Also in `fe7778d`, a real architectural fix for the superuser vs. team
+system conflict that's been dogging us all night:
+
+**Viewing-crew context.** Superusers don't have a real crew membership,
+but every query in the app is scoped by `_s.teamCode`. Instead of
+refactoring 100+ call sites, superusers get a "viewing crew" populated
+into `_s.teamCode` at login time (last-viewed from localStorage or
+first active crew). All existing code "just works" because the filter
+now sees a real crew code. The join guards already shipped prevent
+superusers from ever being written into `crew_members` during normal
+flows — so there's permission-to-view without membership-in-fact.
+
+UI piece: new purple **"👁 CODE ▾"** button in the top bar, visible
+only for `_s.isSU`. Opens a crew switcher modal listing every crew,
+with the active one marked. `switchCrew(code)` updates `_s.teamCode`,
+persists the choice to localStorage, re-renders the current screen.
+
+Plus a theorycraft writeup (feedback given, not saved as memory yet)
+explaining the difference between **permission** (master key, lives
+in RLS policies, lets superuser SEE everything) and **context** (the
+currently-viewed crew, lives in the session, controls what you're
+asking about at any given moment). Both pieces are needed; neither
+alone is enough. The memory-worthy part is that the fix belongs on
+the client, not in a magic wildcard `team_code`.
+
+### CHERP — 8 missing-table audit + migration
+Full schema audit of the JS revealed 10 tables referenced in code
+that don't exist in live Supabase. Two were in-memory-only
+(`notifications`, `crew_specs`) — false alarms. The remaining **8
+are actually missing** and every feature touching them has been
+silently dead since launch:
+
+| JS expects | Status |
+|---|---|
+| `pipe_messages` | missing — chat, broadcast, realtime subscriptions dead |
+| `crew_mros` | missing — material requests dead |
+| `crew_jsa` | missing — Safety tab JSAs dead |
+| `crew_jsa_signatures` | missing — JSA sign-offs dead |
+| `crew_cos` | missing — change orders dead |
+| `worker_certifications` | missing — cert uploads dead |
+| `crew_incidents` | missing — near-miss / injury reports dead |
+| `app_logs` | missing — every `log()` call silently fails, no audit trail |
+
+Legacy tables `jsa_reports`, `change_orders`, `certifications`,
+`messages` exist in the DB but with completely different shapes (UUID
+FKs vs. name-based, different columns). Can't be renamed — they're
+from a half-completed schema refactor and aren't what the app writes
+to. Migration only creates new tables, leaves legacy in place.
+
+Migration file `migrations/2026-04-12_missing_app_tables.sql` adds all
+8. Column shapes reverse-engineered from actual INSERT/PATCH/SELECT
+call sites in `js/screens/` and `js/main.js`. Conservative — anything
+missed can be added via `ALTER TABLE ADD COLUMN` follow-up, same
+pattern we used for `crew_tasks` earlier in the night.
+
+Post-migration verification: all 8 tables return HTTP 200 on
+`SELECT *`. Live POST tests on the 4 highest-impact ones
+(`pipe_messages`, `crew_mros`, `crew_jsa`, `crew_cos`) all returned
+201 with realistic JS-shaped payloads. Cleanup DELETEs returned 204.
+
+Commit `b8a7f84` on CHERP main.
+
+### CHERP — logo standardization + jheath account
+Side-quests during the main bug hunt:
+- **Logo consistency** (`7983fd8`): `demo.html`, `admin.html`,
+  `landing.html` were still using `assets/logo.webp`. Standardized
+  everything on `assets/cherp-icon-192.png` — matches `index.html`,
+  `signup.html`, and `manifest.json` which were already on the newer
+  icon. Top bar, auth screen, admin panel, and iOS home-screen icon
+  all consistent now.
+- **jheath foreman account**: created `J. Heath` / PIN 1234 / role
+  foreman / crew ALPHA-01 via REST. Written to both `user_profiles`
+  (crew column) and pre-seeded into `crew_members` so the row
+  appears in the crew list before first login. Paired with deleting
+  both Ken Deibel rows from `crew_members` (seed superuser row + stale
+  foreman row from before the guards deployed) and updating the
+  `cherp-schema.sql` seed to stop inserting superusers into crew_members
+  on fresh DB builds (commit `127c879`).
+
+### CHERP main commits shipped this session (full list)
+- `c44a941` Fix schema drift: crew_tasks, team_codes, crew_members
+- `1ebb1e1` Fix time clock: create crew_timecards, allow open-meteo in CSP
+- `cc1bd76` Guard superuser from crew-join flow
+- `127c879` Stop seeding Ken Deibel (superuser) into crew_members
+- `7983fd8` Standardize logo to cherp-icon-192.png everywhere
+- `fe7778d` Superuser viewing-crew context + user_profiles drift resilience
+- `b8a7f84` Migration: create 8 missing app tables
+
+### Pipe-R local commits (not pushed to remote)
+- `915b272` Session 2026-04-11/12: Ken AI v1 built, CHERP bug sweep, Sheets sync live
+- `02d0d6f` Fix agent mode dispatch: honor assignedAgent, pipe prompt via stdin
+- `d1a7bb8` ken-ai: rewrite voice — respond AS Ken, not as a plumber narrator
+
 ## Still-open items for next session
 - **Verify the fixes live** — log in to cherp.live as `jheath` / `1234`,
   create a task with a photo, assign it to a worker, clock in/out, check

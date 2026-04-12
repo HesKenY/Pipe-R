@@ -43,7 +43,7 @@ Seven Ollama models registered with specialized roles:
 - **Llama 3.1** (8B) — Log Summarizer
 - **Jeffery** — Test Builder (conservative)
 - **Jefferferson** — Memory Curator
-- **Ken AI** — Personality Lead, built from `agent_mode/ken/profile.md` on top of qwen2.5-coder. Status: `pending_build` — run `ollama create ken-ai -f agent_mode/ken/Modelfile` to activate.
+- **Ken AI** — Personality Lead, built from `agent_mode/ken/profile.md` on top of qwen2.5-coder. Built 2026-04-12, `ken-ai:latest` in Ollama, voice rewritten 2026-04-12 to drop plumber analogies and match Ken's actual typed tone. Rebuild after profile edits: `ollama create ken-ai -f agent_mode/ken/Modelfile`.
 
 Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP Piper. Route Ken-style work to Ken AI once built.
 

@@ -36,22 +36,62 @@ Desktop shortcut scripts (double-click from `C:\Users\Ken\Desktop\Pipe-R Scripts
 
 ## Agent Mode
 
-Seven Ollama models registered with specialized roles:
-- **Qwen Coder** (14B) — Patch Drafter, primary code brain
-- **ForgeAgent** — General Worker
-- **CHERP Piper** — Construction domain knowledge (not code — fine-tuned for field specs)
-- **Llama 3.1** (8B) — Log Summarizer
-- **Jeffery** — Test Builder (conservative)
-- **Jefferferson** — Memory Curator
-- **Ken AI** — Personality Lead, built from `agent_mode/ken/profile.md` on top of qwen2.5-coder. Built 2026-04-12, `ken-ai:latest` in Ollama, voice rewritten 2026-04-12 to drop plumber analogies and match Ken's actual typed tone. Rebuild after profile edits: `ollama create ken-ai -f agent_mode/ken/Modelfile`.
+Eight Ollama models registered with specialized roles (the party + trainer + companion):
 
-Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP Piper. Route Ken-style work to Ken AI once built.
+| Slot | Badge | Display | Base model | Track |
+|---|---|---|---|---|
+| Trainer | TR | Ken AI | `ken-ai:latest` (from qwen2.5-coder:14b) | trainer / orchestrator |
+| Party 1 | SCZ | 5c1z0r Patchsmith | `qwen2.5-coder:14b` | implementation |
+| Party 2 | ROT | R0t0m Relay | `forgeagent:latest` | integration |
+| Party 3 | DEC | D3c1du3y3 Pathfinder | `cherp-piper:latest` | recon |
+| Party 4 | PGN | P0ryg0n Logdex | `llama3.1:8b` | observability |
+| Party 5 | UMB | Umbr30n Safeguard | `jefferyjefferferson:latest` | quality |
+| Party 6 | ALK | 4l4k4z4m Archive | `jefferferson:latest` | memory (slow cold start — see Known Issues) |
+| Companion | M3W | M3w Promptdex | `m3w-learning:latest` (from llama3.1:8b) | learning |
+
+Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP Piper. Route Ken-style work to Ken AI. Route prompt-tuning / post-task learning to M3w.
+
+M3w was built 2026-04-12 from `agent_mode/m3w/Modelfile` (FROM llama3.1:8b + SYSTEM profile from `agent_mode/m3w/profile.md`). Rebuild after profile edits: `ollama create m3w-learning -f agent_mode/m3w/Modelfile`.
+
+### Per-agent memory system (2026-04-12)
+
+Every registered agent gets its own directory under `agent_mode/memories/<slug>/` (slug = id with colons replaced by hyphens). `server.js` scaffolds these at boot via `agent_mode/core/memory.js` ensureAllMemoryDirs. Each dir contains:
+
+- **`notes.md`** — durable, editable standing instructions + facts. Injected into every chat turn AND every dispatched task by `executor._buildPrompt()`. Source of truth for "I always want agent X to do Y". Edit the file or use the deck's Notes button.
+- **`chat-log.jsonl`** — append-only audit of every chat turn (role, content, ts). Cleared by the deck's Clear button (hits `DELETE /api/chat/:agentId/log`).
+- **`charter.md`** — mirror of the agent's training charter, copied from `agent_mode/training/charters/` on first boot.
+
+The same `notes.md` loader runs in both the chat endpoint (`POST /api/chat`) and the executor's task dispatch path (`executor.js _buildPrompt`), so there is ONE source of truth per agent. Write it once, it applies everywhere.
+
+### Deck + chat surface (2026-04-12)
+
+- **`DECK.bat`** — single-click launcher. Starts server, waits for :7777, co-launches Nest if present, opens Chrome `--app` mode at 1920×720 pointing at `pipe-r.html?deck=1`. Pure chromeless window.
+- **`pipe-r.html?deck=1`** — control deck layout mode. Left stack: Trainer (with Ken AI pixel portrait from `trainer-ken.jpg`), Party row (6 cards horizontal), Queue (Board tab only). Right stack: Stats screen (dominant, ~55% of column) + Chat panel + 3 mini info panels. Two-tab system (`Deck` / `Board`) switches which panels are visible. Agent Mode ON/OFF toggle button (maps to pause-agents/resume-agents).
+- **Chat panel**: tied to selected agent. Persistent history via `/api/chat` endpoints. Loads charter + notes + last 12 turns into a fresh ollama run. Every turn also appends to `training-log.jsonl` with `taskType: "chat"` — chat builds the Ken AI v2 fine-tune corpus alongside dispatches.
+- **Training log viewer**: Log button in chat panel opens an inline overlay showing the last 40 entries for the selected agent with Approve/Reject buttons (`POST /api/training/review`). Approved rows survive `curate.js --approved-only`.
+- **Memory indicator**: yellow/green/cyan dot on each party + trainer card showing hasNotes / hasChatTurns state. Dashboard stamps `hasNotes`, `notesLength`, `chatTurns` on each agent.
+- **Blocked agents**: agents with `"blocked": true` in `agents.json` are skipped by `orchestrator._tryAutoAssign` and render with a red `BLOCKED` badge on the deck + remote. Direct dispatch by id still works.
+- **Remote deck**: `remote.html` is now a vertical stack mirroring the deck (Trainer Bench → Party → Stats → Chat → Dispatch → Queue). Fold 6 cover (≤420px) and inner (≥721px) breakpoints. PIN is **0615** (was 1996 — updated in `runtime.json` and the server.js fallback).
+
+### API surface (post-2026-04-12)
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/api/dashboard` | GET | full state; agents enriched with `hasNotes`, `notesLength`, `chatTurns`, `blocked`, `blockReason` |
+| `/api/chat` | POST | `{ agentId, message }` → runs ollama, appends both turns to chat-log.jsonl + training-log.jsonl, returns `{ reply }` |
+| `/api/chat/:agentId` | GET | recent chat history + notes.md contents |
+| `/api/chat/:agentId/notes` | PUT | overwrite notes.md from the deck's notes editor |
+| `/api/chat/:agentId/log` | DELETE | wipe chat-log.jsonl (training log stays intact) |
+| `/api/chat/:agentId/training` | GET | last 40 training-log entries for this agent |
+| `/api/training/review` | POST | `{ lineNo, approved, notes? }` → marks training-log row reviewed |
 
 ### Known Issues / Gotchas
 
-- **`jefferferson:latest`** consistently times out on `ollama run` (spawnSync ETIMEDOUT). Don't route tasks to it until fixed or replaced.
-- **Executor has no max-retry cap.** Failed tasks stay `queued` and the 30s auto-exec loop retries them forever with no backoff. Mark stuck tasks `status: "failed"` manually in `agent_mode/config/tasks.json` until a retry cap lands in `orchestrator.js`. (Codex rebuild workspace has a retry-cap + backoff implementation queued for merge — see `.claude/CODEX_REBUILD_INTEGRATION_PLAN.md`.)
+- **`jefferferson:latest`** (Alakazam Archive, slot 6) — cold start is slow (~90s to first token on a fresh load), but the model does respond. Unblocked 2026-04-12 after a successful direct smoke test. Do not route `summarize` / `memory_extract` tasks to it while it's cold — those task types have 30s executor timeouts and will throw. `draft_patch` / `draft_test` (120s) and `scan` / `learn` (60s) are safer entry points.
 - **`tasks.json` is held in memory by the running server.** Editing the file while `server.js` is live gets clobbered on next save. Stop the server first, edit, then restart.
+- **Executor retry cap** — merged from Codex rebuild 2026-04-12 (commit `a599eb9`). Max retries + exponential backoff live in `orchestrator.js`.
+- **Ollama run spinner leak**: `ollama run` emits ANSI CSI / OSC terminal spinner codes into stdout. `server.js` strips them in the chat endpoint before writing to memory/log — if you add new ollama spawn paths, strip those sequences too (`\u001b\[\??[0-9;]*[a-zA-Z]` and `\u001b\][^\u0007]*\u0007`).
+- **CHERP `crew_tasks.id` mismatch** — the table column is `BIGINT GENERATED ALWAYS AS IDENTITY`; Postgres rejects any client-provided id with `428C9`. `tasks.js saveTask()` was fixed 2026-04-12 to omit `id` from the POST payload and read the server-assigned row back via `Prefer: return=representation`. If you add any new POSTs against `crew_tasks`, do not send an id.
 
 ### Dispatch fix (2026-04-12)
 

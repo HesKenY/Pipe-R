@@ -201,6 +201,8 @@ export class AgentRegistry {
       teamMission: agent.teamMission || inferred.teamMission || null,
       handoffContract: agent.handoffContract || inferred.handoffContract || null,
       lastHealedAt: agent.lastHealedAt || null,
+      blocked: agent.blocked === true,
+      blockReason: agent.blockReason || null,
     };
   }
 

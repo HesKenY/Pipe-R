@@ -243,7 +243,7 @@ function readRuntimeConfig() {
       mode: 'hybrid',
       maxRetries: 5,
       trainerAgentId: 'ken-ai:latest',
-      remotePin: '1996',
+      remotePin: '0615',
       theme: {
         name: 'gba-trainer-deck',
         trainerLabel: 'Ken AI',
@@ -278,6 +278,27 @@ async function getDashboardState() {
   const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
   const orch = new Orchestrator();
   const dash = orch.dashboard();
+
+  // Surface per-agent memory state (hasNotes, turnCount) on each agent so
+  // the deck can render a marker on party cards whose notes have been tuned.
+  try {
+    const mem = await import('./agent_mode/core/memory.js');
+    const stamp = (agent) => {
+      if (!agent) return agent;
+      const notes = mem.readNotes(agent.id) || '';
+      const log = mem.readChatLog(agent.id, 500);
+      agent.hasNotes = /\S/.test(notes) && !/^#[^\n]*\n\s*(Durable memory|$)/i.test(notes.trim().slice(0, 80));
+      agent.notesLength = notes.length;
+      agent.chatTurns = log.length;
+      return agent;
+    };
+    if (dash.trainer) stamp(dash.trainer);
+    if (dash.companion) stamp(dash.companion);
+    if (Array.isArray(dash.party)) dash.party.forEach(stamp);
+    if (Array.isArray(dash.agents)) dash.agents.forEach(stamp);
+  } catch (e) {
+    log('Memory stamp failed: ' + e.message);
+  }
 
   let sheets = { available: false, crews: 0, status: {} };
   try {
@@ -435,12 +456,18 @@ const server = createServer(async (req, res) => {
 
   if (url.startsWith('/assets/pokedex/')) {
     const requested = basename(decodeURIComponent(url.slice('/assets/pokedex/'.length)));
-    if (!/^\d{4}(?:-icon|-icons)?\.png$/i.test(requested)) {
+    const ok = /^\d{4}(?:-icon|-icons)?\.png$/i.test(requested)
+      || /^trainer(?:-[a-z0-9_-]+)?\.(png|jpg|jpeg|webp)$/i.test(requested);
+    if (!ok) {
       res.writeHead(404);
       res.end('Not found');
       return;
     }
-    return serveBinaryFile(res, join(POKEDEX_ICON_DIR, requested), 'image/png');
+    const ext = requested.toLowerCase().split('.').pop();
+    const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+      : ext === 'webp' ? 'image/webp'
+      : 'image/png';
+    return serveBinaryFile(res, join(POKEDEX_ICON_DIR, requested), mime);
   }
 
   // â”€â”€ API ROUTES â”€â”€
@@ -661,6 +688,202 @@ const server = createServer(async (req, res) => {
       log(`Review: ${taskId} ${approved ? 'APPROVED' : 'REJECTED'}`);
       return jsonResp(res, { result: approved ? 'Approved' : 'Rejected', taskId });
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
+  }
+
+  // Per-agent training log viewer — GET last N entries for this agent
+  if (url.startsWith('/api/chat/') && url.includes('/training') && req.method === 'GET') {
+    try {
+      const rest = url.slice('/api/chat/'.length);
+      const agentId = decodeURIComponent(rest.split('/training')[0]);
+      const agents = JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'agents.json'), 'utf8'));
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'agent not found: ' + agentId }, 404);
+      const file = join(ROOT, 'agent_mode', 'training', 'training-log.jsonl');
+      if (!existsSync(file)) return jsonResp(res, { agentId, entries: [] });
+      const raw = readFileSync(file, 'utf8').split('\n').filter(Boolean);
+      const needle = agent.base || agent.id;
+      const entries = [];
+      for (let i = raw.length - 1; i >= 0 && entries.length < 40; i--) {
+        try {
+          const obj = JSON.parse(raw[i]);
+          if (obj.model === needle || obj.model === agent.id) entries.push({ lineNo: i, ...obj });
+        } catch {}
+      }
+      return jsonResp(res, { agentId, count: entries.length, entries });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // Mark a training entry approved/rejected for curation
+  if (url === '/api/training/review' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { lineNo, approved, notes } = JSON.parse(body || '{}');
+      if (!Number.isInteger(lineNo)) return jsonResp(res, { error: 'lineNo required' }, 400);
+      const file = join(ROOT, 'agent_mode', 'training', 'training-log.jsonl');
+      if (!existsSync(file)) return jsonResp(res, { error: 'training-log.jsonl missing' }, 404);
+      const lines = readFileSync(file, 'utf8').split('\n');
+      if (lineNo < 0 || lineNo >= lines.length || !lines[lineNo]) return jsonResp(res, { error: 'invalid lineNo' }, 400);
+      let obj;
+      try { obj = JSON.parse(lines[lineNo]); } catch { return jsonResp(res, { error: 'could not parse line' }, 500); }
+      obj.reviewed = true;
+      obj.approved = !!approved;
+      if (notes) obj.reviewNotes = String(notes).slice(0, 500);
+      obj.reviewedAt = new Date().toISOString();
+      lines[lineNo] = JSON.stringify(obj);
+      writeFileSync(file, lines.join('\n'));
+      log(`Training review: line ${lineNo} ${obj.approved ? 'APPROVED' : 'REJECTED'}`);
+      return jsonResp(res, { result: 'Reviewed', lineNo, approved: obj.approved });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // Per-agent chat log purge — DELETE wipes chat-log.jsonl for that agent
+  if (url.startsWith('/api/chat/') && url.endsWith('/log') && req.method === 'DELETE') {
+    try {
+      const agentId = decodeURIComponent(url.slice('/api/chat/'.length, -'/log'.length));
+      const agents = JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'agents.json'), 'utf8'));
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'agent not found: ' + agentId }, 404);
+      const mem = await import('./agent_mode/core/memory.js');
+      mem.clearChatLog(agentId);
+      log(`Chat log cleared: ${agentId}`);
+      return jsonResp(res, { result: 'Chat log cleared', agentId });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
+  // Per-agent notes editor — PUT { notes } overwrites notes.md
+  if (url.startsWith('/api/chat/') && url.endsWith('/notes') && req.method === 'PUT') {
+    const body = await readBody(req);
+    try {
+      const agentId = decodeURIComponent(url.slice('/api/chat/'.length, -'/notes'.length));
+      const payload = JSON.parse(body || '{}');
+      const notes = String(payload.notes ?? '');
+      const agents = JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'agents.json'), 'utf8'));
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'agent not found: ' + agentId }, 404);
+      const mem = await import('./agent_mode/core/memory.js');
+      mem.ensureMemoryDir(agent);
+      const path = join(ROOT, 'agent_mode', 'memories', String(agentId).replace(/[:/\\?*"<>|]/g, '-'), 'notes.md');
+      writeFileSync(path, notes, 'utf8');
+      log(`Notes updated: ${agentId} (${notes.length} bytes)`);
+      return jsonResp(res, { result: 'Notes saved', agentId, length: notes.length });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
+  // Per-agent chat — GET history, POST sends a turn
+  if (url.startsWith('/api/chat/') && req.method === 'GET') {
+    try {
+      const agentId = decodeURIComponent(url.slice('/api/chat/'.length).split('?')[0]);
+      const mem = await import('./agent_mode/core/memory.js');
+      const agents = JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'agents.json'), 'utf8'));
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'agent not found: ' + agentId }, 404);
+      mem.ensureMemoryDir(agent);
+      return jsonResp(res, {
+        agentId,
+        history: mem.readChatLog(agentId, 200),
+        notes: mem.readNotes(agentId),
+      });
+    } catch (e) { return jsonResp(res, { error: e.message }, 400); }
+  }
+
+  if (url === '/api/chat' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      const agentId = payload.agentId;
+      const message = String(payload.message || '').trim();
+      if (!agentId) return jsonResp(res, { error: 'agentId required' }, 400);
+      if (!message) return jsonResp(res, { error: 'message required' }, 400);
+
+      const agents = JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'agents.json'), 'utf8'));
+      const agent = agents.find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'agent not found: ' + agentId }, 404);
+
+      const mem = await import('./agent_mode/core/memory.js');
+      mem.ensureMemoryDir(agent);
+      const ctx = mem.buildChatContext(agent, { historyTurns: 12 });
+
+      // Build a lightweight SYSTEM block. The agent's Modelfile already
+      // carries its baked-in personality; these are the runtime additions.
+      const systemBlocks = [];
+      if (ctx.charter && ctx.charter.trim()) {
+        systemBlocks.push('### CHARTER\n' + ctx.charter.trim());
+      }
+      if (ctx.notes && ctx.notes.trim()) {
+        systemBlocks.push('### PERSISTENT NOTES\n' + ctx.notes.trim());
+      }
+      const systemBlock = systemBlocks.join('\n\n');
+
+      const transcript = ctx.history
+        .filter(m => m && m.role && m.content)
+        .map(m => `${m.role === 'user' ? 'KEN' : 'AGENT'}: ${m.content}`)
+        .join('\n');
+
+      const finalPrompt = [
+        systemBlock,
+        transcript ? '### RECENT TURNS\n' + transcript : '',
+        `### CURRENT TURN\nKEN: ${message}\nAGENT:`,
+      ].filter(Boolean).join('\n\n');
+
+      // Append user turn up-front so history persists even if the model errors.
+      mem.appendChat(agentId, 'user', message);
+
+      const { spawnSync } = require('child_process');
+      const run = spawnSync('ollama', ['run', agent.base || agent.id], {
+        input: finalPrompt,
+        encoding: 'utf8',
+        timeout: 120000,
+        maxBuffer: 8 * 1024 * 1024,
+      });
+
+      if (run.error || (run.status !== 0 && !run.stdout)) {
+        const errMsg = (run.error && run.error.message) || run.stderr || 'ollama run failed';
+        mem.appendChat(agentId, 'system', 'ERROR: ' + errMsg);
+        return jsonResp(res, { error: errMsg }, 500);
+      }
+
+      // ollama run emits spinner control codes (ANSI CSI + bracketed paste
+       // mode) interleaved with model output. Strip them before storing so
+       // chat history doesn't carry terminal noise into notes / training log.
+      const stripAnsi = (s) => String(s || '')
+        .replace(/\u001b\[\??[0-9;]*[a-zA-Z]/g, '')  // CSI sequences
+        .replace(/\u001b\][^\u0007]*\u0007/g, '')     // OSC sequences
+        .replace(/\r/g, '');
+      const reply = stripAnsi(run.stdout).trim();
+      mem.appendChat(agentId, 'assistant', reply);
+
+      // Feed the shared training log so chat turns become fine-tune corpus
+      // for Ken AI v2. Mirrors executor._recordTraining's entry shape so
+      // curate.js can process both dispatch + chat entries uniformly.
+      try {
+        const trainingDir = join(ROOT, 'agent_mode', 'training');
+        if (!existsSync(trainingDir)) mkdirSync(trainingDir, { recursive: true });
+        const entry = {
+          timestamp: new Date().toISOString(),
+          taskId: 'chat-' + Date.now().toString(36),
+          model: agent.base || agent.id,
+          taskType: 'chat',
+          attempt: 1,
+          objective: message.substring(0, 500),
+          prompt: finalPrompt.substring(0, 2000),
+          response: reply.substring(0, 5000),
+          success: reply.length > 0,
+          elapsed: 0,
+          reviewed: false,
+          approved: null,
+        };
+        appendFileSync(join(trainingDir, 'training-log.jsonl'), JSON.stringify(entry) + '\n');
+      } catch {}
+
+      log(`Chat ${agentId}: ${message.slice(0, 60)} -> ${reply.slice(0, 60)}`);
+      return jsonResp(res, { agentId, reply });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
   }
 
   // Project-specific git operations
@@ -927,6 +1150,19 @@ setInterval(autoSheetsSync, 900000);
 
 // â”€â”€ API endpoint for Claude Code to dispatch tasks directly â”€â”€
 // POST /api/dispatch â€” create + optionally execute a task
+
+// Scaffold per-agent memory directories at boot (no-op if they already exist)
+try {
+  const agentsFile = join(ROOT, 'agent_mode', 'config', 'agents.json');
+  if (existsSync(agentsFile)) {
+    const agents = JSON.parse(readFileSync(agentsFile, 'utf8'));
+    const mem = await import('./agent_mode/core/memory.js');
+    const created = mem.ensureAllMemoryDirs(agents);
+    log('Memory dirs ready: ' + created.map(c => c.id).join(', '));
+  }
+} catch (e) {
+  log('Memory scaffold failed: ' + e.message);
+}
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log();

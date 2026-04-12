@@ -426,6 +426,14 @@
         linear-gradient(180deg, rgba(58, 92, 121, 0.98), rgba(35, 55, 76, 0.98));
       border: 4px solid rgba(246, 201, 108, 0.52);
       box-shadow: inset 0 0 0 2px rgba(255,255,255,0.16);
+      overflow: hidden;
+    }
+    .trainer-emblem img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
     }
 
     .trainer-emblem span,
@@ -1203,6 +1211,415 @@
     .small { font-size: 0.8rem; }
     .empty { padding: 14px 0 4px; }
 
+    /* === 1920x720 Control Deck mode (body.deck) ===================== */
+    body.deck { overflow: hidden; }
+    body.deck .shell {
+      width: calc(100vw - 8px);
+      max-width: none;
+      margin: 4px auto;
+      border-radius: 14px;
+      height: calc(100vh - 8px);
+      display: flex;
+      flex-direction: column;
+    }
+    body.deck .shell::before { inset: 4px; border-radius: 10px; }
+    body.deck .shell::after  { inset: 8px; border-radius: 9px; }
+    body.deck .topbar {
+      padding: 8px 16px 8px;
+      border-bottom-width: 2px;
+      flex: 0 0 auto;
+    }
+    body.deck .title-wrap { gap: 2px; flex-direction: row; align-items: baseline; }
+    body.deck .eyebrow { font-size: 0.68rem; letter-spacing: 0.22em; margin-right: 10px; }
+    body.deck h1 { font-size: 1.15rem; }
+    body.deck .subtitle { display: none; }
+    body.deck .status-cluster { gap: 6px; }
+    body.deck .badge { padding: 5px 9px; font-size: 0.68rem; }
+    body.deck button { padding: 7px 10px; font-size: 0.78rem; }
+    button.agent-off {
+      background: linear-gradient(180deg, rgba(160, 46, 46, 0.96), rgba(108, 26, 26, 0.96));
+      border-color: rgba(255, 150, 140, 0.52);
+      color: #fff2ee;
+    }
+    .deck-tab-btn { display: none; }
+    body.deck .deck-tab-btn { display: inline-flex; }
+    body.deck .deck-tab-btn.active {
+      background: linear-gradient(180deg, rgba(248, 237, 157, 0.96), rgba(215, 190, 82, 0.96));
+      color: #2a2410;
+      border-color: rgba(255, 250, 180, 0.82);
+    }
+
+    /* === Deck tab views =============================================== */
+    /* MAIN tab: hide the 4 info panels (queue, projects, sheets, activity).
+       What stays: trainer + party on the left, summary + chat on the right. */
+    body.deck[data-deck-tab="main"] .panel:has(#task-grid),
+    body.deck[data-deck-tab="main"] .panel:has(#project-grid),
+    body.deck[data-deck-tab="main"] .panel:has(#sheet-grid),
+    body.deck[data-deck-tab="main"] .panel:has(#activity-grid) {
+      display: none;
+    }
+
+    /* BOARD tab: hide the control panels and show only the 4 info panels.
+       Left column shows queue (full), right column shows projects+sheets+activity. */
+    body.deck[data-deck-tab="board"] .panel:has(#trainer-panel),
+    body.deck[data-deck-tab="board"] .panel:has(#party-grid),
+    body.deck[data-deck-tab="board"] .chat-panel,
+    body.deck[data-deck-tab="board"] .panel:has(#summary-panel) {
+      display: none;
+    }
+    body.deck[data-deck-tab="board"] .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    body.deck[data-deck-tab="board"] .grid > .stack:last-child > .panel:has(#project-grid),
+    body.deck[data-deck-tab="board"] .grid > .stack:last-child > .panel:has(#sheet-grid),
+    body.deck[data-deck-tab="board"] .grid > .stack:last-child > .panel:has(#activity-grid) {
+      flex: 1 1 0;
+    }
+
+    body.deck .content {
+      padding: 8px;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-height: 0;
+      grid-template-rows: auto 1fr;
+    }
+    body.deck .button-row { padding: 0; gap: 6px; }
+
+    /* Deck grid: left (trainer + party row + queue)  |  right (stats dominant) */
+    body.deck .grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+      gap: 8px;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+    body.deck .stack { gap: 6px; min-height: 0; }
+
+    /* Both stacks use flex in deck mode so hidden panels (per-tab) take zero
+       space, and visible panels flex-grow into the remainder. */
+    body.deck .grid > .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+    }
+    body.deck .grid > .stack > .panel { min-height: 0; }
+
+    /* Left stack panels: trainer + party auto-sized, queue fills remainder. */
+    body.deck .grid > .stack:first-child > .panel:has(#trainer-panel),
+    body.deck .grid > .stack:first-child > .panel:has(#party-grid) {
+      flex: 0 0 auto;
+      overflow: auto;
+    }
+    body.deck .grid > .stack:first-child > .panel:has(#task-grid) {
+      flex: 1 1 0;
+      overflow: auto;
+    }
+
+    /* Right stack panels: summary + chat share most space, mini panels pinned. */
+    body.deck .grid > .stack:last-child > .panel:has(#summary-panel) {
+      flex: 1.25 1 0;
+      overflow: auto;
+    }
+    body.deck .grid > .stack:last-child > .chat-panel {
+      flex: 1 1 0;
+      display: flex;
+      overflow: hidden;
+    }
+    body.deck .grid > .stack:last-child > .panel:has(#project-grid),
+    body.deck .grid > .stack:last-child > .panel:has(#sheet-grid),
+    body.deck .grid > .stack:last-child > .panel:has(#activity-grid) {
+      flex: 0 0 58px;
+      overflow: auto;
+    }
+    body.deck .chat-panel .chat-log { overflow-y: auto; }
+    body.deck .panel { padding: 10px; border-radius: 12px; }
+    body.deck .panel::after { inset: 5px; border-radius: 8px; }
+    body.deck .panel-header { margin-bottom: 8px; }
+    body.deck .panel-title { font-size: 0.82rem; }
+    body.deck .panel-kicker { font-size: 0.64rem; }
+
+    /* 6 party slots in a single horizontal row */
+    body.deck .agent-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 6px;
+    }
+    body.deck .agent-card { padding: 8px; font-size: 0.72rem; }
+    body.deck .agent-card h3 { font-size: 0.74rem; letter-spacing: 0.04em; }
+
+    /* Collapse party-slot-card from 3-col (cursor|icon|content) to stacked */
+    body.deck .party-slot-card {
+      grid-template-columns: 1fr;
+      min-height: 0;
+      padding: 8px;
+      gap: 6px;
+      text-align: center;
+    }
+    body.deck .party-cursor { display: none; }
+    body.deck .party-icon-shell { gap: 2px; }
+    body.deck .party-icon-frame { width: 56px; height: 56px; }
+    body.deck .slot-marker { font-size: 0.58rem; letter-spacing: 0.08em; }
+    body.deck .party-main { display: grid; gap: 4px; text-align: left; }
+    body.deck .party-headline { gap: 4px; }
+    body.deck .party-name-stack h3 { font-size: 0.74rem; }
+    body.deck .party-name-stack .muted-code { font-size: 0.62rem; }
+    body.deck .party-level { font-size: 0.62rem; }
+    body.deck .party-line { gap: 4px; flex-wrap: wrap; }
+    body.deck .party-track { font-size: 0.6rem; }
+    body.deck .party-slot-card .card-copy { display: none; }
+    body.deck .party-hp-top { font-size: 0.58rem; }
+    body.deck .party-hp-bar { height: 6px; }
+    body.deck .party-subline { display: none; }
+    body.deck .party-slot-card .card-actions { display: none; }
+
+    /* Keep the party panel a tight single row */
+    body.deck #party-grid + #party-menu { display: none; }
+
+    /* Compact trainer card, stat pills, meta lines */
+    body.deck .grid > .stack:first-child > .panel:has(#trainer-panel) {
+      padding: 8px 10px;
+    }
+    body.deck .grid > .stack:first-child > .panel:has(#trainer-panel) .panel-header {
+      margin-bottom: 6px;
+    }
+    body.deck .trainer-card { padding: 8px 10px; gap: 6px; }
+    body.deck .trainer-card h3 { font-size: 0.84rem; }
+    body.deck .trainer-card .trainer-copy { font-size: 0.68rem; line-height: 1.3; }
+    body.deck .trainer-card .trainer-topline { gap: 8px; }
+    body.deck .trainer-copy,
+    body.deck .card-copy { font-size: 0.72rem; line-height: 1.35; }
+    body.deck .stat-pill { padding: 7px 9px; min-width: 90px; }
+    body.deck .stat-label { font-size: 0.62rem; margin-bottom: 2px; }
+    body.deck .stat-value { font-size: 0.9rem; }
+
+    body.deck .task-grid,
+    body.deck .project-grid,
+    body.deck .sheet-grid,
+    body.deck .activity-grid { gap: 6px; }
+    body.deck .task-card,
+    body.deck .project-card,
+    body.deck .sheet-card,
+    body.deck .activity-item { padding: 8px; font-size: 0.72rem; }
+
+    body.deck .emerald-textbox-shell { display: none; }
+
+    /* Let overflow scroll inside panels, not the whole shell */
+    body.deck .panel { overflow: auto; }
+    body.deck .panel::-webkit-scrollbar { width: 8px; height: 8px; }
+    body.deck .panel::-webkit-scrollbar-thumb {
+      background: rgba(67, 116, 87, 0.34);
+      border-radius: 4px;
+    }
+
+    /* === Chat panel ================================================== */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 240px;
+    }
+    .chat-actions { display: flex; gap: 6px; }
+    .chat-log {
+      flex: 1 1 auto;
+      min-height: 120px;
+      max-height: 100%;
+      overflow-y: auto;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(20, 38, 27, 0.78), rgba(12, 26, 18, 0.86));
+      border: 1px solid rgba(67, 116, 87, 0.28);
+      color: #e4f0cf;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      position: relative;
+      z-index: 1;
+    }
+    .chat-log .chat-empty { color: rgba(228, 240, 207, 0.58); font-style: italic; }
+    .chat-msg {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px dashed rgba(248, 237, 157, 0.12);
+    }
+    .chat-msg:last-child { border-bottom: none; }
+    .chat-msg .chat-role {
+      text-transform: uppercase;
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: rgba(248, 237, 157, 0.74);
+      align-self: start;
+      padding-top: 2px;
+    }
+    .chat-msg .chat-body { white-space: pre-wrap; word-break: break-word; }
+    .chat-msg.user .chat-role { color: #a5f0ff; }
+    .chat-msg.assistant .chat-role { color: #baf1b3; }
+    .chat-msg.system .chat-role { color: #ffb3b3; }
+    .chat-msg.pending .chat-body { opacity: 0.62; font-style: italic; }
+    .chat-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+    .chat-input {
+      appearance: none;
+      border: 2px solid rgba(67, 116, 87, 0.32);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 0.88rem;
+      background: linear-gradient(180deg, rgba(247, 244, 220, 0.98), rgba(220, 229, 194, 0.98));
+      color: #1e2e22;
+    }
+    .chat-input:focus { outline: none; border-color: rgba(248, 237, 157, 0.82); }
+    .chat-input:disabled { opacity: 0.5; }
+
+    /* Memory indicator dot on cards whose agent has notes or chat turns */
+    .mem-dot {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 35% 35%, #ffe88a, #d88a1a);
+      box-shadow: 0 0 8px rgba(248, 220, 120, 0.85), 0 0 2px rgba(0,0,0,0.55);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .agent-card.blocked, .trainer-card.blocked {
+      opacity: 0.76;
+      filter: saturate(0.78);
+    }
+    .agent-card.blocked::after, .trainer-card.blocked::after {
+      content: "BLOCKED";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      font-size: 0.56rem;
+      letter-spacing: 0.14em;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(140, 28, 28, 0.88);
+      color: #ffdede;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .chat-subtext {
+      font-size: 0.64rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #5d735d;
+      margin-top: 2px;
+    }
+    body.deck .chat-subtext { font-size: 0.58rem; }
+    .mem-dot.chat { background: radial-gradient(circle at 35% 35%, #baf1b3, #3f8b4e); box-shadow: 0 0 8px rgba(150, 240, 150, 0.82); }
+    .mem-dot.both { background: radial-gradient(circle at 35% 35%, #a5f0ff, #35a4c4); box-shadow: 0 0 10px rgba(130, 230, 255, 0.82); }
+    .agent-card, .trainer-card { position: relative; }
+
+    .chat-notes {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .chat-notes textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 2px solid rgba(67, 116, 87, 0.32);
+      background: linear-gradient(180deg, rgba(247, 244, 220, 0.98), rgba(220, 229, 194, 0.98));
+      color: #1e2e22;
+      font: inherit;
+      font-size: 0.82rem;
+      resize: vertical;
+    }
+    .chat-notes-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    .chat-training {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 4px;
+      max-height: 100%;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+    .chat-training-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chat-training-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+      padding: 8px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(20, 38, 27, 0.78), rgba(12, 26, 18, 0.86));
+      border: 1px solid rgba(67, 116, 87, 0.28);
+      color: #e4f0cf;
+      font-size: 0.76rem;
+      max-height: 320px;
+      min-height: 100px;
+    }
+    .chat-training-entry {
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(248, 237, 157, 0.16);
+      background: rgba(15, 30, 22, 0.6);
+    }
+    .chat-training-entry.approved { border-color: rgba(129, 219, 149, 0.52); }
+    .chat-training-entry.rejected { border-color: rgba(255, 143, 143, 0.52); opacity: 0.72; }
+    .chat-training-entry .te-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(228, 240, 207, 0.78);
+      margin-bottom: 4px;
+    }
+    .chat-training-entry .te-obj { font-size: 0.74rem; color: #eef8df; margin-bottom: 4px; word-break: break-word; }
+    .chat-training-entry .te-reply {
+      font-size: 0.72rem;
+      color: #cde4b6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 80px;
+      overflow: auto;
+      padding: 4px 6px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+    .chat-training-entry .te-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      justify-content: flex-end;
+    }
+    .chat-training-entry .te-actions button {
+      padding: 4px 8px;
+      font-size: 0.66rem;
+    }
+    body.deck .chat-training-list { max-height: 220px; font-size: 0.68rem; }
+    body.deck .chat-training-entry .te-reply { max-height: 60px; font-size: 0.66rem; }
+
+    /* Deck-mode chat sizing */
+    body.deck #chat-panel-section { min-height: 0; }
+    body.deck .chat-notes textarea { min-height: 90px; font-size: 0.72rem; padding: 7px 9px; }
+    body.deck .chat-log {
+      font-size: 0.72rem;
+      padding: 7px 9px;
+      min-height: 0;
+    }
+    body.deck .chat-msg { grid-template-columns: 52px 1fr; padding: 4px 0; }
+    body.deck .chat-msg .chat-role { font-size: 0.56rem; }
+    body.deck .chat-input { padding: 7px 9px; font-size: 0.78rem; }
+
     @media (max-width: 1120px) { .grid { grid-template-columns: 1fr; } }
     @media (max-width: 760px) {
       .shell { width: min(100vw - 10px, 100%); margin: 8px auto 20px; border-radius: 18px; }
@@ -1234,9 +1651,11 @@
 
     <section class="content">
       <div class="button-row">
+        <button id="tab-main-btn" class="deck-tab-btn active" type="button">Deck</button>
+        <button id="tab-board-btn" class="deck-tab-btn" type="button">Board</button>
         <button id="refresh-btn">Refresh Now</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
-        <button id="pause-btn">Pause Auto-Exec</button>
+        <button id="pause-btn">Agent Mode: ON</button>
         <button id="remote-btn">Open Remote Deck</button>
       </div>
       <div class="status-banner" id="banner"></div>
@@ -1290,6 +1709,42 @@
             <div id="summary-panel"></div>
           </section>
 
+          <section class="panel chat-panel" id="chat-panel-section">
+            <div class="panel-header">
+              <div>
+                <div class="panel-kicker">Direct Line</div>
+                <h2 class="panel-title" id="chat-heading">Chat</h2>
+                <div class="chat-subtext" id="chat-subtext">No agent selected</div>
+              </div>
+              <div class="chat-actions">
+                <button id="chat-log-btn" class="secondary" type="button" disabled>Log</button>
+                <button id="chat-notes-btn" class="secondary" type="button" disabled>Notes</button>
+                <button id="chat-clear-btn" class="secondary" type="button">Clear</button>
+              </div>
+            </div>
+            <div class="chat-log" id="chat-log"></div>
+            <div class="chat-notes" id="chat-notes-editor" hidden>
+              <textarea id="chat-notes-text" placeholder="Persistent notes for this agent (markdown). Injected into every dispatch and chat turn."></textarea>
+              <div class="chat-notes-actions">
+                <button id="chat-notes-save-btn" type="button">Save Notes</button>
+                <button id="chat-notes-cancel-btn" class="secondary" type="button">Close</button>
+              </div>
+            </div>
+            <div class="chat-training" id="chat-training-overlay" hidden>
+              <div class="chat-training-header">
+                <div class="chat-subtext" id="chat-training-subtitle">Training log</div>
+                <button id="chat-training-close-btn" class="secondary" type="button">Close</button>
+              </div>
+              <div class="chat-training-list" id="chat-training-list">
+                <div class="empty">Loading…</div>
+              </div>
+            </div>
+            <form class="chat-form" id="chat-form" autocomplete="off">
+              <input class="chat-input" id="chat-input" type="text" placeholder="Select an agent to start chatting..." disabled />
+              <button id="chat-send-btn" type="submit" disabled>Send</button>
+            </form>
+          </section>
+
           <section class="panel">
             <div class="panel-header">
               <div>
@@ -1331,7 +1786,21 @@
   </main>
 
   <script>
-    const state = { dashboard: null, sheets: {}, selectedFocus: null, selectedSummaryTab: 'info' };
+    const state = {
+      dashboard: null,
+      sheets: {},
+      selectedFocus: null,
+      selectedSummaryTab: 'info',
+      chats: {},            // agentId -> [{ role, content, ts }]
+      chatAgentId: null,    // agent the chat panel is currently bound to
+      chatPending: false,
+      chatLoading: false,
+      notes: {},            // agentId -> notes.md text
+      notesEditing: false,
+      notesSaving: false,
+      trainingViewOpen: false,
+      trainingViewAgent: null,
+    };
     const themeFallback = {
       trainerLabel: 'Ken AI',
         partyLabel: 'P0K3M0N-Style Dev Party',
@@ -1366,6 +1835,26 @@
       syncBtn: document.getElementById('sync-btn'),
       pauseBtn: document.getElementById('pause-btn'),
       remoteBtn: document.getElementById('remote-btn'),
+      chatPanel: document.getElementById('chat-panel-section'),
+      chatHeading: document.getElementById('chat-heading'),
+      chatLog: document.getElementById('chat-log'),
+      chatForm: document.getElementById('chat-form'),
+      chatInput: document.getElementById('chat-input'),
+      chatSendBtn: document.getElementById('chat-send-btn'),
+      chatClearBtn: document.getElementById('chat-clear-btn'),
+      chatSubtext: document.getElementById('chat-subtext'),
+      chatNotesBtn: document.getElementById('chat-notes-btn'),
+      chatNotesEditor: document.getElementById('chat-notes-editor'),
+      chatNotesText: document.getElementById('chat-notes-text'),
+      chatNotesSaveBtn: document.getElementById('chat-notes-save-btn'),
+      chatNotesCancelBtn: document.getElementById('chat-notes-cancel-btn'),
+      chatLogBtn: document.getElementById('chat-log-btn'),
+      chatTrainingOverlay: document.getElementById('chat-training-overlay'),
+      chatTrainingList: document.getElementById('chat-training-list'),
+      chatTrainingSubtitle: document.getElementById('chat-training-subtitle'),
+      chatTrainingCloseBtn: document.getElementById('chat-training-close-btn'),
+      tabMainBtn: document.getElementById('tab-main-btn'),
+      tabBoardBtn: document.getElementById('tab-board-btn'),
     };
 
     function escapeHtml(value) {
@@ -1394,6 +1883,21 @@
     }
 
     function badge(label, tone = '') { return `<span class="badge ${tone}">${escapeHtml(label)}</span>`; }
+
+    // Memory indicator: yellow dot = has notes, green = chat turns, cyan = both.
+    // Title shows a human hint so hovering tells Ken what the dot means.
+    function memDotHtml(agent) {
+      if (!agent) return '';
+      const hasNotes = !!agent.hasNotes;
+      const turns = agent.chatTurns || 0;
+      if (!hasNotes && turns === 0) return '';
+      const cls = hasNotes && turns > 0 ? 'both' : (hasNotes ? '' : 'chat');
+      const hint = [
+        hasNotes ? `${agent.notesLength || 0} chars of notes` : '',
+        turns > 0 ? `${turns} chat turns` : '',
+      ].filter(Boolean).join(' · ');
+      return `<span class="mem-dot ${cls}" title="${escapeHtml(hint)}"></span>`;
+    }
 
     function getAgentAccent(agent) {
       const map = {
@@ -1426,7 +1930,7 @@
     }
 
     const POKEDEX_MEDIA = {
-      TR: { dex: 'Trainer ID', icon: '', portrait: '', alias: 'Ken AI' },
+      TR: { dex: 'Trainer ID', icon: 'trainer-ken.jpg', portrait: 'trainer-ken.jpg', alias: 'Ken AI' },
       SCZ: { dex: 'No. 0212', icon: '0212-icon.png', portrait: '0212.png', alias: '5c1z0r' },
       ROT: { dex: 'No. 0479', icon: '0479-icon.png', portrait: '0479.png', alias: 'R0t0m' },
       DEC: { dex: 'No. 0724', icon: '0724-icon.png', portrait: '0724.png', alias: 'D3c1du3y3' },
@@ -1754,10 +2258,12 @@
       const trainerStanding = getAgentStanding(trainer);
       const companionStanding = getAgentStanding(companion);
       const companionMedia = getAgentMedia(companion);
+      const trainerMedia = getAgentMedia(trainer);
       els.trainerPanel.innerHTML = `
         <article class="trainer-card selectable ${selected?.id === trainer.id ? 'selected' : ''}" data-focus="${escapeHtml(trainer.id)}">
+          ${memDotHtml(trainer)}
           <div class="trainer-topline">
-            <div class="trainer-emblem"><span>${escapeHtml(trainer.partyBadge || 'TR')}</span></div>
+            <div class="trainer-emblem">${trainerMedia.portraitUrl ? `<img src="${trainerMedia.portraitUrl}" alt="${escapeHtml(trainer.displayName)} portrait" />` : `<span>${escapeHtml(trainer.partyBadge || 'TR')}</span>`}</div>
             <div class="trainer-identity">
               <div class="card-top">
                 <div>
@@ -1817,7 +2323,8 @@
         const media = getAgentMedia(agent);
         const level = getAgentLevel(agent);
         return `
-          <article class="agent-card selectable party-slot-card ${agent.status === 'unhealthy' ? 'unhealthy' : ''} ${selected?.id === agent.id ? 'selected' : ''}" style="${accentStyle(accent)}" data-focus="${escapeHtml(agent.id)}">
+          <article class="agent-card selectable party-slot-card ${agent.status === 'unhealthy' ? 'unhealthy' : ''} ${agent.blocked ? 'blocked' : ''} ${selected?.id === agent.id ? 'selected' : ''}" style="${accentStyle(accent)}" data-focus="${escapeHtml(agent.id)}" ${agent.blocked ? `title="BLOCKED: ${escapeHtml(agent.blockReason || 'Skipped by auto-assign')}"` : ''}>
+            ${memDotHtml(agent)}
             <div class="party-cursor" aria-hidden="true"></div>
             <div class="party-icon-shell">
               <div class="slot-marker">${escapeHtml(getLaneLabel(agent))}</div>
@@ -2070,6 +2577,239 @@
       `).join('');
     }
 
+    // === Chat panel (per-agent, persisted to disk via /api/chat) ===
+    function renderChat() {
+      if (!els.chatPanel) return;
+      const dashboard = state.dashboard;
+      const agent = dashboard ? getSelectedAgent(dashboard) : null;
+      const agentId = agent?.id || null;
+      els.chatHeading.textContent = agent ? `Chat · ${agent.displayName || agent.id}` : 'Chat';
+      if (els.chatSubtext) {
+        if (agent) {
+          const parts = [
+            agent.base || agent.id,
+            `${agent.notesLength || 0}b notes`,
+            `${agent.chatTurns || 0} turns`,
+          ];
+          if (agent.blocked) parts.push('BLOCKED');
+          els.chatSubtext.textContent = parts.join(' · ');
+        } else {
+          els.chatSubtext.textContent = 'No agent selected';
+        }
+      }
+      const enabled = !!agentId;
+      els.chatInput.disabled = !enabled || state.chatPending;
+      els.chatSendBtn.disabled = !enabled || state.chatPending;
+      els.chatClearBtn.disabled = !enabled || state.chatPending;
+      els.chatNotesBtn.disabled = !enabled;
+      if (els.chatLogBtn) els.chatLogBtn.disabled = !enabled;
+      if (!enabled && state.notesEditing) toggleNotesEditor(false);
+      if (!enabled && state.trainingViewOpen) closeTrainingView();
+      els.chatInput.placeholder = enabled
+        ? (state.chatPending ? 'Waiting for reply…' : `Message ${agent.displayName || agent.id}`)
+        : 'Select an agent to start chatting…';
+
+      const history = (agentId && state.chats[agentId]) || [];
+      if (!enabled) {
+        els.chatLog.innerHTML = '<div class="chat-empty">Pick an agent from the trainer bench or party row to open a direct line.</div>';
+        return;
+      }
+      if (state.chatLoading && !history.length) {
+        els.chatLog.innerHTML = '<div class="chat-empty">Loading history…</div>';
+        return;
+      }
+      if (!history.length) {
+        els.chatLog.innerHTML = '<div class="chat-empty">No messages yet. Say something to kick off this agent\'s memory.</div>';
+        return;
+      }
+      const rows = history.map(m => {
+        const role = m.role === 'user' ? 'KEN'
+          : m.role === 'assistant' ? (agent.displayName || 'AGENT')
+          : (m.role || 'sys').toUpperCase();
+        const cls = m.role === 'user' ? 'user' : (m.role === 'assistant' ? 'assistant' : 'system');
+        const pending = m.pending ? ' pending' : '';
+        return `<div class="chat-msg ${cls}${pending}"><div class="chat-role">${escapeHtml(role)}</div><div class="chat-body">${escapeHtml(m.content || '')}</div></div>`;
+      }).join('');
+      els.chatLog.innerHTML = rows;
+      els.chatLog.scrollTop = els.chatLog.scrollHeight;
+    }
+
+    async function loadChatHistory(agentId) {
+      if (!agentId || state.chats[agentId]) return;
+      state.chatLoading = true;
+      renderChat();
+      try {
+        const data = await fetchJson('/api/chat/' + encodeURIComponent(agentId));
+        state.chats[agentId] = Array.isArray(data.history) ? data.history : [];
+        if (typeof data.notes === 'string') state.notes[agentId] = data.notes;
+      } catch (e) {
+        state.chats[agentId] = [];
+      } finally {
+        state.chatLoading = false;
+        renderChat();
+      }
+    }
+
+    function toggleNotesEditor(force) {
+      const open = typeof force === 'boolean' ? force : !state.notesEditing;
+      state.notesEditing = open;
+      els.chatNotesEditor.hidden = !open;
+      if (open) {
+        const id = state.chatAgentId;
+        els.chatNotesText.value = id ? (state.notes[id] || '') : '';
+        els.chatNotesText.focus();
+      }
+    }
+
+    async function saveNotes() {
+      const agentId = state.chatAgentId;
+      if (!agentId || state.notesSaving) return;
+      state.notesSaving = true;
+      els.chatNotesSaveBtn.disabled = true;
+      els.chatNotesSaveBtn.textContent = 'Saving…';
+      try {
+        const notes = els.chatNotesText.value;
+        await fetchJson('/api/chat/' + encodeURIComponent(agentId) + '/notes', {
+          method: 'PUT',
+          body: JSON.stringify({ notes }),
+        });
+        state.notes[agentId] = notes;
+        els.chatNotesSaveBtn.textContent = 'Saved';
+        setTimeout(() => { els.chatNotesSaveBtn.textContent = 'Save Notes'; }, 1200);
+      } catch (e) {
+        els.chatNotesSaveBtn.textContent = 'Error';
+        setTimeout(() => { els.chatNotesSaveBtn.textContent = 'Save Notes'; }, 1600);
+      } finally {
+        state.notesSaving = false;
+        els.chatNotesSaveBtn.disabled = false;
+      }
+    }
+
+    function syncChatAgent() {
+      const dashboard = state.dashboard;
+      const agent = dashboard ? getSelectedAgent(dashboard) : null;
+      const id = agent?.id || null;
+      if (id !== state.chatAgentId) {
+        state.chatAgentId = id;
+        if (id) loadChatHistory(id);
+      }
+    }
+
+    async function sendChatMessage(message) {
+      const agentId = state.chatAgentId;
+      if (!agentId || !message.trim()) return;
+      const text = message.trim();
+      if (!state.chats[agentId]) state.chats[agentId] = [];
+      state.chats[agentId].push({ role: 'user', content: text, ts: new Date().toISOString() });
+      state.chats[agentId].push({ role: 'assistant', content: '…thinking', pending: true });
+      state.chatPending = true;
+      renderChat();
+      try {
+        const data = await fetchJson('/api/chat', {
+          method: 'POST',
+          body: JSON.stringify({ agentId, message: text }),
+        });
+        const arr = state.chats[agentId];
+        const pendingIdx = arr.findIndex(m => m.pending);
+        if (pendingIdx >= 0) arr.splice(pendingIdx, 1);
+        arr.push({ role: 'assistant', content: data.reply || '(empty reply)', ts: new Date().toISOString() });
+      } catch (e) {
+        const arr = state.chats[agentId];
+        const pendingIdx = arr.findIndex(m => m.pending);
+        if (pendingIdx >= 0) arr.splice(pendingIdx, 1);
+        arr.push({ role: 'system', content: 'ERROR: ' + (e.message || 'chat failed'), ts: new Date().toISOString() });
+      } finally {
+        state.chatPending = false;
+        renderChat();
+      }
+    }
+
+    async function openTrainingView() {
+      const agentId = state.chatAgentId;
+      if (!agentId) return;
+      state.trainingViewOpen = true;
+      state.trainingViewAgent = agentId;
+      els.chatTrainingOverlay.hidden = false;
+      els.chatTrainingSubtitle.textContent = `Training log · ${agentId}`;
+      els.chatTrainingList.innerHTML = '<div class="empty">Loading…</div>';
+      try {
+        const data = await fetchJson('/api/chat/' + encodeURIComponent(agentId) + '/training');
+        renderTrainingEntries(data.entries || []);
+      } catch (e) {
+        els.chatTrainingList.innerHTML = `<div class="empty">Error: ${escapeHtml(e.message)}</div>`;
+      }
+    }
+
+    function closeTrainingView() {
+      state.trainingViewOpen = false;
+      els.chatTrainingOverlay.hidden = true;
+    }
+
+    function renderTrainingEntries(entries) {
+      if (!entries.length) {
+        els.chatTrainingList.innerHTML = '<div class="empty">No training entries yet. Chat with this agent or dispatch a task.</div>';
+        return;
+      }
+      els.chatTrainingList.innerHTML = entries.map(e => {
+        const cls = e.reviewed ? (e.approved ? 'approved' : 'rejected') : '';
+        const type = e.taskType || 'task';
+        const when = (e.timestamp || '').replace('T', ' ').slice(0, 19);
+        const status = e.reviewed ? (e.approved ? 'APPROVED' : 'REJECTED') : (e.success === false ? 'FAILED' : 'UNREVIEWED');
+        return `
+          <article class="chat-training-entry ${cls}" data-line="${e.lineNo}">
+            <div class="te-row">
+              <span>${escapeHtml(type)}</span>
+              <span>${escapeHtml(when)}</span>
+              <span>${escapeHtml(status)}</span>
+            </div>
+            <div class="te-obj">${escapeHtml((e.objective || '').slice(0, 160))}</div>
+            <div class="te-reply">${escapeHtml((e.response || '').slice(0, 400))}</div>
+            <div class="te-actions">
+              <button class="secondary" data-action="approve" data-line="${e.lineNo}">Approve</button>
+              <button class="secondary" data-action="reject" data-line="${e.lineNo}">Reject</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+      els.chatTrainingList.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', () => reviewTrainingEntry(
+          parseInt(btn.dataset.line, 10),
+          btn.dataset.action === 'approve'
+        ));
+      });
+    }
+
+    async function reviewTrainingEntry(lineNo, approved) {
+      try {
+        await fetchJson('/api/training/review', {
+          method: 'POST',
+          body: JSON.stringify({ lineNo, approved }),
+        });
+        const card = els.chatTrainingList.querySelector(`[data-line="${lineNo}"]`);
+        if (card) {
+          card.classList.remove('approved', 'rejected');
+          card.classList.add(approved ? 'approved' : 'rejected');
+          const row = card.querySelector('.te-row > span:last-child');
+          if (row) row.textContent = approved ? 'APPROVED' : 'REJECTED';
+        }
+      } catch (e) {
+        alert('Review failed: ' + e.message);
+      }
+    }
+
+    async function clearChat() {
+      const agentId = state.chatAgentId;
+      if (!agentId) return;
+      if (!confirm('Clear this agent\'s chat-log.jsonl on disk and reset the panel? Training log stays intact.')) return;
+      try {
+        await fetchJson('/api/chat/' + encodeURIComponent(agentId) + '/log', { method: 'DELETE' });
+        state.chats[agentId] = [];
+        renderChat();
+      } catch (e) {
+        alert('Clear failed: ' + e.message);
+      }
+    }
+
     function render() {
       if (!state.dashboard) return;
       const dashboard = state.dashboard;
@@ -2079,7 +2819,8 @@
       els.trainerHeading.textContent = theme.trainerLabel;
       els.modeBadge.textContent = (dashboard.system?.mode || dashboard.mode || 'hybrid').toUpperCase();
       els.modeBadge.className = `badge ${(dashboard.system?.mode || dashboard.mode) === 'offline' ? 'warn' : 'ok'}`;
-      els.pauseBtn.textContent = dashboard.system?.autoExecutePaused ? 'Resume Auto-Exec' : 'Pause Auto-Exec';
+      els.pauseBtn.textContent = dashboard.system?.autoExecutePaused ? 'Agent Mode: OFF' : 'Agent Mode: ON';
+      els.pauseBtn.classList.toggle('agent-off', !!dashboard.system?.autoExecutePaused);
       renderStatusCluster(dashboard);
       renderTrainer(dashboard);
       renderParty(dashboard);
@@ -2090,6 +2831,8 @@
       renderProjects(dashboard);
       renderSheets();
       renderActivity(dashboard);
+      syncChatAgent();
+      renderChat();
     }
 
     async function loadAll(silent = false) {
@@ -2193,6 +2936,50 @@
     els.pauseBtn.addEventListener('click', toggleAutoExec);
     els.remoteBtn.addEventListener('click', () => { window.location.href = '/remote'; });
     window.addEventListener('keydown', handleDeckKeydown);
+
+    if (els.chatForm) {
+      els.chatForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = els.chatInput.value;
+        if (!text.trim() || state.chatPending) return;
+        els.chatInput.value = '';
+        sendChatMessage(text);
+      });
+    }
+    if (els.chatClearBtn) {
+      els.chatClearBtn.addEventListener('click', clearChat);
+    }
+    if (els.chatNotesBtn) {
+      els.chatNotesBtn.addEventListener('click', () => toggleNotesEditor());
+    }
+    if (els.chatNotesSaveBtn) {
+      els.chatNotesSaveBtn.addEventListener('click', saveNotes);
+    }
+    if (els.chatNotesCancelBtn) {
+      els.chatNotesCancelBtn.addEventListener('click', () => toggleNotesEditor(false));
+    }
+    if (els.chatLogBtn) {
+      els.chatLogBtn.addEventListener('click', openTrainingView);
+    }
+    if (els.chatTrainingCloseBtn) {
+      els.chatTrainingCloseBtn.addEventListener('click', closeTrainingView);
+    }
+
+    // Deck mode: ?deck=1 activates the 1920x720 control-deck layout
+    if (new URLSearchParams(location.search).get('deck') === '1') {
+      document.body.classList.add('deck');
+      document.body.dataset.deckTab = 'main';
+    }
+
+    function setDeckTab(tab) {
+      if (!document.body.classList.contains('deck')) return;
+      const next = tab === 'board' ? 'board' : 'main';
+      document.body.dataset.deckTab = next;
+      els.tabMainBtn?.classList.toggle('active', next === 'main');
+      els.tabBoardBtn?.classList.toggle('active', next === 'board');
+    }
+    els.tabMainBtn?.addEventListener('click', () => setDeckTab('main'));
+    els.tabBoardBtn?.addEventListener('click', () => setDeckTab('board'));
 
     loadAll();
     window.setInterval(() => loadAll(true), 5000);

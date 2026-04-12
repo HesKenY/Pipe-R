@@ -382,7 +382,12 @@ export class Orchestrator {
   _tryAutoAssign(task) {
     if (task.assignedAgent) return;
 
-    const available = this.registry.list().filter(agent => agent.available && agent.status !== 'unhealthy');
+    // Skip agents flagged `blocked: true` in agents.json so known-broken
+    // models (e.g. jefferferson which times out on ollama run) never get
+    // picked by auto-assign. Direct dispatch by id still works.
+    const available = this.registry.list().filter(agent =>
+      agent.available && agent.status !== 'unhealthy' && !agent.blocked
+    );
     if (available.length === 0) return;
 
     const trainer = available.find(agent => agent.id === this.trainerAgentId || agent.teamRole === 'trainer') || null;

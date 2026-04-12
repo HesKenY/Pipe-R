@@ -6,7 +6,7 @@
   "maxConcurrentTasks": 2,
   "maxRetries": 5,
   "trainerAgentId": "ken-ai:latest",
-  "remotePin": "1996",
+  "remotePin": "0615",
   "theme": {
     "name": "gba-trainer-deck",
     "flavor": "p0k3m0n-gba",

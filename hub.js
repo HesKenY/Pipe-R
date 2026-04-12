@@ -3272,6 +3272,7 @@ async function agentMode() {
     ['7', 'Build Review Packet', 'Package work for Claude re-entry'],
     ['8', 'Switch Mode',         `Currently: ${modeLabel}`],
     ['T', 'Training Stats',      'Curate training log + show keep rate'],
+    ['N', 'Edit Agent Notes',    'Open an agent notes.md in notepad'],
     ['0', 'Back',                 ''],
   ]);
   winEmpty();
@@ -3458,6 +3459,32 @@ async function agentMode() {
         hubLog('info', 'Training curate run from hub');
       } catch (err) {
         console.log(`  ${c.red}curate failed: ${err.message}${c.reset}`);
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
+      return agentMode();
+    }
+    case 'N': case 'n': {
+      // Open per-agent notes.md in notepad. Scaffolds the memory dir if it
+      // doesn't exist yet so you can tune brand-new agents without touching disk.
+      console.log();
+      agents.forEach((a, i) => {
+        console.log(`  ${c.cyan}${String(i + 1).padStart(2)}.${c.reset} ${c.white}${pad(a.displayName, 22)}${c.reset} ${c.dim2}${a.base}${c.reset}`);
+      });
+      const pick = await ask(`\n  ${c.text}Open notes # (0 cancel): ${c.reset}`);
+      const n = parseInt(pick.trim(), 10);
+      if (!Number.isInteger(n) || n < 1 || n > agents.length) return agentMode();
+      const agent = agents[n - 1];
+      try {
+        const mem = await import('./agent_mode/core/memory.js');
+        mem.ensureMemoryDir(agent);
+        const slug = String(agent.id).replace(/[:/\\?*"<>|]/g, '-');
+        const notesPath = join(ROOT, 'agent_mode', 'memories', slug, 'notes.md');
+        console.log(`  ${c.dim2}Opening ${notesPath}${c.reset}`);
+        const { spawn } = await import('child_process');
+        spawn('notepad.exe', [notesPath], { detached: true, stdio: 'ignore' }).unref();
+        hubLog('info', `Opened notes editor for ${agent.id}`);
+      } catch (err) {
+        console.log(`  ${c.red}notes open failed: ${err.message}${c.reset}`);
       }
       await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       return agentMode();

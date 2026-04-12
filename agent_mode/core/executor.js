@@ -10,6 +10,7 @@
 import { spawnSync } from 'child_process';
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { readNotes, ensureMemoryDir } from './memory.js';
 
 const TRAINING_DIR = join(process.cwd(), 'agent_mode', 'training');
 const KEN_PROFILE = join(process.cwd(), 'agent_mode', 'ken', 'profile.md');
@@ -121,7 +122,21 @@ export class Executor {
     };
 
     const base = typePrompts[task.type] || typePrompts.general;
-    return [personality, charter, base].filter(Boolean).join('\n\n');
+
+    // Per-agent durable notes (agent_mode/memories/<slug>/notes.md).
+    // Edit those files to give an agent standing instructions that persist
+    // across every dispatch AND every chat turn. Notes are injected after
+    // the charter so task-specific corrections override baseline doctrine.
+    let notesBlock = '';
+    try {
+      ensureMemoryDir(agent);
+      const notes = readNotes(agent.id);
+      if (notes && notes.trim()) {
+        notesBlock = '### PERSISTENT NOTES\n' + notes.trim();
+      }
+    } catch {}
+
+    return [personality, charter, notesBlock, base].filter(Boolean).join('\n\n');
   }
 
   _getPersonalityPrefix(personality) {

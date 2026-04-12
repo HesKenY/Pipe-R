@@ -931,7 +931,44 @@ const server = createServer(async (req, res) => {
       if (!command || typeof command !== 'string') {
         return jsonResp(res, { ok: false, error: 'command required' }, 400);
       }
-      const trimmed = command.slice(0, 4000); // hard cap
+      let trimmed = command.slice(0, 4000); // hard cap
+      const cmdText = trimmed.trim();
+      const firstToken = cmdText.split(/\s+/)[0] || '';
+
+      // Auto-rewrite `claude <anything>` into `claude -p "<anything>"`.
+      // Lets the shell feel like a Claude REPL: type a prompt, get a
+      // response. Only rewrites when there's no -p/--print already and
+      // there's actually something to ask. Bare `claude` still returns
+      // the hint below.
+      if (firstToken === 'claude' && cmdText !== 'claude') {
+        const rest = cmdText.slice('claude'.length).trim();
+        const alreadyPrint = /(^|\s)(-p|--print)(\s|$)/.test(rest);
+        if (!alreadyPrint) {
+          const safe = rest.replace(/`/g, '``').replace(/"/g, '`"');
+          trimmed = `claude -p "${safe}"`;
+        }
+      }
+
+      // Guard against interactive-only CLIs that bomb with no TTY: they'd
+      // hang or return cryptic "Input must be provided" errors. Suggest
+      // the one-shot form instead.
+      const interactives = {
+        'claude':  'Type `claude your prompt here` and pipe-r will wrap it as `claude -p "..."` automatically.',
+        'node':    'Use `node -e "expression"` or `node script.js`.',
+        'python':  'Use `python -c "expression"` or `python script.py`.',
+        'python3': 'Use `python3 -c "expression"` or `python3 script.py`.',
+        'irb':     'IRB is interactive-only — won\'t run here.',
+        'pwsh':    'Already in PowerShell — drop the outer invocation.',
+      };
+      if (interactives[firstToken] && cmdText === firstToken) {
+        return jsonResp(res, {
+          ok: false,
+          exitCode: 2,
+          elapsed: 0,
+          stdout: '',
+          stderr: `[pipe-r shell] "${firstToken}" is interactive-only. ${interactives[firstToken]}`,
+        });
+      }
       const started = Date.now();
       let out = '';
       let err = '';

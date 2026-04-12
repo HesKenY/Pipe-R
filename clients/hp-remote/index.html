@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HP Remote — Pipe-R Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-0: #09020f;
+      --bg-1: #16002a;
+      --bg-2: #0b0318;
+      --shell-0: rgba(30, 8, 58, 0.92);
+      --shell-1: rgba(15, 2, 30, 0.96);
+      --cyan: #00f5ff;
+      --cyan-rgb: 0, 245, 255;
+      --cyan-dim: rgba(var(--cyan-rgb), 0.32);
+      --magenta: #ff2bb8;
+      --magenta-rgb: 255, 43, 184;
+      --magenta-dim: rgba(var(--magenta-rgb), 0.32);
+      --lavender: #d7c7ff;
+      --lavender-rgb: 215, 199, 255;
+      --lavender-dim: rgba(var(--lavender-rgb), 0.64);
+      --text: #f1ecff;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background:
+        linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 52%, var(--bg-2) 100%) fixed,
+        radial-gradient(ellipse at bottom, rgba(var(--magenta-rgb), 0.22), transparent 60%) fixed;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: background 600ms ease;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(0deg, rgba(var(--magenta-rgb), 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(var(--magenta-rgb), 0.1) 1px, transparent 1px);
+      background-size: 26px 26px, 26px 26px;
+      opacity: 0.45;
+    }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 92%, rgba(var(--cyan-rgb), 0.16), transparent 55%);
+    }
+
+    header {
+      padding: 16px 24px 12px;
+      border-bottom: 1px solid var(--cyan-dim);
+      background:
+        linear-gradient(180deg, rgba(40, 10, 72, 0.92), rgba(20, 4, 40, 0.96)),
+        linear-gradient(90deg, rgba(var(--cyan-rgb),0.08), transparent 55%);
+      position: relative;
+      z-index: 2;
+    }
+    header .eyebrow {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-shadow: 0 0 12px rgba(var(--cyan-rgb),0.55);
+      font-weight: 700;
+    }
+    header h1 {
+      margin: 4px 0 2px;
+      font-family: "Orbitron", sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 0%, #f5c7ff 35%, #ff6fe5 62%, #00f5ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    header .subtitle {
+      color: var(--lavender-dim);
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+    }
+
+    .server-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .server-row label {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+    .server-row input {
+      appearance: none;
+      border: 1px solid var(--cyan-dim);
+      background: rgba(20, 6, 44, 0.92);
+      color: var(--text);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.78rem;
+      padding: 8px 12px;
+      border-radius: 10px;
+      flex: 1 1 260px;
+      min-width: 220px;
+    }
+    .server-row input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 12px rgba(var(--cyan-rgb),0.5); }
+    .server-row button {
+      appearance: none;
+      border: 1px solid var(--cyan-dim);
+      background: linear-gradient(180deg, rgba(18, 52, 84, 0.96), rgba(8, 28, 56, 0.96));
+      color: #d4f5ff;
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.66rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .server-row button:hover { border-color: var(--cyan); box-shadow: 0 0 14px rgba(var(--cyan-rgb),0.55); }
+    .server-status {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.68rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--cyan-dim);
+    }
+    .server-status.ok { color: #baf1b3; border-color: rgba(130, 255, 150, 0.6); }
+    .server-status.err { color: #ff99b5; border-color: rgba(255, 100, 130, 0.6); }
+
+    .tab-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 24px 0;
+      position: relative;
+      z-index: 2;
+    }
+    .tab-btn {
+      appearance: none;
+      border: 1px solid var(--cyan-dim);
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.94), rgba(10, 2, 22, 0.96));
+      color: var(--cyan);
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 9px 18px;
+      border-radius: 10px 10px 0 0;
+      border-bottom: none;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: linear-gradient(180deg, rgba(var(--magenta-rgb),0.92), rgba(160, 20, 120, 0.92));
+      color: #18031a;
+      border-color: #ffb5e6;
+    }
+
+    main {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      padding: 0 24px 0;
+      min-height: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .panel { display: none; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+    .panel.active { display: flex; }
+
+    .log {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 18px 20px;
+      margin-top: 16px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(6, 1, 14, 0.96), rgba(3, 0, 8, 0.98));
+      border: 1px solid var(--cyan-dim);
+      color: var(--text);
+      font-family: "Inter", sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.56;
+      min-height: 220px;
+    }
+    .log .empty {
+      color: var(--lavender-dim);
+      font-style: italic;
+      text-align: center;
+      padding: 40px 0;
+      font-size: 0.88rem;
+    }
+    .turn {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px dashed var(--cyan-dim);
+    }
+    .turn:last-child { border-bottom: none; margin-bottom: 0; }
+    .turn .role {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .turn.user .role { color: var(--cyan); text-shadow: 0 0 8px rgba(var(--cyan-rgb),0.45); }
+    .turn.claude .role { color: #ffd6f6; text-shadow: 0 0 8px rgba(var(--magenta-rgb),0.45); }
+    .turn.stdout .role { color: #baf1b3; }
+    .turn.error .role { color: #ff99b5; }
+    .turn.pending .body { opacity: 0.62; font-style: italic; }
+    .turn .body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.84rem;
+      color: #d4f5ff;
+    }
+    .turn.user .body { color: var(--lavender); }
+    .turn.error .body { color: #ffb3c0; }
+    .turn .meta {
+      color: var(--lavender-dim);
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 6px;
+      font-family: "Orbitron", sans-serif;
+    }
+
+    .prompt-bar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      margin: 16px 0 20px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.96), rgba(10, 2, 22, 0.98));
+      border: 2px solid var(--magenta-dim);
+      box-shadow: 0 0 22px rgba(var(--magenta-rgb),0.22);
+    }
+    .prompt-bar textarea,
+    .prompt-bar input {
+      appearance: none;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #ffd6f6;
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.94rem;
+      resize: vertical;
+      width: 100%;
+      min-height: 56px;
+      max-height: 300px;
+    }
+    .prompt-bar textarea::placeholder,
+    .prompt-bar input::placeholder { color: rgba(var(--lavender-rgb),0.42); }
+    .prompt-bar .send-btn {
+      appearance: none;
+      border: 2px solid rgba(var(--magenta-rgb),0.58);
+      background: linear-gradient(180deg, rgba(var(--magenta-rgb),0.92), rgba(160, 20, 120, 0.92));
+      color: #18031a;
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.84rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0 22px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-shadow: none;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      box-shadow: 0 0 18px rgba(var(--magenta-rgb),0.5);
+    }
+    .prompt-bar .send-btn:hover { transform: translateY(-1px); box-shadow: 0 0 26px rgba(var(--magenta-rgb),0.75); }
+    .prompt-bar .send-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .shell-bar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 16px 0 20px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.96), rgba(10, 2, 22, 0.98));
+      border: 2px solid var(--cyan-dim);
+    }
+    .shell-bar .prompt-glyph {
+      font-family: "JetBrains Mono", monospace;
+      font-weight: 700;
+      color: var(--cyan);
+      text-shadow: 0 0 8px rgba(var(--cyan-rgb),0.6);
+    }
+    .shell-bar input {
+      min-height: auto;
+      font-size: 0.92rem;
+    }
+
+    .hint {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--lavender-dim);
+      padding: 0 24px 16px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">Pipe-R Ops Deck</div>
+    <h1>HP Remote Client</h1>
+    <div class="subtitle">Run Claude Code + PowerShell on Ken's dev box from any LAN browser. All execution happens remotely on the Pipe-R server.</div>
+    <div class="server-row">
+      <label for="server-url">Server</label>
+      <input id="server-url" type="text" spellcheck="false" />
+      <button id="save-server">Save</button>
+      <span class="server-status" id="server-status">checking…</span>
+    </div>
+  </header>
+
+  <div class="tab-row">
+    <button class="tab-btn active" data-tab="claude" id="tab-claude">◆ CLAUDE</button>
+    <button class="tab-btn" data-tab="shell" id="tab-shell">◆ SHELL</button>
+  </div>
+
+  <main>
+    <section class="panel active" id="panel-claude">
+      <div class="log" id="claude-log">
+        <div class="empty">No turns yet. Ask Claude something — Ctrl+Enter to send.</div>
+      </div>
+      <form class="prompt-bar" id="claude-form">
+        <textarea id="claude-input" placeholder="Prompt Claude Code on the dev box… (Ctrl+Enter to send)"></textarea>
+        <button class="send-btn" id="claude-send" type="submit">SEND</button>
+      </form>
+    </section>
+
+    <section class="panel" id="panel-shell">
+      <div class="log" id="shell-log">
+        <div class="empty">PowerShell console — runs on the dev box. ↑/↓ cycles history.</div>
+      </div>
+      <form class="shell-bar" id="shell-form">
+        <span class="prompt-glyph">PS&gt;</span>
+        <input id="shell-input" type="text" placeholder="Get-Process node | Select-Object Id,ProcessName" spellcheck="false" />
+        <button class="send-btn" id="shell-send" type="submit">RUN</button>
+      </form>
+    </section>
+  </main>
+
+  <div class="hint">Claude: Ctrl+Enter · Shell: Enter · ↑/↓ history · All commands execute on the remote Pipe-R dev box</div>
+
+  <script>
+    const LS_SERVER = 'hp-remote.server-url';
+    const LS_CLAUDE_HIST = 'hp-remote.claude-history';
+    const LS_SHELL_HIST = 'hp-remote.shell-history';
+    const DEFAULT_SERVER = 'http://192.168.0.58:7777';
+
+    const els = {
+      serverUrl: document.getElementById('server-url'),
+      serverStatus: document.getElementById('server-status'),
+      saveServer: document.getElementById('save-server'),
+      tabClaude: document.getElementById('tab-claude'),
+      tabShell: document.getElementById('tab-shell'),
+      panelClaude: document.getElementById('panel-claude'),
+      panelShell: document.getElementById('panel-shell'),
+      claudeLog: document.getElementById('claude-log'),
+      claudeForm: document.getElementById('claude-form'),
+      claudeInput: document.getElementById('claude-input'),
+      claudeSend: document.getElementById('claude-send'),
+      shellLog: document.getElementById('shell-log'),
+      shellForm: document.getElementById('shell-form'),
+      shellInput: document.getElementById('shell-input'),
+      shellSend: document.getElementById('shell-send'),
+    };
+
+    let serverUrl = (localStorage.getItem(LS_SERVER) || DEFAULT_SERVER).replace(/\/+$/, '');
+    els.serverUrl.value = serverUrl;
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    async function checkServer() {
+      els.serverStatus.className = 'server-status';
+      els.serverStatus.textContent = 'checking…';
+      try {
+        const res = await fetch(serverUrl + '/api/dashboard', { cache: 'no-store' });
+        if (res.ok) {
+          const d = await res.json();
+          els.serverStatus.className = 'server-status ok';
+          els.serverStatus.textContent = 'connected · ' + (d.trainer?.displayName || 'pipe-r');
+        } else {
+          els.serverStatus.className = 'server-status err';
+          els.serverStatus.textContent = 'HTTP ' + res.status;
+        }
+      } catch (e) {
+        els.serverStatus.className = 'server-status err';
+        els.serverStatus.textContent = 'unreachable';
+      }
+    }
+
+    els.saveServer.addEventListener('click', () => {
+      serverUrl = els.serverUrl.value.trim().replace(/\/+$/, '');
+      localStorage.setItem(LS_SERVER, serverUrl);
+      checkServer();
+    });
+
+    // === Tab switching =================================================
+    function setTab(tab) {
+      els.tabClaude.classList.toggle('active', tab === 'claude');
+      els.tabShell.classList.toggle('active', tab === 'shell');
+      els.panelClaude.classList.toggle('active', tab === 'claude');
+      els.panelShell.classList.toggle('active', tab === 'shell');
+      if (tab === 'claude') els.claudeInput.focus();
+      if (tab === 'shell') els.shellInput.focus();
+    }
+    els.tabClaude.addEventListener('click', () => setTab('claude'));
+    els.tabShell.addEventListener('click', () => setTab('shell'));
+
+    // === Claude tab ====================================================
+    let claudeHistory = [];
+    try { claudeHistory = JSON.parse(localStorage.getItem(LS_CLAUDE_HIST) || '[]'); } catch {}
+
+    function renderClaudeLog() {
+      if (!claudeHistory.length) {
+        els.claudeLog.innerHTML = '<div class="empty">No turns yet. Ask Claude something — Ctrl+Enter to send.</div>';
+        return;
+      }
+      els.claudeLog.innerHTML = claudeHistory.map(t => {
+        const role = t.role === 'user' ? 'YOU' : (t.role === 'error' ? 'ERROR' : 'CLAUDE');
+        const cls = t.role === 'user' ? 'user' : (t.role === 'error' ? 'error' : 'claude');
+        const meta = t.elapsed != null ? `${t.elapsed}ms${t.exit != null ? ' · exit ' + t.exit : ''}` : '';
+        return `<div class="turn ${cls}${t.pending ? ' pending' : ''}"><div class="role">${role}</div><div class="body">${escapeHtml(t.text)}</div>${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ''}</div>`;
+      }).join('');
+      els.claudeLog.scrollTop = els.claudeLog.scrollHeight;
+    }
+    renderClaudeLog();
+
+    function saveClaudeHistory() {
+      try { localStorage.setItem(LS_CLAUDE_HIST, JSON.stringify(claudeHistory.slice(-200))); } catch {}
+    }
+
+    async function sendClaudePrompt(text) {
+      claudeHistory.push({ role: 'user', text, ts: Date.now() });
+      claudeHistory.push({ role: 'claude', text: '…thinking', pending: true, ts: Date.now() });
+      renderClaudeLog();
+      const pendingIdx = claudeHistory.length - 1;
+      const started = Date.now();
+      // Server auto-wraps bare `claude <text>` into `claude -p "..."`.
+      // We just send the raw command; the dev box handles quoting.
+      const safe = text.replace(/`/g, '``').replace(/"/g, '`"');
+      const command = `claude -p "${safe}"`;
+      try {
+        const res = await fetch(serverUrl + '/api/shell/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command }),
+        });
+        const data = await res.json();
+        const elapsed = Date.now() - started;
+        claudeHistory.splice(pendingIdx, 1);
+        if (data.ok) {
+          claudeHistory.push({ role: 'claude', text: (data.stdout || '(empty)').trim(), elapsed, exit: data.exitCode });
+        } else {
+          claudeHistory.push({ role: 'error', text: (data.stderr || data.error || 'unknown error').trim(), elapsed, exit: data.exitCode });
+        }
+      } catch (e) {
+        claudeHistory.splice(pendingIdx, 1);
+        claudeHistory.push({ role: 'error', text: 'Request failed: ' + e.message, elapsed: Date.now() - started });
+      } finally {
+        saveClaudeHistory();
+        renderClaudeLog();
+        els.claudeSend.disabled = false;
+        els.claudeInput.disabled = false;
+        els.claudeInput.focus();
+      }
+    }
+
+    els.claudeForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const text = els.claudeInput.value.trim();
+      if (!text) return;
+      els.claudeInput.value = '';
+      els.claudeInput.disabled = true;
+      els.claudeSend.disabled = true;
+      sendClaudePrompt(text);
+    });
+    els.claudeInput.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        els.claudeForm.requestSubmit();
+      }
+    });
+
+    // === Shell tab =====================================================
+    let shellHistory = [];
+    let shellHistIdx = -1;
+    try { shellHistory = JSON.parse(localStorage.getItem(LS_SHELL_HIST) || '[]'); } catch {}
+
+    function appendShellTurn(turn) {
+      if (els.shellLog.querySelector('.empty')) els.shellLog.innerHTML = '';
+      const article = document.createElement('div');
+      const cls = turn.ok ? 'stdout' : 'error';
+      article.className = 'turn ' + cls;
+      const role = document.createElement('div');
+      role.className = 'role';
+      role.textContent = turn.ok ? 'PS>' : 'ERROR';
+      article.appendChild(role);
+      const cmd = document.createElement('div');
+      cmd.className = 'body';
+      cmd.style.color = '#ffd6f6';
+      cmd.textContent = turn.command;
+      article.appendChild(cmd);
+      if (turn.stdout && turn.stdout.trim()) {
+        const out = document.createElement('div');
+        out.className = 'body';
+        out.textContent = turn.stdout.trimEnd();
+        article.appendChild(out);
+      }
+      if (turn.stderr && turn.stderr.trim()) {
+        const err = document.createElement('div');
+        err.className = 'body';
+        err.style.color = '#ff99b5';
+        err.textContent = turn.stderr.trimEnd();
+        article.appendChild(err);
+      }
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = `exit ${turn.exit} · ${turn.elapsed}ms`;
+      article.appendChild(meta);
+      els.shellLog.appendChild(article);
+      els.shellLog.scrollTop = els.shellLog.scrollHeight;
+    }
+
+    async function runShellCommand(command) {
+      const started = Date.now();
+      try {
+        const res = await fetch(serverUrl + '/api/shell/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command }),
+        });
+        const data = await res.json();
+        appendShellTurn({
+          command,
+          ok: data.ok,
+          stdout: data.stdout || '',
+          stderr: data.stderr || '',
+          exit: data.exitCode,
+          elapsed: data.elapsed || (Date.now() - started),
+        });
+      } catch (e) {
+        appendShellTurn({
+          command,
+          ok: false,
+          stdout: '',
+          stderr: 'Request failed: ' + e.message,
+          exit: -1,
+          elapsed: Date.now() - started,
+        });
+      }
+    }
+
+    els.shellForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const cmd = els.shellInput.value.trim();
+      if (!cmd) return;
+      els.shellInput.value = '';
+      els.shellInput.disabled = true;
+      els.shellSend.disabled = true;
+      shellHistory.push(cmd);
+      shellHistory = shellHistory.slice(-50);
+      shellHistIdx = shellHistory.length;
+      localStorage.setItem(LS_SHELL_HIST, JSON.stringify(shellHistory));
+      await runShellCommand(cmd);
+      els.shellInput.disabled = false;
+      els.shellSend.disabled = false;
+      els.shellInput.focus();
+    });
+    els.shellInput.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowUp') {
+        if (shellHistIdx > 0) shellHistIdx--;
+        els.shellInput.value = shellHistory[shellHistIdx] || '';
+        event.preventDefault();
+      } else if (event.key === 'ArrowDown') {
+        if (shellHistIdx < shellHistory.length - 1) {
+          shellHistIdx++;
+          els.shellInput.value = shellHistory[shellHistIdx] || '';
+        } else {
+          shellHistIdx = shellHistory.length;
+          els.shellInput.value = '';
+        }
+        event.preventDefault();
+      }
+    });
+
+    // === Wallpaper color sync (matches the main deck) ==================
+    // Pulls the dominant colors from the dev box's current wallpaper every
+    // 30s and applies them as CSS vars so the laptop client tints exactly
+    // like the deck running on the main machine.
+    function hexToRgb(hex) {
+      const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex).trim());
+      if (!m) return null;
+      return [parseInt(m[1],16), parseInt(m[2],16), parseInt(m[3],16)];
+    }
+    function rgbToHex(r, g, b) {
+      const h = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+      return '#' + h(r) + h(g) + h(b);
+    }
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) { h = s = 0; }
+      else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [h, s, l];
+    }
+    function hslToRgb(h, s, l) {
+      let r, g, b;
+      if (s === 0) { r = g = b = l; }
+      else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return [r * 255, g * 255, b * 255];
+    }
+    function brighten(hex, targetL) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return hex;
+      const [h, s] = rgbToHsl(...rgb);
+      const [r, g, b] = hslToRgb(h, Math.max(s, 0.55), targetL);
+      return rgbToHex(r, g, b);
+    }
+    function darken(hex, l) {
+      const rgb = hexToRgb(hex);
+      if (!rgb) return hex;
+      const [h] = rgbToHsl(...rgb);
+      const [r, g, b] = hslToRgb(h, 0.7, l);
+      return rgbToHex(r, g, b);
+    }
+    function rgbTriplet(hex) {
+      const rgb = hexToRgb(hex);
+      return rgb ? `${rgb[0]}, ${rgb[1]}, ${rgb[2]}` : '255, 43, 184';
+    }
+
+    async function syncWallpaperColors() {
+      try {
+        const res = await fetch(serverUrl + '/api/wallpaper-colors', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.ok || !Array.isArray(data.colors)) return;
+        const saturated = data.colors
+          .map(hex => {
+            const rgb = hexToRgb(hex);
+            if (!rgb) return null;
+            const [h, s, l] = rgbToHsl(...rgb);
+            return { hex, h, s, l };
+          })
+          .filter(c => c && c.s > 0.28);
+        const palette = saturated.length >= 2
+          ? saturated
+          : data.colors.slice(0, 3).map(hex => {
+              const rgb = hexToRgb(hex) || [128, 128, 128];
+              const [h, s, l] = rgbToHsl(...rgb);
+              return { hex, h, s, l };
+            });
+        palette.sort((a, b) => b.s - a.s);
+        const first = palette[0];
+        let second = palette.find(c => {
+          if (c === first) return false;
+          const dh = Math.abs((c.h - first.h) * 360);
+          return Math.min(dh, 360 - dh) > 30;
+        }) || palette[1] || palette[0];
+        const primary   = brighten(first.hex, 0.58);
+        const secondary = brighten(second.hex, 0.62);
+        const lavender  = brighten(first.hex, 0.86);
+        const bg0 = darken(first.hex, 0.04);
+        const bg1 = darken(second.hex, 0.09);
+        const bg2 = darken(first.hex, 0.05);
+        const shell0 = darken(first.hex, 0.12) + 'eb';
+        const shell1 = darken(first.hex, 0.06) + 'f5';
+        const root = document.documentElement.style;
+        root.setProperty('--magenta', primary);
+        root.setProperty('--magenta-rgb', rgbTriplet(primary));
+        root.setProperty('--cyan', secondary);
+        root.setProperty('--cyan-rgb', rgbTriplet(secondary));
+        root.setProperty('--lavender', lavender);
+        root.setProperty('--lavender-rgb', rgbTriplet(lavender));
+        root.setProperty('--bg-0', bg0);
+        root.setProperty('--bg-1', bg1);
+        root.setProperty('--bg-2', bg2);
+        root.setProperty('--shell-0', shell0);
+        root.setProperty('--shell-1', shell1);
+      } catch {}
+    }
+
+    checkServer();
+    syncWallpaperColors();
+    els.claudeInput.focus();
+    window.setInterval(checkServer, 15000);
+    window.setInterval(syncWallpaperColors, 30000);
+  </script>
+</body>
+</html>

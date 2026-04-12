@@ -26,7 +26,9 @@
     "independentMission": "Can take a clear ticket from brief to patch with concise reasoning and minimal supervision.",
     "teamMission": "Acts as the primary striker after the trainer sets direction, then hands stable diffs to QA and integration.",
     "handoffContract": "Return changed files, key risks, and the follow-up hooks needed by QA or integration.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "forgeagent:latest",
@@ -55,7 +57,9 @@
     "independentMission": "Can stand up tooling, automation, and deployment plumbing without waiting on the rest of the team.",
     "teamMission": "Bridges builder output, scout findings, and trainer decisions into a runnable system.",
     "handoffContract": "Return exact commands, config edits, integration points, and rollout notes.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "cherp-piper:latest",
@@ -84,7 +88,9 @@
     "independentMission": "Can audit an unfamiliar repo and hand back a clean brief, file map, and decision surface.",
     "teamMission": "Feeds clean reconnaissance to the trainer before build work starts so the party moves with context.",
     "handoffContract": "Return a ranked map of files, open questions, and the most likely path through the repo.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "llama3.1:8b",
@@ -94,9 +100,9 @@
     "personality": "signal-analyst",
     "modeEligibility": "both",
     "status": "idle",
-    "tasksCompleted": 4,
+    "tasksCompleted": 6,
     "tasksFailed": 0,
-    "lastUsed": "2026-04-12T18:47:40.574Z",
+    "lastUsed": "2026-04-12T23:12:51.754Z",
     "registeredAt": "2026-04-09T00:00:00.000Z",
     "buildNote": null,
     "teamRole": "party",
@@ -113,7 +119,9 @@
     "independentMission": "Can triage incidents, summarize sessions, and surface action items from noisy evidence.",
     "teamMission": "Turns runtime noise into clear signals for the trainer, QA, and implementation slots.",
     "handoffContract": "Return ranked findings, likely causes, and the next two checks to run.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "jefferyjefferferson:latest",
@@ -142,7 +150,9 @@
     "independentMission": "Can build a full test plan or regression sweep from a patch or feature brief.",
     "teamMission": "Validates party output and feeds the trainer a trust signal before anything gets blessed.",
     "handoffContract": "Return failing cases, release blockers, confidence notes, and the smallest safe next move.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "jefferferson:latest",
@@ -152,9 +162,6 @@
     "personality": "archive-sage",
     "modeEligibility": "both",
     "status": "idle",
-    "blocked": false,
-    "blockReason": null,
-    "note": "Slow cold start (~90s to first token on fresh load). Subsequent calls in the same session are fast. Executor timeouts for memory_extract (30s) are too tight — route long-form tasks only.",
     "tasksCompleted": 0,
     "tasksFailed": 0,
     "lastUsed": "2026-04-12T03:32:01.029Z",
@@ -174,7 +181,9 @@
     "independentMission": "Can turn messy conversations, outputs, and diffs into reusable knowledge and onboarding memory.",
     "teamMission": "Prevents the team from relearning the same lessons and keeps the trainer supplied with continuity.",
     "handoffContract": "Return durable notes, decision records, unresolved threads, and what must be remembered next.",
-    "lastHealedAt": "2026-04-12T20:11:42.151Z"
+    "lastHealedAt": "2026-04-12T20:11:42.151Z",
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "m3w-learning:latest",
@@ -203,7 +212,9 @@
     "independentMission": "Can review prior outputs, failures, and reviews to propose better prompts or reusable working patterns.",
     "teamMission": "Turns archived memory into better prompts and reusable operating doctrine for the whole party.",
     "handoffContract": "Return prompt improvements, reusable heuristics, and the evidence behind each learning change.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   },
   {
     "id": "ken-ai:latest",
@@ -232,6 +243,8 @@
     "independentMission": "Can plan, review, and make architecture calls without delegating the final decision.",
     "teamMission": "Keeps the party cohesive, resolves conflicts, and picks the next best move.",
     "handoffContract": "Return final decisions, assignment changes, and approval notes.",
-    "lastHealedAt": null
+    "lastHealedAt": null,
+    "blocked": false,
+    "blockReason": null
   }
 ]

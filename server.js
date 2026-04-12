@@ -874,6 +874,56 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // Now playing transport control — POST { action } with play/pause/toggle/next/prev
+  if (url === '/api/now-playing/control' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { action } = JSON.parse(body || '{}');
+      const valid = ['play', 'pause', 'toggle', 'next', 'prev'];
+      if (!valid.includes(action)) return jsonResp(res, { error: 'action must be one of ' + valid.join(', ') }, 400);
+      const script = join(ROOT, '.claude', 'bin', 'smtc-control.ps1');
+      if (!existsSync(script)) return jsonResp(res, { error: 'smtc-control.ps1 missing' }, 500);
+      const out = execSync(
+        `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" ${action}`,
+        { encoding: 'utf8', timeout: 5000 }
+      ).trim();
+      // Invalidate now-playing cache so the next GET picks up the new state.
+      _nowPlayingCache = { ts: 0, data: null };
+      try { return jsonResp(res, JSON.parse(out)); }
+      catch { return jsonResp(res, { raw: out }); }
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
+  // Wallpaper color extraction — pulls dominant colors from the current
+  // Windows desktop wallpaper so the deck can auto-theme off it. Cached 60s.
+  if (url === '/api/wallpaper-colors' && req.method === 'GET') {
+    try {
+      const script = join(ROOT, '.claude', 'bin', 'wallpaper-colors.ps1');
+      if (!existsSync(script)) return jsonResp(res, { ok: false, error: 'script missing' }, 500);
+      const out = execSync(
+        `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}"`,
+        { encoding: 'utf8', timeout: 20000 }
+      ).trim();
+      try { return jsonResp(res, JSON.parse(out)); }
+      catch { return jsonResp(res, { ok: false, error: 'parse failed', raw: out.slice(0, 200) }, 500); }
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
+  // Steam library — list installed games from libraryfolders.vdf + ACF manifests
+  if (url === '/api/steam/library' && req.method === 'GET') {
+    try {
+      const steam = await import('./agent_mode/core/steam.js');
+      const games = steam.listSteamGames({ limit: 300 });
+      return jsonResp(res, { count: games.length, games });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
   // System metrics — CPU, RAM, GPU, loaded ollama models
   // Cached 2s so the deck's 3s poll doesn't thrash PowerShell.
   if (url === '/api/metrics' && req.method === 'GET') {

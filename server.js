@@ -9,6 +9,8 @@ import { createServer } from 'http';
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, appendFileSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 import { join } from 'path';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
 const PORT = 7777;
 const ROOT = process.cwd();

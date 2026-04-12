@@ -73,8 +73,23 @@
     "modeEligibility": "both",
     "status": "idle",
     "tasksCompleted": 0,
-    "tasksFailed": 2,
-    "lastUsed": "2026-04-11T02:44:05.088Z",
+    "tasksFailed": 82,
+    "lastUsed": "2026-04-12T03:32:01.029Z",
     "registeredAt": "2026-04-09T00:00:00.000Z"
+  },
+  {
+    "id": "ken-ai:latest",
+    "base": "ken-ai:latest",
+    "displayName": "Ken AI",
+    "role": "Personality Lead",
+    "personality": "ken-coder",
+    "modeEligibility": "both",
+    "status": "idle",
+    "tasksCompleted": 0,
+    "tasksFailed": 0,
+    "lastUsed": null,
+    "registeredAt": "2026-04-11T00:00:00.000Z",
+    "builtAt": "2026-04-12T06:05:00.000Z",
+    "buildNote": "Built 2026-04-12 from qwen2.5-coder:14b via agent_mode/ken/Modelfile. Smoke test passed."
   }
 ]

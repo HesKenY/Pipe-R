@@ -4,11 +4,20 @@
  */
 
 import { execSync } from 'child_process';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 const LOG_DIR = join(process.cwd(), 'agent_mode', 'logs');
 const TRAINING_DIR = join(process.cwd(), 'agent_mode', 'training');
+const KEN_PROFILE = join(process.cwd(), 'agent_mode', 'ken', 'profile.md');
+
+let _kenProfileCache = null;
+function loadKenProfile() {
+  if (_kenProfileCache !== null) return _kenProfileCache;
+  try { _kenProfileCache = readFileSync(KEN_PROFILE, 'utf8'); }
+  catch { _kenProfileCache = ''; }
+  return _kenProfileCache;
+}
 
 export class Executor {
   constructor(registry) {
@@ -84,6 +93,10 @@ export class Executor {
   }
 
   _getPersonalityPrefix(personality) {
+    if (personality === 'ken-coder') {
+      const profile = loadKenProfile();
+      return profile || 'You are Ken\'s AI — terse, Node-built-ins only, button-driven UIs, no external deps.';
+    }
     const prefixes = {
       'primary-coder': 'You are a senior developer. Write clean, minimal code. No unnecessary abstractions.',
       'conservative-coder': 'You are a cautious developer. Prefer safe, well-tested patterns. Flag anything risky.',

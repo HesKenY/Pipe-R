@@ -804,17 +804,17 @@ const server = createServer(async (req, res) => {
       if (!config.instance || !config.instance.slug) {
         return jsonResp(res, { error: 'instance.slug required' }, 400);
       }
-      const nestPath = join(ROOT, 'workspace', 'CHERP-Nest', 'src', 'builder', 'instance-builder.js');
+      const nestPath = join(ROOT, 'nest', 'src', 'builder', 'instance-builder.js');
       if (!existsSync(nestPath)) {
-        return jsonResp(res, { error: 'Nest not cloned at workspace/CHERP-Nest. Run NEST.bat to clone.' }, 503);
+        return jsonResp(res, { error: 'Nest not cloned at nest/. Run NEST.bat to clone.' }, 503);
       }
       // Pivot cwd so Nest's __dirname-relative paths resolve correctly.
       const originalCwd = process.cwd();
-      const nestRoot = join(ROOT, 'workspace', 'CHERP-Nest');
+      const nestRoot = join(ROOT, 'nest');
       process.chdir(nestRoot);
       let result;
       try {
-        const { InstanceBuilder } = await import('./workspace/CHERP-Nest/src/builder/instance-builder.js');
+        const { InstanceBuilder } = await import('./nest/src/builder/instance-builder.js');
         const builder = new InstanceBuilder(config);
         result = await builder.build((step, i, n) => {
           log(`Nest build [${config.instance.slug}] ${i + 1}/${n}: ${step}`);

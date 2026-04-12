@@ -13,6 +13,10 @@ input/
 workspace/
 staging/
 
+# Bird's Nest — lives at top level for visibility but is a separate repo
+# (HesKenY/CHERP-Nest). Don't track its files inside the Piper repo.
+nest/
+
 # Desktop folder (separate projects, not part of Pipe-R)
 Desktop/
 

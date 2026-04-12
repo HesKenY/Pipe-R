@@ -54,11 +54,11 @@ if !READY!==0 (
 echo        Server is live.
 
 rem -- [3/4] Co-launch Bird's Nest in its own window -----------
-if exist "workspace\CHERP-Nest\nest.js" (
+if exist "nest\nest.js" (
   echo   [3/4] Co-launching Bird's Nest...
-  start "Bird's Nest" cmd /k "cd /d %~dp0workspace\CHERP-Nest && node nest.js"
+  start "Bird's Nest" cmd /k "cd /d %~dp0nest && node nest.js"
 ) else (
-  echo   [3/4] Nest not found at workspace\CHERP-Nest - skipping.
+  echo   [3/4] Nest not found at nest - skipping.
   echo          Run NEST.bat to clone it.
 )
 

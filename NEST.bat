@@ -14,7 +14,7 @@ title Bird's Nest Launcher
 color 0E
 cd /d "%~dp0"
 
-set NEST_DIR=workspace\CHERP-Nest
+set NEST_DIR=nest
 
 echo.
 echo   ===========================================================
@@ -25,18 +25,14 @@ echo.
 rem -- [1/3] Verify Nest repo exists ---------------------------
 if not exist "%NEST_DIR%\nest.js" (
   echo   [!] Nest not found at %NEST_DIR%
-  echo   [!] Cloning HesKenY/CHERP-Nest into workspace...
+  echo   [!] Cloning HesKenY/CHERP-Nest to top-level nest/ ...
   echo.
-  if not exist "workspace" mkdir workspace
-  pushd workspace
-  gh repo clone HesKenY/CHERP-Nest 2>nul
+  gh repo clone HesKenY/CHERP-Nest nest 2>nul
   if errorlevel 1 (
     echo   [X] Clone failed. Check gh auth / network.
-    popd
     pause
     exit /b 1
   )
-  popd
   echo   [OK] Nest cloned.
   echo.
 )

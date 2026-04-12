@@ -771,6 +771,100 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
+  // ──────────────────────────────────────────────────────────
+  // NEST BRIDGE — Piper can trigger Bird's Nest customer builds
+  //              and read the customer registry. Every build
+  //              pulls fresh from HesKenY/CHERP main via Nest's
+  //              _fetchLatestCherp() step.
+  // ──────────────────────────────────────────────────────────
+
+  // GET /api/nest/customers — list registry with days-remaining
+  if (url === '/api/nest/customers' && req.method === 'GET') {
+    try {
+      const custFile = join(ROOT, 'agent_mode', 'config', 'customers.json');
+      const customers = existsSync(custFile) ? JSON.parse(readFileSync(custFile, 'utf8')) : [];
+      const now = Date.now();
+      const enriched = customers.map(c => {
+        const expires = c.expiresAt ? new Date(c.expiresAt).getTime() : null;
+        const daysRemaining = expires ? Math.max(0, Math.ceil((expires - now) / 86400000)) : null;
+        const expired = expires ? now > expires : false;
+        return { ...c, daysRemaining, expired };
+      });
+      return jsonResp(res, { customers: enriched });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // POST /api/nest/build — fire a Nest build for a customer
+  // body: { slug, name, admin: { name }, branding: { companyName, primaryColor, secondaryColor },
+  //          modules: { ... }, supabase: { url, anonKey, serviceKey } }
+  if (url === '/api/nest/build' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const config = JSON.parse(body);
+      if (!config.instance || !config.instance.slug) {
+        return jsonResp(res, { error: 'instance.slug required' }, 400);
+      }
+      const nestPath = join(ROOT, 'workspace', 'CHERP-Nest', 'src', 'builder', 'instance-builder.js');
+      if (!existsSync(nestPath)) {
+        return jsonResp(res, { error: 'Nest not cloned at workspace/CHERP-Nest. Run NEST.bat to clone.' }, 503);
+      }
+      // Pivot cwd so Nest's __dirname-relative paths resolve correctly.
+      const originalCwd = process.cwd();
+      const nestRoot = join(ROOT, 'workspace', 'CHERP-Nest');
+      process.chdir(nestRoot);
+      let result;
+      try {
+        const { InstanceBuilder } = await import('./workspace/CHERP-Nest/src/builder/instance-builder.js');
+        const builder = new InstanceBuilder(config);
+        result = await builder.build((step, i, n) => {
+          log(`Nest build [${config.instance.slug}] ${i + 1}/${n}: ${step}`);
+        });
+      } finally {
+        process.chdir(originalCwd);
+      }
+
+      // Record in customers.json
+      const custFile = join(ROOT, 'agent_mode', 'config', 'customers.json');
+      const customers = existsSync(custFile) ? JSON.parse(readFileSync(custFile, 'utf8')) : [];
+      const buildAt = new Date().toISOString();
+      const expiresAt = new Date(Date.now() + 90 * 86400000).toISOString();
+      const existing = customers.findIndex(c => c.slug === config.instance.slug);
+      const record = {
+        id: config.instance.slug,
+        slug: config.instance.slug,
+        name: config.instance.name || config.instance.slug,
+        status: 'active',
+        buildAt,
+        expiresAt,
+        sourceCommit: builder?.sourceCommit || null,
+        sourceCommitShort: builder?.sourceCommitShort || null,
+        sourceCommitMessage: builder?.sourceCommitMessage || null,
+        buildDir: result?.buildDir || null,
+        zipPath: result?.zipPath || null,
+        modules: config.modules || {},
+        company: config.branding?.companyName || '',
+        adminName: config.admin?.name || '',
+        notes: 'Built via /api/nest/build',
+      };
+      if (existing >= 0) {
+        record.notes = 'Rebuilt via /api/nest/build (replaced prior entry)';
+        customers[existing] = record;
+      } else {
+        customers.push(record);
+      }
+      writeFileSync(custFile, JSON.stringify(customers, null, 2));
+      log(`Nest build complete: ${config.instance.slug} → ${result?.zipPath || result?.buildDir}`);
+
+      return jsonResp(res, {
+        customer: record,
+        buildLog: result?.log || [],
+      });
+    } catch (e) {
+      log(`Nest build failed: ${e.message}`);
+      return jsonResp(res, { error: e.message, stack: e.stack }, 500);
+    }
+  }
+
   // 404
   jsonResp(res, { error: 'Not found' }, 404);
 });

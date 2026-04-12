@@ -1,12 +1,13 @@
 @echo off
 rem ===========================================================
-rem   PIPE-R COMMAND CENTER v5
-rem   Double-click to launch the full web dashboard:
+rem   PIPE-R COMMAND CENTER v5 (unified workbench)
+rem   Double-click to launch the full stack:
 rem     1. Ensures server.js is running on :7777
-rem     2. Opens pipe-r.html in your default browser
-rem   The web UI (P0K3M0N Trainer Deck) replaces the terminal menu.
-rem   Terminal fallbacks: run START.bat / STOP.bat directly,
-rem   or node hub.js from the project folder.
+rem     2. Co-launches Bird's Nest terminal in its own window
+rem     3. Opens pipe-r.html (P0K3M0N Trainer Deck) in browser
+rem   Piper and Nest run together. Nest is the customer-instance
+rem   builder; Piper is the command center that drives it.
+rem   Terminal fallbacks: START.bat / STOP.bat / NEST.bat alone.
 rem ===========================================================
 setlocal EnableDelayedExpansion
 title Pipe-R Command Center v5
@@ -52,12 +53,22 @@ if !READY!==0 (
 
 echo        Server is live.
 
-rem -- [3/3] Open the web dashboard ----------------------------
-echo   [3/3] Opening Trainer Deck in your browser...
+rem -- [3/4] Co-launch Bird's Nest in its own window -----------
+if exist "workspace\CHERP-Nest\nest.js" (
+  echo   [3/4] Co-launching Bird's Nest...
+  start "Bird's Nest" cmd /k "cd /d %~dp0workspace\CHERP-Nest && node nest.js"
+) else (
+  echo   [3/4] Nest not found at workspace\CHERP-Nest - skipping.
+  echo          Run NEST.bat to clone it.
+)
+
+rem -- [4/4] Open the web dashboard ----------------------------
+echo   [4/4] Opening Trainer Deck in your browser...
 start "" "http://localhost:7777/pipe-r.html"
 
 echo.
 echo   Command Center launched.
+echo   Windows now open: Piper server, Bird's Nest, Trainer Deck
 echo   Remote dashboard ^(phone^):  http://localhost:7777/remote.html
 echo   Hub terminal fallback:     node hub.js
 echo.

@@ -854,6 +854,7 @@ const server = createServer(async (req, res) => {
         instanceUrl: payload.instanceUrl,
         observer: payload.observer || 'llama3.1:8b',
         cleanup: payload.cleanup !== false,
+        teamCode: payload.teamCode,
       });
       log(`LiveTest done: ${round.id} ops=${round.operations.length} ok=${round.ok}`);
       return jsonResp(res, round);

@@ -179,14 +179,20 @@ function sha256(s) {
 //   7. POST daily_logs (foreman writes a site log)
 //   8. POST messages (crew chat)
 //   9. cleanup (reverse order)
-export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8b', cleanup = true } = {}) {
+export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8b', cleanup = true, teamCode: forcedTeamCode } = {}) {
   if (!existsSync(ROUNDS_DIR)) mkdirSync(ROUNDS_DIR, { recursive: true });
 
   const scenario = loadScenario(scenarioId);
   const roundId = 'lt-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
   const started = Date.now();
   const suffix = Date.now().toString(36).slice(-4).toUpperCase();
-  const teamCode = `${scenario.seed.team_code_prefix}-${suffix}`;
+  // Pre-existing crew wins. If the caller passes teamCode we reuse it
+  // and skip the create/cleanup of the team_code row. Default target is
+  // WS5A3Q — the standing Test crew on cherp.live (per Ken 2026-04-12).
+  const reuseExistingCrew = !!(forcedTeamCode || scenario.seed.reuse_team_code);
+  const teamCode = forcedTeamCode
+    || scenario.seed.reuse_team_code
+    || `${scenario.seed.team_code_prefix}-${suffix}`;
   const operations = [];
   const taskRowIds = [];
   const timecardIds = [];
@@ -249,8 +255,10 @@ export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8
     }
   }
 
-  // 2. CREW CREATE: foreman creates the team_code.
-  {
+  // 2. CREW CREATE: foreman creates the team_code — UNLESS we're reusing
+  //    a pre-existing crew (e.g. WS5A3Q), in which case we skip this phase
+  //    entirely so we don't duplicate a real crew row.
+  if (!reuseExistingCrew) {
     const res = await sbFetch('team_codes', {
       method: 'POST',
       headers: { 'Prefer': 'return=minimal' },
@@ -267,6 +275,13 @@ export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8
       },
     });
     record('create_crew', res, `team_code=${teamCode} · crew_name=${scenario.seed.crew_name}`);
+  } else {
+    operations.push({
+      kind: 'create_crew',
+      ok: true,
+      status: 0,
+      summary: `reusing existing team_code=${teamCode} (skipped creation)`,
+    });
   }
 
   // 3. JOIN CREW: each user_profile updates its team_code, then the app

@@ -113,7 +113,61 @@ Both repos are private. CHERP-Nest (`https://github.com/HesKenY/CHERP-Nest.git`)
 
 ## Related workstreams
 
-- **`.claude/CODEX_REBUILD_INTEGRATION_PLAN.md`** — Codex is working on a Pipe-R rebuild in `C:\Users\Ken\Desktop\Pipe-R Rebuild (Codex)\workspace`. Plan file catalogs what they shipped (retry cap, web UIs, P0K3M0N trainer theming), flags high-risk merge conflicts (queue.js, executor.js, orchestrator.js, agents.json, profile.md), and proposes a merge procedure. Do not execute without Ken's go-ahead.
+- **`.claude/CODEX_REBUILD_INTEGRATION_PLAN.md`** — Codex is working on a Pipe-R rebuild in `C:\Users\Ken\Desktop\Pipe-R Rebuild (Codex)\workspace`. Plan file catalogs what they shipped (retry cap, web UIs, trainer theming), flags high-risk merge conflicts (queue.js, executor.js, orchestrator.js, agents.json, profile.md), and proposes a merge procedure. Do not execute without Ken's go-ahead.
+- **`.claude/WORKLIST.md`** — running punch list + Live Test Mode design brief. Edit freely; Claude reads it at the start of a session.
+
+## Live Test Mode (2026-04-12)
+
+`agent_mode/core/livetest.js` runs a scripted scenario against a real CHERP instance and asks an observer agent for a debrief. Default target: `https://cherp.live/demo.html` + team_code `WS5A3Q` (standing Test crew on production — pass `teamCode: "WS5A3Q"` to `POST /api/livetest/start` to reuse it instead of creating a new SIMLT-<random> crew).
+
+**Phases per round:**
+1. `signup_user` — creates `user_profiles` for each sim member (SHA-256 PIN, role-valid)
+2. `create_crew` — skipped when `reuseExistingCrew` is set, otherwise inserts `team_codes`
+3. `user_join_crew` + `add_member` — PATCH each user's `team_code`, then insert `crew_members`
+4. `create_task` — `crew_tasks` POST with `Prefer: return=representation` so the bigint id comes back
+5. `progress_update` — PATCH progress + notes on the tasks just created
+6. `timecard` — `crew_timecards` with client-gen TEXT id, correct `user_id`/`user_name`/`hours`/`date`
+7. `daily_log` — `daily_logs` (no team_code column; uses `company_id` + `created_by` UUID)
+8. `crew_message` — `messages` (sender_id UUID + `channel` field for the team code)
+9. `cleanup` — reverse order by row id, tolerant to FK residue (foreman user_profile often returns 409 due to audit_log FK — benign)
+
+**Scenarios:** `agent_mode/livetest/scenarios/*.json`. Current catalog:
+- `kitchen-remodel-3day` — 3-person crew, 5 tasks, 3 progress updates, one day. Verified 37/38 green against live cherp.live.
+
+**Rounds** persist to `agent_mode/livetest/rounds/<roundId>.json` with the full operation log + observer debrief. `curate.js` picks up the debrief turns as `taskType: "chat"` rows in `training-log.jsonl` automatically.
+
+**Endpoints:**
+- `GET /api/livetest/scenarios` — list available scenarios
+- `GET /api/livetest/rounds` — list last 40 rounds
+- `GET /api/livetest/rounds/<id>` — full round with operations + debrief
+- `POST /api/livetest/start` — fire a round with `{ scenarioId, teamCode?, instanceUrl?, observer?, cleanup? }`
+
+**v1 ambitions (queued in WORKLIST.md):** split the 6 agents into Team A (Crew Roleplay: D3c1du3y3/5c1z0r/P0ryg0n) and Team B (Ops+Maint: R0t0m/Umbr30n/4l4k4z4m); parallel dispatch; multi-scenario dropdown in the deck; pass/fail scoring against `acceptCriteria`.
+
+## System telemetry + now playing (2026-04-12)
+
+- **`GET /api/metrics`** — cached 2s, pulls CPU/RAM/disk via PowerShell + GPU via `nvidia-smi` + loaded models via `ollama ps`. CPU temp is usually null on AMD (WMI thermal zone empty).
+- **`GET /api/now-playing`** — cached 1.5s, reads Windows SMTC via `.claude/bin/smtc-nowplaying.ps1`. No OAuth — just the currently playing track from Spotify desktop or any SMTC-aware app. Keeps the deck's now-playing strip live with whatever's running on Ken's system.
+
+## Deck (2026-04-12 vaporwave pass)
+
+- **`DECK.bat`** — chromeless Chrome `--app` launcher at 1920×720 pointing at `pipe-r.html?deck=1`.
+- **Theme:** vaporwave-ops (purple/cyan), Orbitron + Inter fonts, chrome-gradient h1, 5 theme presets in Settings (Vaporwave / Outrun / Terminal / Arctic / Blood) via body[data-theme] CSS vars.
+- **Tabs:** Deck / Board / Metrics. Deck tab hides info panels; Board tab shows queue+projects+sheets+activity; Metrics tab shows 8 circular SVG gauges + loaded Ollama models.
+- **Settings modal:** ⚙ button in the audio strip. Theme picker, refresh interval, audio source, PIN display, Agent Mode toggle.
+- **Notes modal:** per-agent `notes.md` editor as a full-screen overlay (not inline — it used to squash the chat).
+- **Chat panel:** tied to selected agent, live loop against `/api/chat`, turns feed both `chat-log.jsonl` and `training-log.jsonl`. Log button opens a training-log viewer overlay with Approve/Reject buttons per row.
+- **Now Playing strip:** shows SMTC data, pulsing dot on playback, source badge.
+
+## Known gotchas learned this session
+
+- **`crew_tasks.id`** is `BIGINT GENERATED ALWAYS AS IDENTITY`. Never send a client id in the POST body. Use `Prefer: return=representation` and read the id back.
+- **`daily_logs`** has NO `team_code` column — uses `company_id` + `created_by` (UUID). Cleanup has to track row ids.
+- **`messages`** has NO `team_code` either — uses `sender_id` (UUID) + `channel`. `body` is the content column, not `content`.
+- **`crew_timecards`** uses client-gen TEXT `id` (not auto). Columns: `user_id`, `user_name`, `hours`, `date` (not `worker_name`/`hours_worked`).
+- **`user_profiles`** role CHECK constraint only allows `('apprentice','journeyman','foreman','superintendent','admin','superuser')`. `worker` is NOT valid (still unfixed on live — flagged in CHERP CLAUDE.md).
+- **Ollama run spinner leak:** any new ollama spawn path must strip ANSI CSI `\u001b\[\??[0-9;]*[a-zA-Z]` and OSC `\u001b\][^\u0007]*\u0007` from stdout, or chat-log.jsonl will contain terminal noise.
+- **CSS :has() specificity** with `.stack:last-child` beats `body[data-deck-tab="..."] .stack` — when overriding deck-mode stack styles per tab, use `!important` on `display` + `flex-direction` + `grid-template-rows`.
 
 ## Google Sheets Sync
 

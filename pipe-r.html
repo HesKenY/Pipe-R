@@ -1424,14 +1424,17 @@
       display: none !important;
     }
     body.deck[data-deck-tab="board"] .grid {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+      grid-template-rows: minmax(0, 1fr) !important;
       min-height: 0;
     }
+    /* Board tab needs to beat the base `.stack:last-child { display:grid }`
+       rule. !important wins over the :last-child pseudo specificity. */
     body.deck[data-deck-tab="board"] .grid > .stack {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      display: flex !important;
+      flex-direction: column !important;
+      grid-template-rows: none !important;
+      gap: 8px !important;
       min-height: 0;
     }
     body.deck[data-deck-tab="board"] .grid > .stack > .panel {

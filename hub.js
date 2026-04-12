@@ -3433,9 +3433,11 @@ async function agentMode() {
       return agentMode();
     }
     case '8': {
-      const current = orch.mode.getMode();
+      // Merged orchestrator (post-Codex) exposes getMode/setMode directly
+      // on the orch object instead of the old nested orch.mode.*.
+      const current = orch.getMode();
       const newMode = current === 'hybrid' ? 'offline' : 'hybrid';
-      orch.mode.setMode(newMode);
+      orch.setMode(newMode);
       console.log(`  ${c.green}✓ Switched to ${newMode.toUpperCase()} mode${c.reset}`);
       hubLog('info', `Mode: ${newMode}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);

@@ -260,11 +260,83 @@ Side-quests during the main bug hunt:
 - `7983fd8` Standardize logo to cherp-icon-192.png everywhere
 - `fe7778d` Superuser viewing-crew context + user_profiles drift resilience
 - `b8a7f84` Migration: create 8 missing app tables
+- `3b6abbc` Realtime expansion + manual Sync button
 
-### Pipe-R local commits (not pushed to remote)
+### Pipe-R commits this session (now pushed to origin=CHERP-Backup + pipe-r)
 - `915b272` Session 2026-04-11/12: Ken AI v1 built, CHERP bug sweep, Sheets sync live
 - `02d0d6f` Fix agent mode dispatch: honor assignedAgent, pipe prompt via stdin
 - `d1a7bb8` ken-ai: rewrite voice — respond AS Ken, not as a plumber narrator
+- `353341a` Session log + CLAUDE.md: late 2026-04-12 work (Ken AI voice, nest)
+- `ee04bff` CLAUDE.md: dispatch fix + remotes + Codex plan link
+- `9ece585` training: add curate.js + first curated batch
+- `2490eae` training: wire review loop into training-log + hub [T] button
+
+### Bird's Nest
+- `54f1398` Builder: fetch CHERP main each build + pin commit to manifest.
+  Nest now clones/updates source-cache/CHERP on every build via
+  `git clone --depth 1` then `git fetch + reset --hard`. Records the
+  commit SHA + message + date in `instance.json` and the customer
+  README, so every customer instance is traceable back to the exact
+  cherp.live revision it was baked from.
+
+### Infrastructure / git remotes
+- `HesKenY/CHERP-Nest` → private (was public)
+- `HesKenY/CHERP-Backup` → private, **wiped and force-pushed** with the
+  Claude project folder history as its new content (was "Backup of CHERP
+  production before modular rewrite"). Now the primary remote for the
+  Pipe-R/Claude repo: `git push origin main` goes here.
+- `HesKenY/Pipe-R` → kept as secondary remote named `pipe-r`. Push with
+  `git push pipe-r main` explicitly.
+
+### Training pipeline efficiency (new 2026-04-12 late pass)
+Wired the review loop end-to-end so agent mode actually turns raw
+outputs into a high-quality training set.
+
+- `executor.js _recordTraining()`: training-log entries now carry
+  `taskId`, `objective`, and `approved: null` defaults.
+- `orchestrator.js reviewTask()`: after marking the task, finds the
+  matching training-log line by taskId and back-stamps it with
+  `reviewed: true` + `approved: true|false` + notes. Uses the
+  top-of-file ESM imports (readFileSync, writeFileSync, existsSync).
+- `curate.js`: new filter rule drops `approved === false` entries.
+  New CLI flag `--approved-only` reduces the set to only vetted
+  entries. Two passes give us raw-clean vs vetted-clean side by side.
+- `hub.js [T] Training Stats`: new button in Agent Mode menu that
+  runs curate.js twice (default + approved-only) and pipes the output
+  into the hub terminal.
+- `agent_mode/training/curate.js`: new file. `training-log.curated.jsonl`:
+  new output file.
+
+Current state:
+- 105 raw entries, 22 kept after default curate (21%)
+- 0 kept after approved-only (nothing reviewed yet — grows as Ken
+  uses hub.js [4] Review Pending)
+- 178 more clean entries needed before hitting the 200-entry fine-tune
+  threshold for v2.
+
+### CHERP — instant-sync design expansion (2026-04-12 late)
+Per Ken's field-use feedback, expanded the offline-first doctrine to
+include instant client-side sync as a priority:
+
+- `js/main.js startRealtime()`: rewritten to support multiple tables
+  over one WebSocket. Subscribes to pipe_messages + crew_tasks +
+  crew_mros, each filtered by the active team_code. onmessage routes
+  postgres_changes events by topic back to per-table handlers that
+  re-render whichever screen is currently visible. Notifications fire
+  for tasks created by others, for MROs requested by others, and for
+  messages sent by others.
+- `js/main.js syncNow()`: new manual-sync helper. Maps _curScreen to
+  the matching render function and re-invokes it, then flushes the
+  offline queue. The "refresh NOW" lever for when Realtime fails
+  silently.
+- `demo.html topbar`: new ↻ Sync button visible to all roles, bound
+  to `syncNow()`.
+- `memory/feedback_cherp_design.md`: added two new bullets — "instant
+  page sync on workers' clients is a priority" and "manual sync
+  button" — so the design rule carries forward into future sessions.
+
+Three layers of freshness now: Realtime subscription, 30-second poll
+fallback, and manual sync button. Offline-first still holds.
 
 ## Still-open items for next session
 - **Verify the fixes live** — log in to cherp.live as `jheath` / `1234`,

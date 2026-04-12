@@ -147,7 +147,35 @@ export class Orchestrator {
     }
     task.reviewedAt = new Date().toISOString();
     this.queue.save();
+
+    // Propagate the review back into training-log.jsonl so curate.js can
+    // filter by approval status. Best-effort — never throw out of review.
+    try { this._stampTrainingReview(taskId, approved, notes); } catch (e) {}
+
     this._log('task_reviewed', { id: task.id, approved, notes });
+  }
+
+  /** Find the training-log entry for this task id and mark it reviewed. */
+  _stampTrainingReview(taskId, approved, notes) {
+    const logPath = join(ROOT, 'agent_mode', 'training', 'training-log.jsonl');
+    if (!existsSync(logPath)) return;
+    const raw = readFileSync(logPath, 'utf8');
+    const lines = raw.split('\n');
+    let touched = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) continue;
+      if (line.indexOf('"taskId":"' + taskId + '"') === -1) continue;
+      try {
+        const e = JSON.parse(line);
+        e.reviewed = true;
+        e.approved = !!approved;
+        if (notes) e.reviewNotes = notes;
+        lines[i] = JSON.stringify(e);
+        touched = true;
+      } catch (err) {}
+    }
+    if (touched) writeFileSync(logPath, lines.join('\n'));
   }
 
   /** Build a packet for Claude Code re-entry */

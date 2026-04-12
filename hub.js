@@ -3271,6 +3271,7 @@ async function agentMode() {
     ['6', 'Assign Task',         'Manually assign task to agent'],
     ['7', 'Build Review Packet', 'Package work for Claude re-entry'],
     ['8', 'Switch Mode',         `Currently: ${modeLabel}`],
+    ['T', 'Training Stats',      'Curate training log + show keep rate'],
     ['0', 'Back',                 ''],
   ]);
   winEmpty();
@@ -3438,6 +3439,25 @@ async function agentMode() {
       console.log(`  ${c.green}✓ Switched to ${newMode.toUpperCase()} mode${c.reset}`);
       hubLog('info', `Mode: ${newMode}`);
       await ask(`  ${c.dim2}[Enter]${c.reset} `);
+      return agentMode();
+    }
+    case 'T': case 't': {
+      // Run curate.js and stream its output directly into the hub terminal.
+      // Also offer the approved-only pass so Ken can see both numbers in one shot.
+      console.log();
+      try {
+        const { execSync } = await import('child_process');
+        const all = execSync('node agent_mode/training/curate.js', { cwd: ROOT, encoding: 'utf8' });
+        console.log(all.replace(/^/gm, '  '));
+        const approvedOnly = execSync('node agent_mode/training/curate.js --approved-only', { cwd: ROOT, encoding: 'utf8' });
+        console.log();
+        console.log(`  ${c.dim2}── approved-only pass ──${c.reset}`);
+        console.log(approvedOnly.replace(/^/gm, '  '));
+        hubLog('info', 'Training curate run from hub');
+      } catch (err) {
+        console.log(`  ${c.red}curate failed: ${err.message}${c.reset}`);
+      }
+      await ask(`\n  ${c.dim2}[Enter]${c.reset} `);
       return agentMode();
     }
     case '0': return mainMenu();

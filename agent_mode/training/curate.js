@@ -33,6 +33,10 @@ const BROKEN_AGENTS = new Set([
 const DROPPED_TYPES = new Set([
   // Add task types here if we find systematic junk from one
 ]);
+// Pass `--approved-only` on the CLI to drop everything that hasn't been
+// explicitly approved via hub.js [4] Review Pending. Stricter, smaller set,
+// but every surviving entry has a human thumbs-up.
+const ONLY_APPROVED = process.argv.includes('--approved-only');
 // -----------------
 
 function main() {
@@ -53,6 +57,8 @@ function main() {
     droppedShort: 0,
     droppedBrokenAgent: 0,
     droppedDroppedType: 0,
+    droppedRejected: 0,
+    droppedUnreviewed: 0,
     byAgent: {},  // { 'ken-ai:latest': { kept: N, dropped: M }, ... }
   };
 
@@ -86,6 +92,18 @@ function main() {
       stats.byAgent[model].dropped++;
       continue;
     }
+    // Explicit human reject always wins
+    if (e.approved === false) {
+      stats.droppedRejected++;
+      stats.byAgent[model].dropped++;
+      continue;
+    }
+    // In approved-only mode, we demand a human thumbs-up
+    if (ONLY_APPROVED && e.approved !== true) {
+      stats.droppedUnreviewed++;
+      stats.byAgent[model].dropped++;
+      continue;
+    }
 
     kept.push(line);
     stats.kept++;
@@ -96,14 +114,16 @@ function main() {
 
   // report
   const pct = stats.total ? Math.round((stats.kept / stats.total) * 100) : 0;
-  console.log('training log curate — ' + LOG_PATH);
-  console.log('  total entries:     ' + stats.total);
-  console.log('  kept:              ' + stats.kept + '  (' + pct + '%)');
-  console.log('  dropped (fail):    ' + stats.droppedNotSuccess);
-  console.log('  dropped (short):   ' + stats.droppedShort);
-  console.log('  dropped (broken):  ' + stats.droppedBrokenAgent);
-  console.log('  dropped (type):    ' + stats.droppedDroppedType);
-  if (stats.droppedParseError) console.log('  parse errors:      ' + stats.droppedParseError);
+  console.log('training log curate — ' + LOG_PATH + (ONLY_APPROVED ? '  [approved-only mode]' : ''));
+  console.log('  total entries:        ' + stats.total);
+  console.log('  kept:                 ' + stats.kept + '  (' + pct + '%)');
+  console.log('  dropped (fail):       ' + stats.droppedNotSuccess);
+  console.log('  dropped (short):      ' + stats.droppedShort);
+  console.log('  dropped (broken):     ' + stats.droppedBrokenAgent);
+  console.log('  dropped (type):       ' + stats.droppedDroppedType);
+  console.log('  dropped (rejected):   ' + stats.droppedRejected);
+  if (ONLY_APPROVED) console.log('  dropped (unreviewed): ' + stats.droppedUnreviewed);
+  if (stats.droppedParseError) console.log('  parse errors:         ' + stats.droppedParseError);
   console.log('');
   console.log('per-agent breakdown:');
   const rows = Object.entries(stats.byAgent).sort((a, b) => b[1].kept - a[1].kept);

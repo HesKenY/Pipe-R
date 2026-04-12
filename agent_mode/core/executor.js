@@ -136,13 +136,16 @@ export class Executor {
 
     const entry = {
       timestamp: new Date().toISOString(),
+      taskId: task.id,
       model: agent.base,
       taskType: task.type,
+      objective: (task.objective || '').substring(0, 500),
       prompt: prompt.substring(0, 2000),
       response: output.substring(0, 5000),
       success,
       elapsed,
       reviewed: false,
+      approved: null,
     };
 
     const file = join(TRAINING_DIR, 'training-log.jsonl');

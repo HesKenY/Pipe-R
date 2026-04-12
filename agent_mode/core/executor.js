@@ -3,7 +3,7 @@
  * Sends structured prompts, captures output, records learning data
  */
 
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -33,12 +33,21 @@ export class Executor {
     const startTime = Date.now();
 
     try {
-      // Run against Ollama with timeout based on task type
+      // Pipe prompt via stdin instead of shell argv — avoids Windows 8KB
+      // command-line limit, shell escaping corruption, and lets us send
+      // multi-line SYSTEM prompts (e.g. Ken's profile) cleanly.
       const timeout = this._getTimeout(task.type);
-      const output = execSync(
-        `ollama run ${agent.base} "${prompt.replace(/"/g, '\\"')}"`,
-        { encoding: 'utf8', timeout, maxBuffer: 1024 * 1024 * 5 }
-      ).trim();
+      const result = spawnSync('ollama', ['run', agent.base], {
+        input: prompt,
+        encoding: 'utf8',
+        timeout,
+        maxBuffer: 1024 * 1024 * 5,
+      });
+      if (result.error) throw result.error;
+      if (result.status !== 0) {
+        throw new Error(`ollama exited ${result.status}: ${(result.stderr || '').trim() || 'no stderr'}`);
+      }
+      const output = (result.stdout || '').trim();
 
       const elapsed = Date.now() - startTime;
 

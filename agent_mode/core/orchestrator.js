@@ -64,6 +64,7 @@ export class Orchestrator {
       objective: opts.objective,
       scope: opts.scope || [],
       priority: opts.priority || 2,
+      assignedAgent: opts.assignedAgent || null,
       requiresClaudeReview: this.mode === 'hybrid',
     });
 

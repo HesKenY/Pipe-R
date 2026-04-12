@@ -32,7 +32,7 @@ export class TaskQueue {
       scope: opts.scope || [],
       priority: opts.priority ?? 2,
       status: 'queued',
-      assignedAgent: null,
+      assignedAgent: opts.assignedAgent || null,
       requiresClaudeReview: opts.requiresClaudeReview ?? true,
       output: null,
       reviewNotes: null,

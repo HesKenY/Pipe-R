@@ -1,10 +1,14 @@
-<!-- Goal 3: added the trainer dashboard web UI with the P0K3M0N-style GBA field-kit theme - see CHANGES.md -->
+<!-- Pipe-R Ops Deck — vaporwave sci-fi theme. Display: Orbitron. Body: Inter. -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pipe-R Trainer Deck</title>
+  <title>Pipe-R Ops Deck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://open.spotify.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #356c4a;
@@ -1212,18 +1216,19 @@
     .empty { padding: 14px 0 4px; }
 
     /* === 1920x720 Control Deck mode (body.deck) ===================== */
-    body.deck { overflow: hidden; }
+    body.deck { overflow: auto; }
     body.deck .shell {
       width: calc(100vw - 8px);
       max-width: none;
       margin: 4px auto;
       border-radius: 14px;
-      height: calc(100vh - 8px);
+      min-height: calc(100vh - 8px);
       display: flex;
       flex-direction: column;
     }
     body.deck .shell::before { inset: 4px; border-radius: 10px; }
     body.deck .shell::after  { inset: 8px; border-radius: 9px; }
+    body.deck .spotify-strip { flex: 0 0 auto; }
     body.deck .topbar {
       padding: 8px 16px 8px;
       border-bottom-width: 2px;
@@ -1248,6 +1253,155 @@
       color: #2a2410;
       border-color: rgba(255, 250, 180, 0.82);
     }
+
+    /* === Metrics panel ================================================ */
+    .metrics-panel { display: none; }
+    body.deck[data-deck-tab="metrics"] .metrics-panel { display: flex; flex-direction: column; }
+    body.deck[data-deck-tab="metrics"] .grid { display: none; }
+
+    .metrics-head-meta { display: flex; gap: 6px; align-items: center; }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .metric-card {
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(20, 38, 27, 0.78), rgba(12, 26, 18, 0.86));
+      border: 1px solid rgba(108, 220, 255, 0.28);
+      color: #e4f0cf;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(180, 220, 255, 0.86);
+    }
+    .metric-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #baf1b3;
+    }
+    .metric-sub { font-size: 0.64rem; color: rgba(228, 240, 207, 0.68); }
+
+    /* Circular SVG gauges — r=52, C ≈ 326.73, stroke-dasharray drives fill. */
+    .gauge {
+      position: relative;
+      width: 100%;
+      max-width: 140px;
+      aspect-ratio: 1 / 1;
+      margin: 4px auto 0;
+      filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.22));
+    }
+    .gauge svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .gauge-track {
+      fill: none;
+      stroke: rgba(0, 245, 255, 0.14);
+      stroke-width: 10;
+    }
+    .gauge-fill {
+      fill: none;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke-dasharray 700ms cubic-bezier(0.2, 0.9, 0.2, 1), stroke 400ms ease;
+    }
+    .cpu-fill      { stroke: url(#grad-cyan); }
+    .ram-fill      { stroke: url(#grad-violet); }
+    .gpu-fill      { stroke: url(#grad-mint); }
+    .vram-fill     { stroke: url(#grad-pink); }
+    .gpu-temp-fill { stroke: url(#grad-heat); }
+    .cpu-temp-fill { stroke: url(#grad-heat); }
+    .pow-fill      { stroke: url(#grad-amber); }
+    .disk-fill     { stroke: url(#grad-ice); }
+
+    /* Fallback solid colors if SVG gradient defs don't get injected */
+    .gauge-fill[stroke^="url"] { stroke: #00f5ff; }
+
+    .gauge-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      pointer-events: none;
+    }
+    .gauge-value {
+      font-family: "Orbitron", sans-serif;
+      font-weight: 700;
+      font-size: 1.55rem;
+      color: #f5f6ff;
+      text-shadow:
+        0 0 12px rgba(0, 245, 255, 0.8),
+        0 0 22px rgba(255, 43, 184, 0.4);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .gauge-unit {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(0, 245, 255, 0.8);
+    }
+    body.deck .gauge { max-width: 108px; }
+    body.deck .gauge-value { font-size: 1.15rem; }
+    body.deck .gauge-unit { font-size: 0.52rem; }
+
+    .metrics-models { margin-top: 12px; }
+    .metrics-models .panel-kicker { margin-bottom: 8px; }
+    .metric-models-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .metric-model-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(20, 38, 27, 0.78);
+      border: 1px solid rgba(108, 220, 255, 0.22);
+      color: #e4f0cf;
+    }
+    .metric-model-row .mm-name { font-weight: 700; color: #baf1b3; }
+    .metric-model-row .mm-meta { font-size: 0.68rem; color: rgba(228, 240, 207, 0.7); }
+    .metric-model-row .mm-bar {
+      grid-column: 1 / -1;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .metric-model-row .mm-bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #00ffd0, #ff3bb2);
+    }
+
+    @media (max-width: 1200px) { .metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    body.deck .metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    body.deck .metric-card { padding: 8px 10px; gap: 4px; }
+    body.deck .metric-label { font-size: 0.56rem; }
+    body.deck .metric-value { font-size: 0.95rem; }
+    body.deck .metric-sub { font-size: 0.58rem; }
+    body.deck .metric-dial { max-height: 58px; }
+    body.deck .metric-dial-label { font-size: 1rem; }
 
     /* === Deck tab views =============================================== */
     /* MAIN tab: hide the 4 info panels (queue, projects, sheets, activity).
@@ -1620,6 +1774,658 @@
     body.deck .chat-msg .chat-role { font-size: 0.56rem; }
     body.deck .chat-input { padding: 7px 9px; font-size: 0.78rem; }
 
+    /* === SPOTIFY PLAYER STRIP ========================================== */
+    .spotify-strip {
+      display: flex;
+      align-items: stretch;
+      gap: 10px;
+      padding: 10px 14px 4px;
+      background:
+        linear-gradient(180deg, rgba(10, 2, 22, 0.92), rgba(16, 4, 36, 0.72)),
+        linear-gradient(90deg, rgba(255, 43, 184, 0.12), rgba(0, 245, 255, 0.10));
+      border-bottom: 1px solid rgba(0, 245, 255, 0.22);
+    }
+    .np-card {
+      flex: 1 1 auto;
+      min-height: 80px;
+      border-radius: 14px;
+      padding: 10px 16px;
+      background: linear-gradient(90deg, rgba(6, 1, 14, 0.92), rgba(20, 6, 44, 0.92));
+      border: 1px solid rgba(255, 43, 184, 0.32);
+      box-shadow: 0 0 18px rgba(255, 43, 184, 0.2), inset 0 0 24px rgba(0, 245, 255, 0.08);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+    }
+    .np-status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #555;
+      box-shadow: 0 0 0 rgba(0, 245, 255, 0);
+      transition: background 300ms ease, box-shadow 600ms ease;
+    }
+    .np-card.playing .np-status-dot {
+      background: #4dffd2;
+      box-shadow: 0 0 12px rgba(77, 255, 210, 0.9);
+      animation: np-pulse 1.6s ease-in-out infinite;
+    }
+    .np-card.paused .np-status-dot {
+      background: #ffb347;
+      box-shadow: 0 0 10px rgba(255, 179, 71, 0.6);
+    }
+    @keyframes np-pulse {
+      0%, 100% { box-shadow: 0 0 12px rgba(77, 255, 210, 0.9); }
+      50% { box-shadow: 0 0 22px rgba(77, 255, 210, 0.55); }
+    }
+    .np-text { min-width: 0; }
+    .np-cue {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #00f5ff;
+      text-shadow: 0 0 10px rgba(0, 245, 255, 0.6);
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .np-title {
+      font-family: "Orbitron", sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffd6f6;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 0 10px rgba(255, 43, 184, 0.5);
+    }
+    .np-artist {
+      font-family: "Inter", sans-serif;
+      font-size: 0.78rem;
+      color: rgba(215, 199, 255, 0.78);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .np-source {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: rgba(0, 245, 255, 0.7);
+      padding: 4px 10px;
+      border: 1px solid rgba(0, 245, 255, 0.35);
+      border-radius: 999px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    body.deck .np-title { font-size: 0.88rem; }
+    body.deck .np-artist { font-size: 0.7rem; }
+
+    /* === Modal overlays (settings + notes) ============================ */
+    .modal-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 1, 14, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-scrim[hidden] { display: none; }
+    .modal-card {
+      width: min(640px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background:
+        linear-gradient(180deg, rgba(30, 10, 56, 0.98), rgba(14, 3, 32, 0.99)),
+        linear-gradient(135deg, rgba(0, 245, 255, 0.06), transparent 40%);
+      border: 2px solid rgba(255, 43, 184, 0.42);
+      border-radius: 18px;
+      box-shadow: 0 0 60px rgba(255, 43, 184, 0.28), 0 0 120px rgba(0, 245, 255, 0.18);
+      color: #f1ecff;
+    }
+    .notes-modal-card { width: min(820px, 100%); }
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid rgba(0, 245, 255, 0.24);
+    }
+    .modal-head h2 { margin: 0; }
+    .modal-body {
+      padding: 18px 22px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .settings-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .settings-label {
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #00f5ff;
+      text-shadow: 0 0 8px rgba(0, 245, 255, 0.45);
+    }
+    .settings-input,
+    .settings-static {
+      appearance: none;
+      border: 2px solid rgba(0, 245, 255, 0.32);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.95), rgba(10, 2, 22, 0.98));
+      color: #f1ecff;
+      font: inherit;
+      font-size: 0.88rem;
+    }
+    .settings-input:focus { outline: none; border-color: #00f5ff; box-shadow: 0 0 12px rgba(0, 245, 255, 0.42); }
+    .settings-hint { font-size: 0.68rem; color: rgba(215, 199, 255, 0.62); }
+    .notes-modal-text {
+      width: 100%;
+      min-height: 320px;
+      border-radius: 12px;
+      padding: 14px 16px;
+      border: 2px solid rgba(0, 245, 255, 0.32);
+      background: linear-gradient(180deg, rgba(14, 3, 32, 0.98), rgba(6, 1, 14, 1));
+      color: #f1ecff;
+      font: 400 0.92rem/1.55 "JetBrains Mono", monospace;
+      resize: vertical;
+    }
+    .notes-modal-text:focus { outline: none; border-color: #00f5ff; box-shadow: 0 0 14px rgba(0, 245, 255, 0.5); }
+
+    /* === Color theme presets (body[data-theme="..."]) ================= */
+    /* Override a few accent tokens per theme; the rest of the synthwave
+       stack uses the :root vars, so changing them here cascades. */
+    body[data-theme="outrun"] {
+      --sw-cyan: #ff6fe5;
+      --sw-cyan-dim: rgba(255, 111, 229, 0.34);
+      --sw-magenta: #ff8a1f;
+      --sw-magenta-dim: rgba(255, 138, 31, 0.34);
+      --sw-lavender: #ffe3cc;
+    }
+    body[data-theme="terminal"] {
+      --sw-cyan: #00ff9c;
+      --sw-cyan-dim: rgba(0, 255, 156, 0.34);
+      --sw-magenta: #ffcc00;
+      --sw-magenta-dim: rgba(255, 204, 0, 0.34);
+      --sw-lavender: #d8ffc0;
+    }
+    body[data-theme="arctic"] {
+      --sw-cyan: #aeefff;
+      --sw-cyan-dim: rgba(174, 239, 255, 0.4);
+      --sw-magenta: #7fe1ff;
+      --sw-magenta-dim: rgba(127, 225, 255, 0.4);
+      --sw-lavender: #e8faff;
+    }
+    body[data-theme="blood"] {
+      --sw-cyan: #ff6666;
+      --sw-cyan-dim: rgba(255, 102, 102, 0.34);
+      --sw-magenta: #ff1f3f;
+      --sw-magenta-dim: rgba(255, 31, 63, 0.34);
+      --sw-lavender: #ffd6d6;
+    }
+    .spotify-config {
+      flex: 0 0 auto;
+      padding: 0 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 245, 255, 0.44);
+      background: linear-gradient(180deg, rgba(18, 52, 84, 0.96), rgba(8, 28, 56, 0.96));
+      color: #d4f5ff;
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.64rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      min-width: 86px;
+      text-shadow: 0 0 8px rgba(0, 245, 255, 0.45);
+      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    }
+    .spotify-config:hover {
+      border-color: #00f5ff;
+      box-shadow: 0 0 14px rgba(0, 245, 255, 0.55);
+      transform: translateY(-1px);
+    }
+    body.deck .spotify-strip { padding: 6px 10px 2px; gap: 8px; }
+    body.deck .spotify-frame { min-height: 80px; }
+    body.deck .spotify-iframe { height: 80px; }
+    body.deck .spotify-config { padding: 0 10px; min-width: 74px; font-size: 0.58rem; }
+    body.deck .spotify-cue { font-size: 0.64rem; }
+    body.deck .spotify-hint { font-size: 0.62rem; }
+
+    /* === MODERN TYPOGRAPHY LAYER ======================================= */
+    /* Orbitron for display + buttons + kickers, Inter for body, JetBrains Mono for code. */
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      font-feature-settings: "ss01", "cv11";
+    }
+    h1,
+    .panel-title,
+    .panel-kicker,
+    .eyebrow,
+    .badge,
+    .chat-subtext,
+    .metric-label,
+    .slot-marker,
+    button,
+    .deck-tab-btn {
+      font-family: "Orbitron", "Inter", sans-serif;
+    }
+    .muted-code,
+    code,
+    .mono,
+    .stat-value {
+      font-family: "JetBrains Mono", "Consolas", monospace;
+    }
+    h1 {
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+    .panel-title {
+      font-weight: 700;
+      letter-spacing: 0.16em;
+    }
+    .panel-kicker {
+      font-weight: 600;
+      letter-spacing: 0.18em;
+    }
+    .eyebrow {
+      font-weight: 700;
+      letter-spacing: 0.34em;
+    }
+    button {
+      font-weight: 600;
+      letter-spacing: 0.14em;
+    }
+    .subtitle {
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      color: rgba(215, 199, 255, 0.68);
+    }
+
+    /* === SYNTHWAVE THEME — purple/cyan override layer =================== */
+    /* Applied last in the cascade so it recolors every existing panel, card,
+       button, badge, and gauge without touching the original structure. */
+    :root {
+      --sw-deep: #0a0415;
+      --sw-purple: #1a0b2e;
+      --sw-purple-2: #220c3d;
+      --sw-magenta: #ff2bb8;
+      --sw-magenta-dim: rgba(255, 43, 184, 0.35);
+      --sw-cyan: #00f5ff;
+      --sw-cyan-dim: rgba(0, 245, 255, 0.34);
+      --sw-lavender: #d7c7ff;
+      --sw-lavender-dim: rgba(215, 199, 255, 0.62);
+      --sw-text: #f1ecff;
+      --sw-grid: rgba(255, 0, 168, 0.12);
+    }
+    body {
+      background:
+        linear-gradient(180deg, #09020f 0%, #16002a 52%, #0b0318 100%) fixed,
+        radial-gradient(ellipse at bottom, rgba(255, 43, 184, 0.22), transparent 60%) fixed;
+      color: var(--sw-text);
+    }
+    body::before {
+      background:
+        linear-gradient(0deg, var(--sw-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--sw-grid) 1px, transparent 1px),
+        linear-gradient(135deg, rgba(255,255,255,0.02) 25%, transparent 25%);
+      background-size: 22px 22px, 22px 22px, 44px 44px;
+      opacity: 0.5;
+    }
+    body::after {
+      background: radial-gradient(circle at 50% 92%, rgba(0, 245, 255, 0.18), transparent 55%);
+    }
+
+    .shell {
+      background:
+        linear-gradient(180deg, rgba(30, 8, 58, 0.92), rgba(15, 2, 30, 0.96)),
+        linear-gradient(135deg, rgba(255, 43, 184, 0.05), transparent 40%);
+      border: 2px solid var(--sw-magenta-dim);
+      box-shadow:
+        0 0 50px rgba(255, 43, 184, 0.22),
+        inset 0 0 80px rgba(0, 245, 255, 0.08);
+    }
+    .shell::before { border-color: var(--sw-cyan-dim); }
+    .shell::after { border-color: rgba(215, 199, 255, 0.18); }
+
+    .topbar {
+      background:
+        linear-gradient(180deg, rgba(40, 10, 72, 0.96), rgba(20, 4, 40, 0.96)),
+        linear-gradient(90deg, rgba(0, 245, 255, 0.1), transparent 55%);
+      border-bottom: 3px solid var(--sw-cyan-dim);
+    }
+    .eyebrow {
+      color: var(--sw-cyan);
+      text-shadow: 0 0 12px rgba(0, 245, 255, 0.5);
+    }
+    h1 {
+      background: linear-gradient(180deg, #ffffff 0%, #f5c7ff 35%, #ff6fe5 62%, #00f5ff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+      text-shadow:
+        0 0 22px rgba(255, 43, 184, 0.45),
+        0 0 42px rgba(0, 245, 255, 0.22);
+      filter: drop-shadow(0 2px 0 rgba(10, 4, 21, 0.55));
+    }
+    .subtitle { color: var(--sw-lavender-dim); }
+
+    .panel {
+      background:
+        linear-gradient(180deg, rgba(30, 10, 56, 0.94), rgba(16, 4, 32, 0.96)),
+        linear-gradient(135deg, rgba(0, 245, 255, 0.04), transparent 40%);
+      border: 1px solid rgba(0, 245, 255, 0.28);
+      box-shadow: 0 0 18px rgba(255, 43, 184, 0.12);
+    }
+    .panel::before {
+      background:
+        radial-gradient(circle at top left, rgba(0, 245, 255, 0.18) 0 10px, transparent 11px),
+        radial-gradient(circle at top right, rgba(255, 43, 184, 0.18) 0 10px, transparent 11px),
+        radial-gradient(circle at bottom left, rgba(255, 43, 184, 0.14) 0 10px, transparent 11px),
+        radial-gradient(circle at bottom right, rgba(0, 245, 255, 0.14) 0 10px, transparent 11px);
+    }
+    .panel::after { border-color: rgba(0, 245, 255, 0.2); }
+
+    .panel-kicker { color: var(--sw-cyan); letter-spacing: 0.14em; }
+    .panel-title {
+      color: var(--sw-lavender);
+      text-shadow: 0 0 10px rgba(255, 43, 184, 0.42);
+    }
+
+    button {
+      background: linear-gradient(180deg, rgba(60, 14, 108, 0.96), rgba(32, 6, 68, 0.96));
+      border: 2px solid var(--sw-magenta-dim);
+      color: var(--sw-lavender);
+      text-shadow: 0 0 8px rgba(255, 43, 184, 0.38);
+    }
+    button:hover, button:focus-visible {
+      border-color: var(--sw-cyan);
+      box-shadow: 0 0 16px rgba(0, 245, 255, 0.5);
+    }
+    button.secondary {
+      background: linear-gradient(180deg, rgba(18, 52, 84, 0.96), rgba(8, 28, 56, 0.96));
+      border-color: var(--sw-cyan-dim);
+      color: #d4f5ff;
+    }
+    button.deck-tab-btn.active {
+      background: linear-gradient(180deg, rgba(255, 43, 184, 0.92), rgba(160, 20, 120, 0.92));
+      border-color: #ffb5e6;
+      color: #18031a;
+      text-shadow: none;
+    }
+    button.agent-off {
+      background: linear-gradient(180deg, rgba(200, 28, 72, 0.96), rgba(120, 14, 50, 0.96));
+      border-color: rgba(255, 120, 170, 0.58);
+      color: #ffe3ef;
+    }
+
+    .badge {
+      background: linear-gradient(180deg, rgba(36, 10, 68, 0.95), rgba(18, 4, 38, 0.95));
+      border: 1px solid var(--sw-cyan-dim);
+      color: var(--sw-lavender);
+    }
+    .badge.ok { color: #8ffff3; border-color: rgba(0, 245, 255, 0.6); }
+    .badge.warn { color: #ffd2a0; border-color: rgba(255, 160, 64, 0.5); }
+    .badge.danger { color: #ffa0b8; border-color: rgba(255, 43, 100, 0.6); }
+    .badge.pixel { color: #ffccff; border-color: var(--sw-magenta-dim); }
+
+    /* Trainer card — pixel portrait frame neon */
+    .trainer-card {
+      background:
+        linear-gradient(180deg, rgba(40, 10, 80, 0.72), rgba(14, 2, 30, 0.88)),
+        linear-gradient(90deg, rgba(0, 245, 255, 0.08), transparent 40%);
+      border: 1px solid var(--sw-magenta-dim);
+      box-shadow: 0 0 22px rgba(255, 43, 184, 0.2);
+    }
+    .trainer-emblem {
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.6), transparent 30%),
+        linear-gradient(180deg, rgba(60, 14, 108, 0.98), rgba(20, 4, 40, 0.98));
+      border: 4px solid var(--sw-cyan);
+      box-shadow:
+        0 0 20px rgba(0, 245, 255, 0.5),
+        inset 0 0 0 2px rgba(255, 43, 184, 0.36);
+    }
+
+    /* Agent cards (party row) — synthwave glow on hover/selection */
+    .agent-card {
+      background: linear-gradient(180deg, rgba(38, 10, 72, 0.94), rgba(18, 4, 38, 0.96));
+      border: 1px solid var(--sw-cyan-dim);
+      color: var(--sw-text);
+    }
+    .party-icon-frame {
+      background:
+        radial-gradient(circle at 35% 28%, rgba(0, 245, 255, 0.25), transparent 32%),
+        linear-gradient(180deg, rgba(40, 12, 80, 0.98), rgba(14, 3, 32, 0.98));
+      border: 2px solid var(--sw-magenta-dim);
+      box-shadow:
+        0 0 14px rgba(255, 43, 184, 0.25),
+        inset 0 0 0 2px rgba(0, 245, 255, 0.22);
+    }
+    .party-icon-fallback {
+      background: linear-gradient(180deg, rgba(60, 14, 108, 0.98), rgba(20, 4, 40, 0.98));
+      color: var(--sw-lavender);
+    }
+    .slot-marker { color: rgba(0, 245, 255, 0.78); }
+    .agent-card.selected {
+      border-color: var(--sw-magenta);
+      box-shadow: 0 0 22px rgba(255, 43, 184, 0.5);
+    }
+    .agent-card.blocked::after {
+      background: rgba(180, 30, 74, 0.92);
+      color: #ffd2e2;
+    }
+    .agent-card h3,
+    .trainer-card h3,
+    .task-card h3,
+    .project-card h3,
+    .sheet-card h3,
+    .activity-item h3 {
+      color: var(--sw-lavender);
+      text-shadow: 0 0 8px rgba(0, 245, 255, 0.35);
+    }
+    .card-copy,
+    .trainer-copy,
+    .project-copy,
+    .sheet-copy,
+    .activity-copy,
+    .status-banner,
+    .muted-code {
+      color: var(--sw-lavender-dim);
+    }
+    .party-name-stack .muted-code { color: rgba(0, 245, 255, 0.7); }
+    .party-track { color: var(--sw-cyan); }
+    .party-level { color: var(--sw-magenta); }
+    .party-hp-bar {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--sw-cyan-dim);
+    }
+    .party-hp-bar span { background: linear-gradient(90deg, var(--sw-cyan), var(--sw-magenta)); }
+
+    /* Info panels (queue, projects, sheets, activity) */
+    .task-card, .project-card, .sheet-card, .activity-item {
+      background: linear-gradient(180deg, rgba(34, 8, 66, 0.94), rgba(16, 4, 36, 0.96));
+      border: 1px solid rgba(0, 245, 255, 0.26);
+      color: var(--sw-text);
+    }
+
+    /* Stats panel content — full synthwave override for the summary screen */
+    .stat-pill {
+      background: rgba(14, 4, 34, 0.72);
+      border: 1px solid var(--sw-cyan-dim);
+      color: var(--sw-lavender);
+    }
+    .stat-label { color: rgba(0, 245, 255, 0.72); }
+    .stat-value { color: var(--sw-lavender); }
+
+    /* Selected-model summary panel — purge all the cream/green pokemon frames */
+    .summary-portrait-shell {
+      background: linear-gradient(180deg, rgba(30, 10, 56, 0.92), rgba(14, 3, 32, 0.96));
+      border: 2px solid var(--sw-cyan-dim);
+      box-shadow: 0 0 18px rgba(0, 245, 255, 0.18), inset 0 0 0 2px rgba(255, 43, 184, 0.18);
+    }
+    .summary-portrait {
+      background:
+        radial-gradient(circle at top, rgba(255, 43, 184, 0.22), transparent 32%),
+        linear-gradient(180deg, rgba(22, 8, 52, 0.98), rgba(8, 2, 22, 0.98));
+      border: 2px solid var(--sw-magenta-dim);
+    }
+    .summary-emblem {
+      background:
+        radial-gradient(circle at 36% 28%, rgba(255, 255, 255, 0.58), transparent 24%),
+        linear-gradient(180deg, rgba(60, 14, 108, 0.98), rgba(20, 4, 40, 0.98));
+    }
+    .summary-emblem span { color: var(--sw-lavender); }
+    .summary-caption { color: var(--sw-cyan); }
+
+    .summary-core {
+      background: linear-gradient(180deg, rgba(30, 10, 56, 0.94), rgba(14, 3, 32, 0.96));
+      border: 2px solid var(--sw-magenta-dim);
+      box-shadow: 0 0 20px rgba(255, 43, 184, 0.18);
+      color: var(--sw-text);
+    }
+    .summary-name-row h3 { color: var(--sw-lavender); }
+    .summary-role { color: var(--sw-cyan); }
+
+    .summary-tabs { gap: 6px; }
+    .summary-tab {
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.94), rgba(10, 2, 22, 0.96));
+      border: 2px solid var(--sw-cyan-dim);
+      color: var(--sw-cyan);
+      font-family: "Orbitron", sans-serif;
+    }
+    .summary-tab.active {
+      background: linear-gradient(180deg, rgba(255, 43, 184, 0.9), rgba(160, 20, 120, 0.9));
+      border-color: #ffb5e6;
+      color: #18031a;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    .summary-chip-row .badge {
+      background: rgba(20, 6, 44, 0.88);
+      border-color: var(--sw-cyan-dim);
+      color: var(--sw-lavender);
+    }
+    .summary-stat {
+      background: rgba(20, 6, 44, 0.72);
+      border: 1px solid var(--sw-cyan-dim);
+    }
+    .summary-stat label { color: rgba(0, 245, 255, 0.78); }
+    .summary-stat strong { color: var(--sw-lavender); }
+    .summary-memo {
+      background: rgba(20, 6, 44, 0.72);
+      border: 1px solid var(--sw-cyan-dim);
+      color: var(--sw-text);
+    }
+    .summary-note {
+      background: rgba(20, 6, 44, 0.72);
+      border: 1px solid var(--sw-cyan-dim);
+    }
+    .summary-note label { color: rgba(0, 245, 255, 0.78); }
+    .summary-note strong { color: var(--sw-lavender); }
+    .summary-bar-top { color: rgba(215, 199, 255, 0.72); }
+    .summary-track {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(0, 245, 255, 0.22);
+    }
+    .summary-track > span,
+    .summary-track span { background: linear-gradient(90deg, var(--sw-cyan), var(--sw-magenta)); }
+
+    /* Chat panel */
+    .chat-log {
+      background:
+        linear-gradient(180deg, rgba(14, 4, 30, 0.88), rgba(6, 1, 14, 0.96)),
+        linear-gradient(90deg, rgba(255, 43, 184, 0.05), transparent 50%);
+      border: 1px solid var(--sw-cyan-dim);
+      color: var(--sw-text);
+    }
+    .chat-log .chat-empty { color: var(--sw-lavender-dim); }
+    .chat-msg { border-bottom-color: rgba(0, 245, 255, 0.14); }
+    .chat-msg .chat-role { color: var(--sw-cyan); }
+    .chat-msg.user .chat-role { color: #9feaff; }
+    .chat-msg.assistant .chat-role { color: #ffb5e6; }
+    .chat-msg.system .chat-role { color: #ff99b5; }
+    .chat-input {
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.95), rgba(10, 2, 22, 0.98));
+      border: 2px solid var(--sw-cyan-dim);
+      color: var(--sw-text);
+    }
+    .chat-input::placeholder { color: rgba(215, 199, 255, 0.46); }
+    .chat-input:focus { border-color: var(--sw-cyan); box-shadow: 0 0 12px rgba(0, 245, 255, 0.45); }
+    .chat-notes textarea {
+      background: linear-gradient(180deg, rgba(20, 6, 44, 0.95), rgba(10, 2, 22, 0.98));
+      border: 2px solid var(--sw-cyan-dim);
+      color: var(--sw-text);
+    }
+    .chat-subtext { color: rgba(0, 245, 255, 0.72); }
+
+    .chat-training-list {
+      background: linear-gradient(180deg, rgba(14, 4, 30, 0.88), rgba(6, 1, 14, 0.96));
+      border-color: var(--sw-cyan-dim);
+    }
+    .chat-training-entry {
+      background: rgba(20, 6, 44, 0.8);
+      border-color: rgba(255, 43, 184, 0.22);
+      color: var(--sw-text);
+    }
+    .chat-training-entry.approved { border-color: rgba(0, 245, 255, 0.7); }
+    .chat-training-entry.rejected { border-color: rgba(255, 43, 100, 0.6); }
+    .chat-training-entry .te-row { color: rgba(215, 199, 255, 0.74); }
+    .chat-training-entry .te-obj { color: var(--sw-lavender); }
+    .chat-training-entry .te-reply {
+      background: rgba(0, 0, 0, 0.45);
+      color: #d4f5ff;
+    }
+
+    /* Metrics cards — already purple/cyan from base CSS, reinforce glow */
+    .metric-card {
+      border-color: var(--sw-cyan-dim);
+      box-shadow: 0 0 14px rgba(255, 43, 184, 0.14);
+    }
+    .metric-label { color: var(--sw-cyan); }
+    .metric-value { color: var(--sw-lavender); text-shadow: 0 0 8px rgba(255, 43, 184, 0.4); }
+    .metric-sub { color: rgba(215, 199, 255, 0.6); }
+    .metric-bar { border-color: var(--sw-cyan-dim); }
+
+    .metric-models .panel-kicker { color: var(--sw-cyan); }
+    .metric-model-row {
+      background: rgba(20, 6, 44, 0.8);
+      border-color: var(--sw-cyan-dim);
+      color: var(--sw-text);
+    }
+    .metric-model-row .mm-name { color: var(--sw-lavender); }
+
+    /* Memory indicators */
+    .mem-dot { box-shadow: 0 0 10px rgba(255, 215, 100, 0.75), 0 0 2px rgba(0,0,0,0.55); }
+    .mem-dot.chat { box-shadow: 0 0 10px rgba(130, 255, 200, 0.75); }
+    .mem-dot.both { box-shadow: 0 0 12px rgba(0, 245, 255, 0.85); }
+
+    /* Status cluster dots in top bar */
+    .status-cluster .badge { background: rgba(14, 4, 34, 0.88); }
+
+    /* Emerald textbox — kill it or recolor. Keep it purple if visible. */
+    .emerald-textbox-shell,
+    .emerald-textbox {
+      background: linear-gradient(180deg, rgba(28, 6, 56, 0.9), rgba(10, 2, 22, 0.96));
+      border-color: var(--sw-cyan-dim);
+      color: var(--sw-lavender);
+    }
+
     @media (max-width: 1120px) { .grid { grid-template-columns: 1fr; } }
     @media (max-width: 760px) {
       .shell { width: min(100vw - 10px, 100%); margin: 8px auto 20px; border-radius: 18px; }
@@ -1639,12 +2445,38 @@
   </style>
 </head>
 <body>
+  <!-- SVG gradient palette for circular gauges — referenced by .gauge-fill strokes. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="grad-cyan"   x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#4dffd2"/></linearGradient>
+      <linearGradient id="grad-violet" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#7a5bff"/><stop offset="100%" stop-color="#c984ff"/></linearGradient>
+      <linearGradient id="grad-mint"   x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00ffd0"/><stop offset="100%" stop-color="#2dff9a"/></linearGradient>
+      <linearGradient id="grad-pink"   x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff3bb2"/><stop offset="100%" stop-color="#ff6fe5"/></linearGradient>
+      <linearGradient id="grad-heat"   x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff3bb2"/><stop offset="60%" stop-color="#ff8a1f"/><stop offset="100%" stop-color="#ffd84d"/></linearGradient>
+      <linearGradient id="grad-amber"  x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffd84d"/><stop offset="100%" stop-color="#ff8a1f"/></linearGradient>
+      <linearGradient id="grad-ice"    x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#60d8ff"/><stop offset="100%" stop-color="#9bdcff"/></linearGradient>
+    </defs>
+  </svg>
+
   <main class="shell">
+    <section class="spotify-strip" id="spotify-strip">
+      <div class="np-card" id="np-card">
+        <div class="np-status-dot" id="np-status-dot" aria-hidden="true"></div>
+        <div class="np-text">
+          <div class="np-cue" id="np-cue">◆ SYSTEM AUDIO</div>
+          <div class="np-title" id="np-title">No media session detected</div>
+          <div class="np-artist" id="np-artist">Start playing in Spotify desktop (or any SMTC-aware app)</div>
+        </div>
+        <div class="np-source" id="np-source"></div>
+      </div>
+      <button id="settings-btn" class="spotify-config" type="button" title="Settings">⚙ SETTINGS</button>
+    </section>
+
     <header class="topbar">
       <div class="title-wrap">
-        <div class="eyebrow">Pipe-R Trainer Deck</div>
-        <h1 id="deck-title">Ken AI Field Kit</h1>
-        <div class="subtitle" id="deck-subtitle">Pokémon Emerald-style trainer workbench for Ken AI, the six-slot party, and one companion lane.</div>
+        <div class="eyebrow">Pipe-R Ops Deck</div>
+        <h1 id="deck-title">Ken AI Ops Center</h1>
+        <div class="subtitle" id="deck-subtitle">Vaporwave command deck for Ken AI, the six-agent squad, and the learning companion lane.</div>
       </div>
       <div class="status-cluster" id="status-cluster"></div>
     </header>
@@ -1653,6 +2485,7 @@
       <div class="button-row">
         <button id="tab-main-btn" class="deck-tab-btn active" type="button">Deck</button>
         <button id="tab-board-btn" class="deck-tab-btn" type="button">Board</button>
+        <button id="tab-metrics-btn" class="deck-tab-btn" type="button">Metrics</button>
         <button id="refresh-btn">Refresh Now</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
         <button id="pause-btn">Agent Mode: ON</button>
@@ -1665,7 +2498,7 @@
           <section class="panel">
             <div class="panel-header">
               <div>
-                <div class="panel-kicker">Trainer Bench</div>
+                <div class="panel-kicker">Command Bench</div>
                 <h2 class="panel-title" id="trainer-heading">Ken AI</h2>
               </div>
               <span class="badge pixel" id="mode-badge">Mode</span>
@@ -1676,8 +2509,8 @@
           <section class="panel">
             <div class="panel-header">
               <div>
-                <div class="panel-kicker">Party Screen</div>
-<h2 class="panel-title" id="party-heading">P0K3M0N-Style Dev Party</h2>
+                <div class="panel-kicker">Squad</div>
+                <h2 class="panel-title" id="party-heading">Agent Squad</h2>
               </div>
               <span class="badge" id="party-count">0 slots</span>
             </div>
@@ -1688,7 +2521,7 @@
           <section class="panel">
             <div class="panel-header">
               <div>
-                <div class="panel-kicker">Gym Queue</div>
+                <div class="panel-kicker">Task Queue</div>
                 <h2 class="panel-title">Recent Tasks</h2>
               </div>
               <span class="badge" id="queue-count">0 tasks</span>
@@ -1701,7 +2534,7 @@
           <section class="panel">
             <div class="panel-header">
               <div>
-                <div class="panel-kicker">Stats Screen</div>
+                <div class="panel-kicker">Telemetry</div>
                 <h2 class="panel-title" id="summary-heading">Selected Model</h2>
               </div>
               <span class="badge pixel" id="summary-dex">Summary</span>
@@ -1723,13 +2556,11 @@
               </div>
             </div>
             <div class="chat-log" id="chat-log"></div>
-            <div class="chat-notes" id="chat-notes-editor" hidden>
-              <textarea id="chat-notes-text" placeholder="Persistent notes for this agent (markdown). Injected into every dispatch and chat turn."></textarea>
-              <div class="chat-notes-actions">
-                <button id="chat-notes-save-btn" type="button">Save Notes</button>
-                <button id="chat-notes-cancel-btn" class="secondary" type="button">Close</button>
-              </div>
-            </div>
+            <!-- Inline notes editor retired — Notes button now opens a full modal overlay. -->
+            <div id="chat-notes-editor" hidden></div>
+            <textarea id="chat-notes-text" hidden></textarea>
+            <button id="chat-notes-save-btn" hidden></button>
+            <button id="chat-notes-cancel-btn" hidden></button>
             <div class="chat-training" id="chat-training-overlay" hidden>
               <div class="chat-training-header">
                 <div class="chat-subtext" id="chat-training-subtitle">Training log</div>
@@ -1779,18 +2610,229 @@
           </section>
         </div>
       </div>
-      <section class="emerald-textbox-shell">
-        <div class="emerald-textbox" id="emerald-textbox"></div>
+
+      <!-- METRICS TAB — full-width view, hidden unless data-deck-tab="metrics" -->
+      <section class="panel metrics-panel" id="metrics-panel-section">
+        <div class="panel-header">
+          <div>
+            <div class="panel-kicker">System Telemetry</div>
+            <h2 class="panel-title">Metrics Deck</h2>
+          </div>
+          <div class="metrics-head-meta">
+            <span class="badge" id="metrics-updated">—</span>
+            <button id="metrics-refresh-btn" class="secondary" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <!-- Each gauge is an SVG ring with accent color per metric.
+               Circle r=52 → circumference ≈ 326.73 (used in JS as C). -->
+          <div class="metric-card">
+            <div class="metric-label">CPU Load</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill cpu-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-cpu-load">—</div>
+                <div class="gauge-unit">%</div>
+              </div>
+            </div>
+            <div class="metric-sub" id="metric-cpu-name">CPU</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">RAM</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill ram-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-ram-val">—</div>
+                <div class="gauge-unit">GB</div>
+              </div>
+            </div>
+            <div class="metric-sub" id="metric-ram-sub">used / total</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">GPU Util</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill gpu-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-gpu-util">—</div>
+                <div class="gauge-unit">%</div>
+              </div>
+            </div>
+            <div class="metric-sub" id="metric-gpu-name">GPU</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">GPU VRAM</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill vram-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-vram-val">—</div>
+                <div class="gauge-unit">GB</div>
+              </div>
+            </div>
+            <div class="metric-sub" id="metric-vram-sub">used / total</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">GPU Temp</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill gpu-temp-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-gpu-temp">—</div>
+                <div class="gauge-unit">°C</div>
+              </div>
+            </div>
+            <div class="metric-sub">target &lt;80°C</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">CPU Temp</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill cpu-temp-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-cpu-temp">—</div>
+                <div class="gauge-unit">°C</div>
+              </div>
+            </div>
+            <div class="metric-sub">WMI thermal zone</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">GPU Power</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill pow-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-pow-val">—</div>
+                <div class="gauge-unit">W</div>
+              </div>
+            </div>
+            <div class="metric-sub">200W full scale</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Disk (C:)</div>
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                <circle class="gauge-fill disk-fill" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="0 326.73"/>
+              </svg>
+              <div class="gauge-center">
+                <div class="gauge-value" id="metric-disk-val">—</div>
+                <div class="gauge-unit">GB</div>
+              </div>
+            </div>
+            <div class="metric-sub" id="metric-disk-sub">used / total</div>
+          </div>
+        </div>
+        <div class="metrics-models">
+          <div class="panel-kicker">Loaded Ollama Models</div>
+          <div class="metric-models-list" id="metric-models-list">
+            <div class="empty">No models currently resident. Models evict after ~5 min idle.</div>
+          </div>
+        </div>
       </section>
+      <!-- emerald-textbox removed — GBA aesthetic retired 2026-04-12 -->
+      <div id="emerald-textbox" hidden></div>
     </section>
   </main>
 
+  <!-- Settings modal — theme, polling, PIN, audio source -->
+  <div class="modal-scrim" id="settings-modal" hidden>
+    <div class="modal-card">
+      <header class="modal-head">
+        <div>
+          <div class="panel-kicker">Ops Deck</div>
+          <h2 class="panel-title">Settings</h2>
+        </div>
+        <button class="secondary" id="settings-close-btn" type="button">Close</button>
+      </header>
+      <div class="modal-body">
+        <section class="settings-row">
+          <label class="settings-label">Color theme</label>
+          <select id="settings-theme" class="settings-input">
+            <option value="vaporwave">Vaporwave (purple / cyan)</option>
+            <option value="outrun">Outrun (magenta / orange)</option>
+            <option value="terminal">Terminal (green / amber)</option>
+            <option value="arctic">Arctic (ice blue / white)</option>
+            <option value="blood">Blood (red / black)</option>
+          </select>
+          <div class="settings-hint">Applies instantly. Saved to browser.</div>
+        </section>
+        <section class="settings-row">
+          <label class="settings-label">Dashboard refresh (seconds)</label>
+          <input id="settings-refresh" class="settings-input" type="number" min="2" max="60" value="5" />
+          <div class="settings-hint">How often the deck polls /api/dashboard.</div>
+        </section>
+        <section class="settings-row">
+          <label class="settings-label">Audio source</label>
+          <select id="settings-audio-source" class="settings-input">
+            <option value="system">System (Windows SMTC — reads Spotify desktop)</option>
+            <option value="off">Off (hide player strip)</option>
+          </select>
+          <div class="settings-hint">Pipe-R shows the currently playing track from any SMTC-aware app.</div>
+        </section>
+        <section class="settings-row">
+          <label class="settings-label">Remote PIN</label>
+          <div class="settings-static" id="settings-pin">—</div>
+          <div class="settings-hint">Set in agent_mode/config/runtime.json. Phone auth.</div>
+        </section>
+        <section class="settings-row">
+          <label class="settings-label">Agent Mode</label>
+          <button id="settings-toggle-agents" class="secondary" type="button">Toggle Auto-Exec</button>
+          <div class="settings-hint">Same as the Agent Mode button in the top bar.</div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notes modal — full-overlay editor that doesn't squash the chat -->
+  <div class="modal-scrim" id="notes-modal" hidden>
+    <div class="modal-card notes-modal-card">
+      <header class="modal-head">
+        <div>
+          <div class="panel-kicker">Persistent Notes</div>
+          <h2 class="panel-title" id="notes-modal-title">Agent Notes</h2>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button id="notes-modal-save-btn" type="button">Save</button>
+          <button id="notes-modal-close-btn" class="secondary" type="button">Close</button>
+        </div>
+      </header>
+      <div class="modal-body">
+        <textarea id="notes-modal-text" class="notes-modal-text" placeholder="Persistent notes for this agent (markdown). Injected into every chat turn and dispatched task."></textarea>
+        <div class="settings-hint">Edits save to agent_mode/memories/&lt;agent&gt;/notes.md. Loaded on the next dispatch.</div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const THEME_LS_KEY = 'pipe-r.theme';
+    const REFRESH_LS_KEY = 'pipe-r.refresh-sec';
+    const AUDIO_LS_KEY = 'pipe-r.audio-source';
+    let _dashTimer = null;
     const state = {
       dashboard: null,
       sheets: {},
       selectedFocus: null,
       selectedSummaryTab: 'info',
+      theme: localStorage.getItem(THEME_LS_KEY) || 'vaporwave',
+      refreshSec: parseInt(localStorage.getItem(REFRESH_LS_KEY) || '5', 10),
+      audioSource: localStorage.getItem(AUDIO_LS_KEY) || 'system',
       chats: {},            // agentId -> [{ role, content, ts }]
       chatAgentId: null,    // agent the chat panel is currently bound to
       chatPending: false,
@@ -1800,11 +2842,13 @@
       notesSaving: false,
       trainingViewOpen: false,
       trainingViewAgent: null,
+      metrics: null,
+      metricsPolling: false,
     };
     const themeFallback = {
       trainerLabel: 'Ken AI',
-        partyLabel: 'P0K3M0N-Style Dev Party',
-      workbenchLabel: 'Hoenn Emerald Field Kit',
+      partyLabel: 'Agent Squad',
+      workbenchLabel: 'Vaporwave Ops Deck',
     };
 
     const els = {
@@ -1853,8 +2897,45 @@
       chatTrainingList: document.getElementById('chat-training-list'),
       chatTrainingSubtitle: document.getElementById('chat-training-subtitle'),
       chatTrainingCloseBtn: document.getElementById('chat-training-close-btn'),
+      spotifyStrip: document.getElementById('spotify-strip'),
+      npCard: document.getElementById('np-card'),
+      npTitle: document.getElementById('np-title'),
+      npArtist: document.getElementById('np-artist'),
+      npSource: document.getElementById('np-source'),
+      npCue: document.getElementById('np-cue'),
+      settingsBtn: document.getElementById('settings-btn'),
+      settingsModal: document.getElementById('settings-modal'),
+      settingsCloseBtn: document.getElementById('settings-close-btn'),
+      settingsTheme: document.getElementById('settings-theme'),
+      settingsRefresh: document.getElementById('settings-refresh'),
+      settingsAudio: document.getElementById('settings-audio-source'),
+      settingsPin: document.getElementById('settings-pin'),
+      settingsToggleAgents: document.getElementById('settings-toggle-agents'),
+      notesModal: document.getElementById('notes-modal'),
+      notesModalTitle: document.getElementById('notes-modal-title'),
+      notesModalText: document.getElementById('notes-modal-text'),
+      notesModalSaveBtn: document.getElementById('notes-modal-save-btn'),
+      notesModalCloseBtn: document.getElementById('notes-modal-close-btn'),
       tabMainBtn: document.getElementById('tab-main-btn'),
       tabBoardBtn: document.getElementById('tab-board-btn'),
+      tabMetricsBtn: document.getElementById('tab-metrics-btn'),
+      metricsPanel: document.getElementById('metrics-panel-section'),
+      metricsUpdated: document.getElementById('metrics-updated'),
+      metricsRefreshBtn: document.getElementById('metrics-refresh-btn'),
+      mCpuLoad: document.getElementById('metric-cpu-load'),
+      mCpuName: document.getElementById('metric-cpu-name'),
+      mRamVal: document.getElementById('metric-ram-val'),
+      mRamSub: document.getElementById('metric-ram-sub'),
+      mGpuUtil: document.getElementById('metric-gpu-util'),
+      mGpuName: document.getElementById('metric-gpu-name'),
+      mVramVal: document.getElementById('metric-vram-val'),
+      mVramSub: document.getElementById('metric-vram-sub'),
+      mGpuTemp: document.getElementById('metric-gpu-temp'),
+      mCpuTemp: document.getElementById('metric-cpu-temp'),
+      mPowVal: document.getElementById('metric-pow-val'),
+      mDiskVal: document.getElementById('metric-disk-val'),
+      mDiskSub: document.getElementById('metric-disk-sub'),
+      mModelsList: document.getElementById('metric-models-list'),
     };
 
     function escapeHtml(value) {
@@ -2651,13 +3732,20 @@
     }
 
     function toggleNotesEditor(force) {
+      // Notes editor is now a full modal overlay instead of an inline panel
+      // inside the chat. This stops it from squishing the chat log when open.
       const open = typeof force === 'boolean' ? force : !state.notesEditing;
       state.notesEditing = open;
-      els.chatNotesEditor.hidden = !open;
+      if (!els.notesModal) return;
+      els.notesModal.hidden = !open;
       if (open) {
         const id = state.chatAgentId;
-        els.chatNotesText.value = id ? (state.notes[id] || '') : '';
-        els.chatNotesText.focus();
+        const agent = chatAgent?.() || getSelectedAgent?.(state.dashboard) || null;
+        els.notesModalTitle.textContent = agent
+          ? `Notes · ${agent.displayName || id}`
+          : 'Agent Notes';
+        els.notesModalText.value = id ? (state.notes[id] || '') : '';
+        setTimeout(() => els.notesModalText.focus(), 50);
       }
     }
 
@@ -2665,23 +3753,25 @@
       const agentId = state.chatAgentId;
       if (!agentId || state.notesSaving) return;
       state.notesSaving = true;
-      els.chatNotesSaveBtn.disabled = true;
-      els.chatNotesSaveBtn.textContent = 'Saving…';
+      if (els.notesModalSaveBtn) {
+        els.notesModalSaveBtn.disabled = true;
+        els.notesModalSaveBtn.textContent = 'Saving…';
+      }
       try {
-        const notes = els.chatNotesText.value;
+        const notes = els.notesModalText.value;
         await fetchJson('/api/chat/' + encodeURIComponent(agentId) + '/notes', {
           method: 'PUT',
           body: JSON.stringify({ notes }),
         });
         state.notes[agentId] = notes;
-        els.chatNotesSaveBtn.textContent = 'Saved';
-        setTimeout(() => { els.chatNotesSaveBtn.textContent = 'Save Notes'; }, 1200);
+        if (els.notesModalSaveBtn) els.notesModalSaveBtn.textContent = 'Saved';
+        setTimeout(() => { if (els.notesModalSaveBtn) els.notesModalSaveBtn.textContent = 'Save'; }, 1200);
       } catch (e) {
-        els.chatNotesSaveBtn.textContent = 'Error';
-        setTimeout(() => { els.chatNotesSaveBtn.textContent = 'Save Notes'; }, 1600);
+        if (els.notesModalSaveBtn) els.notesModalSaveBtn.textContent = 'Error';
+        setTimeout(() => { if (els.notesModalSaveBtn) els.notesModalSaveBtn.textContent = 'Save'; }, 1600);
       } finally {
         state.notesSaving = false;
-        els.chatNotesSaveBtn.disabled = false;
+        if (els.notesModalSaveBtn) els.notesModalSaveBtn.disabled = false;
       }
     }
 
@@ -2814,8 +3904,8 @@
       if (!state.dashboard) return;
       const dashboard = state.dashboard;
       const theme = { ...themeFallback, ...(dashboard.theme || {}) };
-      els.deckTitle.textContent = `${theme.trainerLabel} Trainer Deck`;
-      els.deckSubtitle.textContent = `${theme.workbenchLabel}. The left side now behaves like a party menu, and the right side lets you page through model info like a handheld stats screen for the trainer, companion, or selected field slot.`;
+      els.deckTitle.textContent = `${theme.trainerLabel} Ops Center`;
+      els.deckSubtitle.textContent = `${theme.workbenchLabel}. Left column hosts the squad + task queue, right column is telemetry + direct line to the selected model.`;
       els.trainerHeading.textContent = theme.trainerLabel;
       els.modeBadge.textContent = (dashboard.system?.mode || dashboard.mode || 'hybrid').toUpperCase();
       els.modeBadge.className = `badge ${(dashboard.system?.mode || dashboard.mode) === 'offline' ? 'warn' : 'ok'}`;
@@ -2965,6 +4055,85 @@
       els.chatTrainingCloseBtn.addEventListener('click', closeTrainingView);
     }
 
+    // === Now playing (Windows SMTC) =====================================
+    // Polls /api/now-playing every 3s. The server reads the Windows media
+    // session manager via PowerShell, so whatever's active in Spotify
+    // desktop (or any SMTC-aware app) shows up here without any auth.
+    async function loadNowPlaying() {
+      if (state.audioSource === 'off') {
+        els.spotifyStrip.style.display = 'none';
+        return;
+      }
+      els.spotifyStrip.style.display = '';
+      try {
+        const np = await fetchJson('/api/now-playing');
+        renderNowPlaying(np);
+      } catch (e) {
+        renderNowPlaying({ available: false });
+      }
+    }
+    function renderNowPlaying(np) {
+      if (!np || !np.available) {
+        els.npCard.classList.remove('playing', 'paused');
+        els.npTitle.textContent = 'No media session detected';
+        els.npArtist.textContent = 'Start playing in Spotify desktop (or any SMTC-aware app)';
+        els.npSource.textContent = '';
+        els.npCue.textContent = '◆ SYSTEM AUDIO';
+        return;
+      }
+      els.npCard.classList.toggle('playing', !!np.playing);
+      els.npCard.classList.toggle('paused', !np.playing && np.status === 'Paused');
+      els.npTitle.textContent = np.title || '(Untitled)';
+      els.npArtist.textContent = np.artist ? `${np.artist}${np.album ? ' · ' + np.album : ''}` : '';
+      const src = np.isSpotify ? 'SPOTIFY' : (np.source ? String(np.source).split('_')[0].slice(0, 16).toUpperCase() : 'SMTC');
+      els.npSource.textContent = src;
+      els.npCue.textContent = np.playing ? '◆ NOW PLAYING' : '◆ PAUSED';
+    }
+    // Initial + 3s poll
+    loadNowPlaying();
+    window.setInterval(loadNowPlaying, 3000);
+
+    // === Color theme ====================================================
+    function applyTheme(name) {
+      state.theme = name;
+      document.body.dataset.theme = name;
+      localStorage.setItem(THEME_LS_KEY, name);
+    }
+    applyTheme(state.theme);
+
+    // === Settings modal =================================================
+    function openSettings() {
+      els.settingsModal.hidden = false;
+      els.settingsTheme.value = state.theme;
+      els.settingsRefresh.value = state.refreshSec;
+      els.settingsAudio.value = state.audioSource;
+      const pin = state.dashboard?.system?.remotePin || state.dashboard?.remotePin || '0615';
+      els.settingsPin.textContent = pin;
+    }
+    function closeSettings() { els.settingsModal.hidden = true; }
+    els.settingsBtn?.addEventListener('click', openSettings);
+    els.settingsCloseBtn?.addEventListener('click', closeSettings);
+    els.settingsModal?.addEventListener('click', (event) => {
+      if (event.target === els.settingsModal) closeSettings();
+    });
+    els.settingsTheme?.addEventListener('change', (event) => applyTheme(event.target.value));
+    els.settingsRefresh?.addEventListener('change', (event) => {
+      const n = Math.max(2, Math.min(60, parseInt(event.target.value, 10) || 5));
+      state.refreshSec = n;
+      localStorage.setItem(REFRESH_LS_KEY, String(n));
+      // main poll interval gets reset via the bottom of this script
+      if (_dashTimer) { clearInterval(_dashTimer); _dashTimer = window.setInterval(() => loadAll(true), n * 1000); }
+    });
+    els.settingsAudio?.addEventListener('change', (event) => {
+      state.audioSource = event.target.value;
+      localStorage.setItem(AUDIO_LS_KEY, state.audioSource);
+      loadNowPlaying();
+    });
+    els.settingsToggleAgents?.addEventListener('click', () => {
+      toggleAutoExec();
+      setTimeout(loadAll, 400);
+    });
+
     // Deck mode: ?deck=1 activates the 1920x720 control-deck layout
     if (new URLSearchParams(location.search).get('deck') === '1') {
       document.body.classList.add('deck');
@@ -2973,16 +4142,161 @@
 
     function setDeckTab(tab) {
       if (!document.body.classList.contains('deck')) return;
-      const next = tab === 'board' ? 'board' : 'main';
+      const valid = ['main', 'board', 'metrics'];
+      const next = valid.includes(tab) ? tab : 'main';
       document.body.dataset.deckTab = next;
       els.tabMainBtn?.classList.toggle('active', next === 'main');
       els.tabBoardBtn?.classList.toggle('active', next === 'board');
+      els.tabMetricsBtn?.classList.toggle('active', next === 'metrics');
+      if (next === 'metrics') {
+        loadMetrics();
+        startMetricsPolling();
+      } else {
+        stopMetricsPolling();
+      }
     }
     els.tabMainBtn?.addEventListener('click', () => setDeckTab('main'));
     els.tabBoardBtn?.addEventListener('click', () => setDeckTab('board'));
+    els.tabMetricsBtn?.addEventListener('click', () => setDeckTab('metrics'));
+    els.metricsRefreshBtn?.addEventListener('click', () => loadMetrics());
+
+    // === Metrics tab =====================================================
+    let _metricsTimer = null;
+    function startMetricsPolling() {
+      if (_metricsTimer) return;
+      _metricsTimer = window.setInterval(loadMetrics, 3000);
+    }
+    function stopMetricsPolling() {
+      if (_metricsTimer) { clearInterval(_metricsTimer); _metricsTimer = null; }
+    }
+
+    async function loadMetrics() {
+      try {
+        const data = await fetchJson('/api/metrics');
+        state.metrics = data;
+        renderMetrics();
+      } catch (e) {
+        if (els.metricsUpdated) els.metricsUpdated.textContent = 'ERR';
+      }
+    }
+
+    function fmtGB(n) { return (Math.round(n * 10) / 10).toFixed(1) + ' GB'; }
+    function pct(a, b) { return b > 0 ? Math.max(0, Math.min(100, (a / b) * 100)) : 0; }
+
+    // Circle r=52 → C = 2πr ≈ 326.73
+    const GAUGE_C = 326.725635973;
+    function setGauge(selector, pctValue) {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const clamped = Math.max(0, Math.min(100, pctValue || 0));
+      const dash = (clamped / 100) * GAUGE_C;
+      el.setAttribute('stroke-dasharray', `${dash} ${GAUGE_C}`);
+    }
+
+    function renderMetrics() {
+      const m = state.metrics;
+      if (!m) return;
+      els.metricsUpdated.textContent = new Date(m.timestamp).toLocaleTimeString();
+
+      // CPU load
+      const cpu = m.cpu || {};
+      const load = cpu.loadPct != null ? cpu.loadPct : 0;
+      els.mCpuLoad.textContent = cpu.loadPct != null ? load.toFixed(0) : '—';
+      setGauge('.cpu-fill', load);
+      els.mCpuName.textContent = cpu.name
+        ? `${cpu.name.replace('AMD ', '').replace('Intel ', '')} · ${cpu.cores || '?'}c @ ${cpu.maxMhz ? (cpu.maxMhz/1000).toFixed(1)+' GHz' : '?'}`
+        : 'CPU';
+
+      // CPU temp (0-100°C scale)
+      if (cpu.tempC != null) {
+        els.mCpuTemp.textContent = cpu.tempC;
+        setGauge('.cpu-temp-fill', (cpu.tempC / 100) * 100);
+      } else {
+        els.mCpuTemp.textContent = 'N/A';
+        setGauge('.cpu-temp-fill', 0);
+      }
+
+      // RAM
+      const ram = m.ram || {};
+      if (ram.usedGb != null && ram.totalGb != null) {
+        els.mRamVal.textContent = fmtGB(ram.usedGb).replace(' GB','');
+        setGauge('.ram-fill', pct(ram.usedGb, ram.totalGb));
+        els.mRamSub.textContent = `${ram.usedGb.toFixed(1)} / ${ram.totalGb.toFixed(1)} GB · ${Math.round(pct(ram.usedGb, ram.totalGb))}%`;
+      } else {
+        els.mRamVal.textContent = '—';
+        setGauge('.ram-fill', 0);
+      }
+
+      // GPU
+      const gpu = m.gpu || {};
+      if (gpu.name) {
+        els.mGpuUtil.textContent = gpu.utilPct != null ? gpu.utilPct : '—';
+        setGauge('.gpu-fill', gpu.utilPct || 0);
+        els.mGpuName.textContent = gpu.name.replace('NVIDIA GeForce ', '');
+        if (gpu.memTotalMb) {
+          const vu = gpu.memUsedMb / 1024;
+          const vt = gpu.memTotalMb / 1024;
+          els.mVramVal.textContent = vu.toFixed(1);
+          setGauge('.vram-fill', pct(gpu.memUsedMb, gpu.memTotalMb));
+          els.mVramSub.textContent = `${vu.toFixed(1)} / ${vt.toFixed(1)} GB · ${Math.round(pct(gpu.memUsedMb, gpu.memTotalMb))}%`;
+        }
+        if (gpu.tempC != null) {
+          els.mGpuTemp.textContent = gpu.tempC;
+          setGauge('.gpu-temp-fill', (gpu.tempC / 100) * 100);
+        } else {
+          els.mGpuTemp.textContent = 'N/A';
+          setGauge('.gpu-temp-fill', 0);
+        }
+        if (gpu.powerW != null) {
+          els.mPowVal.textContent = Math.round(gpu.powerW);
+          setGauge('.pow-fill', Math.min(100, (gpu.powerW / 200) * 100));
+        }
+      } else {
+        els.mGpuUtil.textContent = 'N/A';
+        els.mVramVal.textContent = 'N/A';
+        els.mPowVal.textContent = 'N/A';
+        els.mGpuTemp.textContent = 'N/A';
+        setGauge('.gpu-fill', 0);
+        setGauge('.vram-fill', 0);
+        setGauge('.pow-fill', 0);
+        setGauge('.gpu-temp-fill', 0);
+      }
+
+      // Disk
+      const disk = m.disk || {};
+      if (disk.usedGb != null && disk.totalGb != null) {
+        els.mDiskVal.textContent = Math.round(disk.usedGb);
+        setGauge('.disk-fill', pct(disk.usedGb, disk.totalGb));
+        els.mDiskSub.textContent = `${Math.round(disk.usedGb)} / ${Math.round(disk.totalGb)} GB · ${Math.round(pct(disk.usedGb, disk.totalGb))}%`;
+      }
+
+      // Loaded Ollama models
+      const loaded = (m.ollama && m.ollama.loaded) || [];
+      if (!loaded.length) {
+        els.mModelsList.innerHTML = '<div class="empty">No models currently resident. Models evict after ~5 min idle.</div>';
+      } else {
+        els.mModelsList.innerHTML = loaded.map(mod => {
+          return `
+            <article class="metric-model-row">
+              <div class="mm-name">${escapeHtml(mod.name)}</div>
+              <div class="mm-meta">${escapeHtml(mod.size || '')} · ${escapeHtml(mod.processor || '')}</div>
+              <div class="mm-meta">${escapeHtml(mod.until || '')}</div>
+              <div class="mm-bar"><span style="width:100%"></span></div>
+            </article>
+          `;
+        }).join('');
+      }
+    }
 
     loadAll();
-    window.setInterval(() => loadAll(true), 5000);
+    _dashTimer = window.setInterval(() => loadAll(true), (state.refreshSec || 5) * 1000);
+
+    // Notes modal close handlers (modal version replaces inline editor)
+    els.notesModalCloseBtn?.addEventListener('click', () => toggleNotesEditor(false));
+    els.notesModal?.addEventListener('click', (event) => {
+      if (event.target === els.notesModal) toggleNotesEditor(false);
+    });
+    els.notesModalSaveBtn?.addEventListener('click', saveNotes);
   </script>
 </body>
 </html>

@@ -8,10 +8,10 @@
   "trainerAgentId": "ken-ai:latest",
   "remotePin": "0615",
   "theme": {
-    "name": "gba-trainer-deck",
-    "flavor": "p0k3m0n-gba",
+    "name": "vaporwave-ops",
+    "flavor": "vaporwave",
     "trainerLabel": "Ken AI",
-    "partyLabel": "P0K3M0N-Style Dev Party",
-    "workbenchLabel": "Game Boy Advance Field Kit"
+    "partyLabel": "Agent Squad",
+    "workbenchLabel": "Vaporwave Ops Deck"
   }
 }

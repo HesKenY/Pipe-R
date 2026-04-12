@@ -620,7 +620,7 @@
   <main class="frame">
     <section class="hero">
       <div class="eyebrow">Pipe-R Remote Deck</div>
-      <h1 id="remote-title">Ken AI Trainer Remote</h1>
+      <h1 id="remote-title">Ken AI Ops Remote</h1>
       <div class="hero-copy" id="remote-copy">Phone-first trainer control for the party queue, Sheets sync, and kill orders.</div>
       <div class="hero-status" id="hero-status"></div>
     </section>
@@ -628,7 +628,7 @@
     <section class="screen">
       <section class="panel" id="lock-panel">
         <div class="panel-header">
-          <div><div class="panel-kicker">Entry Gate</div><h2 class="panel-title">Trainer PIN</h2></div>
+          <div><div class="panel-kicker">Entry Gate</div><h2 class="panel-title">Ops PIN</h2></div>
           <span class="badge pixel">4-digit lock</span>
         </div>
         <div class="pin-note">Enter the runtime PIN to unlock the trainer deck. The queue, kill order, and Sheets sync buttons fire through PIN-checked remote endpoints.</div>
@@ -657,15 +657,15 @@
 
       <section class="panel hidden" id="trainer-lane-panel">
         <div class="panel-header">
-          <div><div class="panel-kicker">Trainer Bench</div><h2 class="panel-title" id="trainer-lane-title">Ken AI</h2></div>
-          <span class="badge pixel">Trainer</span>
+          <div><div class="panel-kicker">Command Bench</div><h2 class="panel-title" id="trainer-lane-title">Ken AI</h2></div>
+          <span class="badge pixel">Ops Lead</span>
         </div>
         <div id="trainer-lane-body"></div>
       </section>
 
       <section class="panel hidden" id="party-lane-panel">
         <div class="panel-header">
-          <div><div class="panel-kicker">Party Screen</div><h2 class="panel-title">P0K3M0N Party</h2></div>
+          <div><div class="panel-kicker">Squad</div><h2 class="panel-title">Agent Squad</h2></div>
           <span class="badge" id="party-lane-count">0 slots</span>
         </div>
         <div class="agent-grid" id="agent-grid"></div>
@@ -695,7 +695,7 @@
 
       <section class="panel hidden" id="compose-panel">
         <div class="panel-header">
-          <div><div class="panel-kicker">Trainer Orders</div><h2 class="panel-title">Queue Task</h2></div>
+          <div><div class="panel-kicker">Ops Orders</div><h2 class="panel-title">Queue Task</h2></div>
           <span class="badge" id="queue-live-count">0 tracked</span>
         </div>
         <div class="panel-copy small">Quick templates</div>
@@ -705,7 +705,7 @@
         <div class="panel-copy small">Objective</div>
         <textarea id="objective-input" placeholder="Example: summarize the last failed tasks and hand Ken a short review packet."></textarea>
         <div class="button-row">
-          <button id="queue-task" class="secondary">Queue Trainer Order</button>
+          <button id="queue-task" class="secondary">Queue Ops Order</button>
           <button id="clear-task" class="ghost">Clear Order</button>
         </div>
       </section>
@@ -745,8 +745,8 @@
 
     const themeFallback = {
       trainerLabel: 'Ken AI',
-        partyLabel: 'P0K3M0N-Style Dev Party',
-      workbenchLabel: 'Hoenn Emerald Field Kit',
+      partyLabel: 'Agent Squad',
+      workbenchLabel: 'Vaporwave Ops Deck',
     };
 
     const els = {

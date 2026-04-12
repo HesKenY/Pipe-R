@@ -235,6 +235,134 @@ function handleCommand(cmd) {
   }
 }
 
+// ── Now playing via Windows SMTC (cached 1.5s) ──────────────────
+let _nowPlayingCache = { ts: 0, data: null };
+function getNowPlaying() {
+  const now = Date.now();
+  if (_nowPlayingCache.data && (now - _nowPlayingCache.ts) < 1500) return _nowPlayingCache.data;
+  const script = join(ROOT, '.claude', 'bin', 'smtc-nowplaying.ps1');
+  if (!existsSync(script)) {
+    const data = { available: false, error: 'smtc-nowplaying.ps1 missing' };
+    _nowPlayingCache = { ts: now, data };
+    return data;
+  }
+  try {
+    const out = execSync(
+      `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}"`,
+      { encoding: 'utf8', timeout: 6000 }
+    ).trim();
+    const parsed = JSON.parse(out);
+    // Detect likely Spotify app via source app user model id
+    if (parsed.source && typeof parsed.source === 'string') {
+      parsed.isSpotify = /spotify/i.test(parsed.source);
+    }
+    _nowPlayingCache = { ts: now, data: parsed };
+    return parsed;
+  } catch (e) {
+    const data = { available: false, error: e.message };
+    _nowPlayingCache = { ts: now, data };
+    return data;
+  }
+}
+
+// ── System metrics (cached 2s) ──────────────────────────────────
+// Pulls CPU / RAM / GPU / ollama model state via native commands.
+// Anything that times out or fails returns null; the UI renders "—".
+let _metricsCache = { ts: 0, data: null };
+async function getSystemMetrics() {
+  const now = Date.now();
+  if (_metricsCache.data && (now - _metricsCache.ts) < 2000) return _metricsCache.data;
+
+  const safeExec = (cmd, timeout = 4000) => {
+    try { return execSync(cmd, { encoding: 'utf8', timeout }).trim(); }
+    catch { return ''; }
+  };
+
+  // CPU: name, max clock, logical cores, current %
+  const cpuName = safeExec(`powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Name"`);
+  const cpuMaxMhz = parseInt(safeExec(`powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).MaxClockSpeed"`), 10) || null;
+  const cpuCores = parseInt(safeExec(`powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).NumberOfLogicalProcessors"`), 10) || null;
+  const cpuLoadRaw = safeExec(`powershell -NoProfile -Command "(Get-Counter '\\Processor(_Total)\\% Processor Time' -ErrorAction SilentlyContinue).CounterSamples.CookedValue"`, 5000);
+  const cpuLoad = cpuLoadRaw ? parseFloat(cpuLoadRaw) : null;
+
+  // RAM: used + total in GB
+  const ramRaw = safeExec(`powershell -NoProfile -Command "$os = Get-CimInstance Win32_OperatingSystem; Write-Host ([math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory)/1024/1024, 2)); Write-Host ([math]::Round($os.TotalVisibleMemorySize/1024/1024, 2))"`);
+  const ramLines = ramRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const ramUsedGb = ramLines[0] ? parseFloat(ramLines[0]) : null;
+  const ramTotalGb = ramLines[1] ? parseFloat(ramLines[1]) : null;
+
+  // CPU temp via WMI thermal zone (often empty on AMD). Converted from deci-Kelvin.
+  let cpuTempC = null;
+  const thermRaw = safeExec(`powershell -NoProfile -Command "(Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction SilentlyContinue | Select-Object -First 1).CurrentTemperature"`);
+  if (thermRaw) {
+    const kTenths = parseInt(thermRaw, 10);
+    if (Number.isFinite(kTenths) && kTenths > 2000) cpuTempC = Math.round((kTenths / 10) - 273.15);
+  }
+
+  // GPU via nvidia-smi (AMD Radeon fallback not implemented — Ken's on NVIDIA).
+  let gpu = null;
+  const gpuRaw = safeExec(`nvidia-smi --query-gpu=name,temperature.gpu,utilization.gpu,memory.used,memory.total,power.draw --format=csv,noheader,nounits`, 4000);
+  if (gpuRaw) {
+    const parts = gpuRaw.split(',').map(s => s.trim());
+    if (parts.length >= 5) {
+      gpu = {
+        name: parts[0],
+        tempC: Number(parts[1]) || null,
+        utilPct: Number(parts[2]) || null,
+        memUsedMb: Number(parts[3]) || null,
+        memTotalMb: Number(parts[4]) || null,
+        powerW: parts[5] ? Number(parts[5]) || null : null,
+      };
+    }
+  }
+
+  // Loaded Ollama models (`ollama ps` — evicted models vanish)
+  const ollamaPsRaw = safeExec('ollama ps', 3000);
+  const loadedModels = [];
+  if (ollamaPsRaw) {
+    const lines = ollamaPsRaw.split(/\r?\n/).slice(1).filter(l => l.trim());
+    for (const line of lines) {
+      const cols = line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+      if (cols.length >= 4) {
+        loadedModels.push({
+          name: cols[0],
+          id: cols[1],
+          size: cols[2],
+          processor: cols[3] || '',
+          context: cols[4] || '',
+          until: cols.slice(5).join(' ') || '',
+        });
+      }
+    }
+  }
+
+  // Disk free for the project drive
+  let disk = null;
+  const diskRaw = safeExec(`powershell -NoProfile -Command "$d = Get-PSDrive -Name C; Write-Host ([math]::Round($d.Used/1gb, 2)); Write-Host ([math]::Round(($d.Used + $d.Free)/1gb, 2))"`);
+  const diskLines = diskRaw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (diskLines.length >= 2) {
+    disk = { usedGb: parseFloat(diskLines[0]) || null, totalGb: parseFloat(diskLines[1]) || null };
+  }
+
+  const data = {
+    timestamp: new Date().toISOString(),
+    cpu: {
+      name: cpuName || null,
+      maxMhz: cpuMaxMhz,
+      cores: cpuCores,
+      loadPct: cpuLoad != null ? Math.round(cpuLoad * 10) / 10 : null,
+      tempC: cpuTempC,
+    },
+    ram: { usedGb: ramUsedGb, totalGb: ramTotalGb },
+    disk,
+    gpu,
+    ollama: { loaded: loadedModels, count: loadedModels.length },
+  };
+
+  _metricsCache = { ts: now, data };
+  return data;
+}
+
 function readRuntimeConfig() {
   try {
     return JSON.parse(readFileSync(join(ROOT, 'agent_mode', 'config', 'runtime.json'), 'utf8'));
@@ -245,10 +373,10 @@ function readRuntimeConfig() {
       trainerAgentId: 'ken-ai:latest',
       remotePin: '0615',
       theme: {
-        name: 'gba-trainer-deck',
+        name: 'vaporwave-ops',
         trainerLabel: 'Ken AI',
-        partyLabel: 'P0K3M0N-Style Dev Party',
-        workbenchLabel: 'Game Boy Advance Field Kit',
+        partyLabel: 'Agent Squad',
+        workbenchLabel: 'Vaporwave Ops Deck',
       },
     };
   }
@@ -329,10 +457,10 @@ async function getDashboardState() {
       autoExecutePaused: agentsPaused,
     },
     theme: runtime.theme || {
-      name: 'gba-trainer-deck',
+      name: 'vaporwave-ops',
       trainerLabel: 'Ken AI',
-        partyLabel: 'P0K3M0N-Style Dev Party',
-      workbenchLabel: 'Game Boy Advance Field Kit',
+      partyLabel: 'Agent Squad',
+      workbenchLabel: 'Vaporwave Ops Deck',
     },
     trainerAgentId: runtime.trainerAgentId || 'ken-ai:latest',
     queue: dash.queue,
@@ -688,6 +816,27 @@ const server = createServer(async (req, res) => {
       log(`Review: ${taskId} ${approved ? 'APPROVED' : 'REJECTED'}`);
       return jsonResp(res, { result: approved ? 'Approved' : 'Rejected', taskId });
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
+  }
+
+  // Now playing — Windows SMTC session bridge. Cached 1.5s.
+  if (url === '/api/now-playing' && req.method === 'GET') {
+    try {
+      const np = getNowPlaying();
+      return jsonResp(res, np);
+    } catch (e) {
+      return jsonResp(res, { available: false, error: e.message });
+    }
+  }
+
+  // System metrics — CPU, RAM, GPU, loaded ollama models
+  // Cached 2s so the deck's 3s poll doesn't thrash PowerShell.
+  if (url === '/api/metrics' && req.method === 'GET') {
+    try {
+      const metrics = await getSystemMetrics();
+      return jsonResp(res, metrics);
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
   }
 
   // Per-agent training log viewer — GET last N entries for this agent

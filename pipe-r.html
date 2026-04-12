@@ -1414,19 +1414,34 @@
     }
 
     /* BOARD tab: hide the control panels and show only the 4 info panels.
-       Left column shows queue (full), right column shows projects+sheets+activity. */
+       Queue fills the left column; projects/sheets/activity split the right
+       column evenly. !important wins over the general deck flex-pinning
+       rules without fighting :has() specificity weirdness. */
     body.deck[data-deck-tab="board"] .panel:has(#trainer-panel),
     body.deck[data-deck-tab="board"] .panel:has(#party-grid),
     body.deck[data-deck-tab="board"] .chat-panel,
     body.deck[data-deck-tab="board"] .panel:has(#summary-panel) {
-      display: none;
+      display: none !important;
     }
-    body.deck[data-deck-tab="board"] .grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-    body.deck[data-deck-tab="board"] .grid > .stack:last-child > .panel:has(#project-grid),
-    body.deck[data-deck-tab="board"] .grid > .stack:last-child > .panel:has(#sheet-grid),
-    body.deck[data-deck-tab="board"] .grid > .stack:last-child > .panel:has(#activity-grid) {
-      flex: 1 1 0;
+    body.deck[data-deck-tab="board"] .grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      min-height: 0;
     }
+    body.deck[data-deck-tab="board"] .grid > .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+    }
+    body.deck[data-deck-tab="board"] .grid > .stack > .panel {
+      flex: 1 1 0 !important;
+      min-height: 0 !important;
+      overflow: auto !important;
+    }
+    /* Make the queue's task-grid scroll inside its panel so it doesn't
+       blow out the column height. */
+    body.deck[data-deck-tab="board"] #task-grid { overflow: auto; }
 
     body.deck .content {
       padding: 8px;

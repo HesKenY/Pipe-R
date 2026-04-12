@@ -1,0 +1,128 @@
+{
+  "id": "lt-mnwca1id-bqw5",
+  "scenarioId": "kitchen-remodel-3day",
+  "scenarioName": "3-day kitchen remodel, 3-person crew",
+  "instanceUrl": "https://cherp.live/demo.html",
+  "teamCode": "SIMLT-A1ID",
+  "observer": "llama3.1:8b",
+  "startedAt": "2026-04-12T22:32:25.381Z",
+  "finishedAt": "2026-04-12T22:32:43.030Z",
+  "durationMs": 17649,
+  "ok": false,
+  "operations": [
+    {
+      "kind": "create_crew",
+      "ok": false,
+      "status": 400,
+      "summary": "team_code=SIMLT-A1ID",
+      "errorCode": "PGRST204",
+      "errorMsg": "Could not find the 'name' column of 'team_codes' in the schema cache"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 400,
+      "summary": "Sim Foreman (foreman)",
+      "errorCode": "PGRST204",
+      "errorMsg": "Could not find the 'name' column of 'crew_members' in the schema cache"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 400,
+      "summary": "Sim Worker A (journeyman)",
+      "errorCode": "PGRST204",
+      "errorMsg": "Could not find the 'name' column of 'crew_members' in the schema cache"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 400,
+      "summary": "Sim Apprentice (apprentice)",
+      "errorCode": "PGRST204",
+      "errorMsg": "Could not find the 'name' column of 'crew_members' in the schema cache"
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "URGENT → Sim Worker A: Demo existing cabinets, protect floor",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "URGENT → Sim Foreman: Rough-in new plumbing for island sink",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "NORMAL → Sim Apprentice: Photograph conditions before demo",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "NORMAL → Sim Foreman: Drop new romex for under-cab lights",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "LOW → Sim Apprentice: Haul debris to dumpster, sweep site",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 0",
+      "errorMsg": "no server id captured (task create failed)"
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 2",
+      "errorMsg": "no server id captured (task create failed)"
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 0",
+      "errorMsg": "no server id captured (task create failed)"
+    },
+    {
+      "kind": "cleanup_members",
+      "ok": true,
+      "status": 204,
+      "summary": "SIMLT-A1ID"
+    },
+    {
+      "kind": "cleanup_crew",
+      "ok": true,
+      "status": 204,
+      "summary": "SIMLT-A1ID"
+    }
+  ],
+  "debrief": "VERDICT: fail\nSUMMARY: The test crew failed to complete due to repeated PostgREST errors \nand task creation issues.\n\nCRITERIA:\n  - crew created successfully: not met — PostgREST error (1)\n  - 3 members joined: not met — repeated member join attempts failed with P\nPostgREST error (2-4)\n  - all 5 tasks created: not met — foreign key constraint violation in task\ntask creation (5-9)\n  - at least 2 task progress updates landed: not met — no progress updates \nsucceeded due to task creation failures\n  - no unrecoverable PostgREST errors: not met — multiple instances of PGRS\nPGRST204 error\n\nANOMALIES:\n  - Inconsistent behavior between member join and task creation operations.\noperations.\n  - Schema cache issues suggest potential configuration or setup\nsetup problems.\n\nNEXT:\n  - Investigate the CHERP instance's schema cache and PostgREST configurati\nconfiguration to identify and rectify any discrepancies or misconfiguration\nmisconfigurations.",
+  "debriefError": null,
+  "acceptCriteria": [
+    "crew created successfully",
+    "3 members joined",
+    "all 5 tasks created",
+    "at least 2 task progress updates landed",
+    "no unrecoverable PostgREST errors"
+  ]
+}

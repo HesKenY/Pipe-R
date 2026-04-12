@@ -818,6 +818,51 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
   }
 
+  // === Live Test Mode ================================================
+  // v0: runs a scripted scenario against a real CHERP instance, captures
+  // the REST API responses, asks an observer agent for a debrief, and
+  // persists the full round to agent_mode/livetest/rounds/<id>.json.
+  if (url === '/api/livetest/scenarios' && req.method === 'GET') {
+    try {
+      const lt = await import('./agent_mode/core/livetest.js');
+      return jsonResp(res, { scenarios: lt.listScenarios() });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/livetest/rounds' && req.method === 'GET') {
+    try {
+      const lt = await import('./agent_mode/core/livetest.js');
+      return jsonResp(res, { rounds: lt.listRounds() });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url.startsWith('/api/livetest/rounds/') && req.method === 'GET') {
+    try {
+      const id = decodeURIComponent(url.slice('/api/livetest/rounds/'.length));
+      const lt = await import('./agent_mode/core/livetest.js');
+      const round = lt.getRound(id);
+      if (!round) return jsonResp(res, { error: 'round not found: ' + id }, 404);
+      return jsonResp(res, round);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/livetest/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      const lt = await import('./agent_mode/core/livetest.js');
+      log(`LiveTest start: ${payload.scenarioId} → ${payload.instanceUrl || '(default)'}`);
+      const round = await lt.runRound({
+        scenarioId: payload.scenarioId,
+        instanceUrl: payload.instanceUrl,
+        observer: payload.observer || 'llama3.1:8b',
+        cleanup: payload.cleanup !== false,
+      });
+      log(`LiveTest done: ${round.id} ops=${round.operations.length} ok=${round.ok}`);
+      return jsonResp(res, round);
+    } catch (e) {
+      log(`LiveTest error: ${e.message}`);
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
   // Now playing — Windows SMTC session bridge. Cached 1.5s.
   if (url === '/api/now-playing' && req.method === 'GET') {
     try {

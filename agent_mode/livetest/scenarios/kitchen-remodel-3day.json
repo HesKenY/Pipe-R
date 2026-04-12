@@ -1,0 +1,34 @@
+{
+  "id": "kitchen-remodel-3day",
+  "name": "3-day kitchen remodel, 3-person crew",
+  "durationMin": 15,
+  "seed": {
+    "team_code_prefix": "SIMLT",
+    "crew_name": "Live Test Crew",
+    "foreman_name": "Sim Foreman",
+    "members": [
+      { "name": "Sim Foreman",   "role": "foreman" },
+      { "name": "Sim Worker A",  "role": "journeyman" },
+      { "name": "Sim Apprentice", "role": "apprentice" }
+    ]
+  },
+  "tasks": [
+    { "text": "Demo existing cabinets, protect floor",   "priority": "urgent", "assigned_to": "Sim Worker A" },
+    { "text": "Rough-in new plumbing for island sink",   "priority": "urgent", "assigned_to": "Sim Foreman" },
+    { "text": "Photograph conditions before demo",       "priority": "normal", "assigned_to": "Sim Apprentice" },
+    { "text": "Drop new romex for under-cab lights",     "priority": "normal", "assigned_to": "Sim Foreman" },
+    { "text": "Haul debris to dumpster, sweep site",     "priority": "low",    "assigned_to": "Sim Apprentice" }
+  ],
+  "progress_updates": [
+    { "task_index": 0, "progress": 60,  "note": "cabinets 60% demoed, kept pantry" },
+    { "task_index": 2, "progress": 100, "note": "12 photos uploaded (sim)" },
+    { "task_index": 0, "progress": 100, "note": "demo complete, floor protection holding" }
+  ],
+  "acceptCriteria": [
+    "crew created successfully",
+    "3 members joined",
+    "all 5 tasks created",
+    "at least 2 task progress updates landed",
+    "no unrecoverable PostgREST errors"
+  ]
+}

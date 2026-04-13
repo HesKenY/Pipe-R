@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HP Remote — Pipe-R Client</title>
+  <title>HP Remote v3 — Pipe-R Client</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -184,6 +184,18 @@
     }
     .panel { display: none; flex-direction: column; flex: 1 1 auto; min-height: 0; }
     .panel.active { display: flex; }
+    .iframe-panel { padding: 12px 0 20px; }
+    .iframe-panel.active { display: flex; }
+    .remote-frame {
+      flex: 1 1 auto;
+      width: 100%;
+      min-height: 600px;
+      border: 1px solid var(--cyan-dim);
+      border-radius: 14px;
+      background: #000;
+      box-shadow: 0 0 22px rgba(var(--magenta-rgb),0.18);
+    }
+    #open-full-deck { text-decoration: none; display: inline-flex; align-items: center; }
 
     .log {
       flex: 1 1 auto;
@@ -338,6 +350,10 @@
   <div class="tab-row">
     <button class="tab-btn active" data-tab="claude" id="tab-claude">◆ CLAUDE</button>
     <button class="tab-btn" data-tab="shell" id="tab-shell">◆ SHELL</button>
+    <button class="tab-btn" data-tab="deck" id="tab-deck">◆ DECK</button>
+    <button class="tab-btn" data-tab="metrics" id="tab-metrics">◆ METRICS</button>
+    <button class="tab-btn" data-tab="steam" id="tab-steam">◆ STEAM</button>
+    <a class="tab-btn" id="open-full-deck" target="_blank" rel="noopener">↗ FULL DECK</a>
   </div>
 
   <main>
@@ -361,6 +377,19 @@
         <button class="send-btn" id="shell-send" type="submit">RUN</button>
       </form>
     </section>
+
+    <!-- Full deck embedded as iframe so every deck tab (Deck, Board,
+         Metrics, Steam, Shell, chat, settings, etc.) is available from
+         the laptop without re-implementing any of it here. -->
+    <section class="panel iframe-panel" id="panel-deck">
+      <iframe id="deck-frame" class="remote-frame" title="Pipe-R Deck" referrerpolicy="no-referrer"></iframe>
+    </section>
+    <section class="panel iframe-panel" id="panel-metrics">
+      <iframe id="metrics-frame" class="remote-frame" title="Pipe-R Metrics" referrerpolicy="no-referrer"></iframe>
+    </section>
+    <section class="panel iframe-panel" id="panel-steam">
+      <iframe id="steam-frame" class="remote-frame" title="Pipe-R Steam" referrerpolicy="no-referrer"></iframe>
+    </section>
   </main>
 
   <div class="hint">Claude: Ctrl+Enter · Shell: Enter · ↑/↓ history · All commands execute on the remote Pipe-R dev box</div>
@@ -377,8 +406,18 @@
       saveServer: document.getElementById('save-server'),
       tabClaude: document.getElementById('tab-claude'),
       tabShell: document.getElementById('tab-shell'),
+      tabDeck: document.getElementById('tab-deck'),
+      tabMetrics: document.getElementById('tab-metrics'),
+      tabSteam: document.getElementById('tab-steam'),
+      openFullDeck: document.getElementById('open-full-deck'),
       panelClaude: document.getElementById('panel-claude'),
       panelShell: document.getElementById('panel-shell'),
+      panelDeck: document.getElementById('panel-deck'),
+      panelMetrics: document.getElementById('panel-metrics'),
+      panelSteam: document.getElementById('panel-steam'),
+      deckFrame: document.getElementById('deck-frame'),
+      metricsFrame: document.getElementById('metrics-frame'),
+      steamFrame: document.getElementById('steam-frame'),
       claudeLog: document.getElementById('claude-log'),
       claudeForm: document.getElementById('claude-form'),
       claudeInput: document.getElementById('claude-input'),
@@ -427,16 +466,46 @@
     });
 
     // === Tab switching =================================================
+    const allTabs = ['claude', 'shell', 'deck', 'metrics', 'steam'];
+    function iframeSrcFor(tab) {
+      if (tab === 'deck')    return serverUrl + '/pipe-r.html?deck=1';
+      if (tab === 'metrics') return serverUrl + '/pipe-r.html?deck=1#metrics';
+      if (tab === 'steam')   return serverUrl + '/pipe-r.html?deck=1#steam';
+      return '';
+    }
     function setTab(tab) {
+      if (!allTabs.includes(tab)) tab = 'claude';
       els.tabClaude.classList.toggle('active', tab === 'claude');
       els.tabShell.classList.toggle('active', tab === 'shell');
+      els.tabDeck.classList.toggle('active', tab === 'deck');
+      els.tabMetrics.classList.toggle('active', tab === 'metrics');
+      els.tabSteam.classList.toggle('active', tab === 'steam');
       els.panelClaude.classList.toggle('active', tab === 'claude');
       els.panelShell.classList.toggle('active', tab === 'shell');
+      els.panelDeck.classList.toggle('active', tab === 'deck');
+      els.panelMetrics.classList.toggle('active', tab === 'metrics');
+      els.panelSteam.classList.toggle('active', tab === 'steam');
       if (tab === 'claude') els.claudeInput.focus();
-      if (tab === 'shell') els.shellInput.focus();
+      if (tab === 'shell')  els.shellInput.focus();
+      // Lazy-load iframes so the deck isn't embedded until you click its tab.
+      if (tab === 'deck'    && !els.deckFrame.src)    els.deckFrame.src = iframeSrcFor('deck');
+      if (tab === 'metrics' && !els.metricsFrame.src) els.metricsFrame.src = iframeSrcFor('metrics');
+      if (tab === 'steam'   && !els.steamFrame.src)   els.steamFrame.src = iframeSrcFor('steam');
     }
     els.tabClaude.addEventListener('click', () => setTab('claude'));
     els.tabShell.addEventListener('click', () => setTab('shell'));
+    els.tabDeck.addEventListener('click', () => setTab('deck'));
+    els.tabMetrics.addEventListener('click', () => setTab('metrics'));
+    els.tabSteam.addEventListener('click', () => setTab('steam'));
+
+    // Re-point iframes + "Full Deck" link whenever server URL changes.
+    function refreshRemoteFrames() {
+      els.openFullDeck.href = serverUrl + '/pipe-r.html?deck=1';
+      if (els.deckFrame.src)    els.deckFrame.src    = iframeSrcFor('deck');
+      if (els.metricsFrame.src) els.metricsFrame.src = iframeSrcFor('metrics');
+      if (els.steamFrame.src)   els.steamFrame.src   = iframeSrcFor('steam');
+    }
+    refreshRemoteFrames();
 
     // === Claude tab ====================================================
     let claudeHistory = [];

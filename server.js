@@ -1011,6 +1011,22 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, { log: readRecentLog(50) });
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  if (url === '/api/halo/watch-log' && req.method === 'GET') {
+    try {
+      const { readRecentWatchLog } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, { log: readRecentWatchLog(50) });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/mode' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { mode } = JSON.parse(body || '{}');
+      const { setMode } = await import('./agent_mode/halo/agent.js');
+      const r = setMode(mode);
+      log('Halo mode set: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
 
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped

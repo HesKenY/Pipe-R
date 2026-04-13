@@ -5407,47 +5407,48 @@
     if (localStorage.getItem(AUTO_MODE_LS_KEY) === '1') startAutoMode();
     setAutoModeLabel();
 
-    // Halo MCC learning agent toggle. Calls the server's
-    // /api/halo/start|stop endpoint — the actual loop lives in
-    // agent_mode/halo/agent.js. The button reflects live server
-    // state via /api/halo/status which we poll every 5s.
+    // Halo MCC learning agent toggle. The loop starts in OBSERVE
+    // mode (watches Ken play, logs what it would do, never fires
+    // input) and auto-handoffs to DRIVE mode after enough purposeful
+    // observations. Button labels: Halo: OFF | Halo: WATCH | Halo: DRIVE.
     let _haloPoller = null;
-    async function setHaloLabel(on) {
+    async function setHaloLabel(running, mode) {
       if (!els.haloModeBtn) return;
-      els.haloModeBtn.textContent = 'Halo: ' + (on ? 'ON' : 'OFF');
-      els.haloModeBtn.classList.toggle('agent-off', !on);
+      let label = 'Halo: OFF';
+      if (running) label = 'Halo: ' + (mode === 'drive' ? 'DRIVE' : 'WATCH');
+      els.haloModeBtn.textContent = label;
+      els.haloModeBtn.classList.toggle('agent-off', !running);
     }
     async function refreshHaloStatus() {
       try {
         const s = await fetchJson('/api/halo/status');
-        setHaloLabel(!!s.running);
+        setHaloLabel(!!s.running, s.mode);
       } catch (e) {}
     }
     async function toggleHaloMode() {
       if (!els.haloModeBtn) return;
       const btn = els.haloModeBtn;
-      const orig = btn.textContent;
       btn.disabled = true;
       try {
         const s = await fetchJson('/api/halo/status');
         if (s.running) {
           const r = await fetchJson('/api/halo/stop', { method: 'POST' });
-          setBanner('Halo agent stopped — ran ' + (r.ranTicks || 0) + ' ticks', 'ok');
+          setBanner('Halo agent stopped — ran ' + (r.ranTicks || 0) + ' ticks' +
+                    (r.handoffAt ? ' (handoff at ' + r.handoffAt + ')' : ''), 'ok');
           setHaloLabel(false);
         } else {
-          if (!confirm('Hand control to Ken AI? The agent will fire keyboard/mouse into whatever window currently has focus. Make sure Halo MCC is the active window, then OK.')) {
-            btn.textContent = orig;
+          if (!confirm('Start Ken AI in OBSERVE mode? It will watch Halo MCC, log what it would do, and auto-take-over once it has enough context. You stay in control until the handoff triggers.')) {
             btn.disabled = false;
             return;
           }
           const r = await fetchJson('/api/halo/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tickMs: 4000, model: 'ken-ai:latest' }),
+            body: JSON.stringify({ tickMs: 4000, model: 'ken-ai:latest', mode: 'observe' }),
           });
           if (r.ok) {
-            setBanner('Halo agent deployed — tickMs=' + r.tickMs + '. Click Halo button again to stop.', 'warn');
-            setHaloLabel(true);
+            setBanner('Halo agent watching — mode=' + r.mode + ', tickMs=' + r.tickMs + '. Auto-handoff after ~25 watched ticks.', 'warn');
+            setHaloLabel(true, r.mode);
           } else {
             setBanner('Halo start failed: ' + (r.reason || 'unknown'), 'danger');
           }

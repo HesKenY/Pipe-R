@@ -4,121 +4,201 @@ Halo MCC actuator — fires one action from the agent's vocabulary.
 Usage:
     python halo_do.py <action> [duration_ms]
 
-Actions map to Halo MCC default keybinds (PC):
-    move_fwd      → w
-    move_back     → s
-    strafe_left   → a
-    strafe_right  → d
-    jump          → space
-    crouch        → ctrl (hold)
-    sprint        → shift (hold)
-    fire          → left mouse button
-    ads           → right mouse button
-    reload        → r
-    interact      → e
-    grenade       → g
-    melee         → f / v
-    swap_weapon   → q
-    look_left     → mouse rel (-200, 0)
-    look_right    → mouse rel (+200, 0)
-    look_up       → mouse rel (0, -120)
-    look_down     → mouse rel (0, +120)
-    pause         → esc
+Input backends, in preference order:
+
+    1. `keyboard` + `mouse` modules (low-level WH_KEYBOARD_LL /
+        WH_MOUSE_LL hooks). Delivers to the game even when the
+        game window is NOT focused. This is the "background
+        control" path Ken asked for 2026-04-13.
+    2. `pydirectinput` (SendInput with scan codes). Works for
+        DirectInput games but ONLY when the game is focused.
+    3. `pyautogui` (Windows message events). Pokemon for most
+        games. Kept as last-ditch fallback.
+
+Action vocabulary maps to Halo 2 / MCC PC default keybinds
+(verified 2026-04-13 from halopedia.org/Control_schemes):
+
+    move_fwd      → w          (hold)
+    move_back     → s          (hold)
+    strafe_left   → a          (hold)
+    strafe_right  → d          (hold)
+    jump          → space      (tap)
+    crouch        → left_ctrl  (hold)
+    sprint        → left_shift (hold)   [Reach/4/5 only; noop in H1/H2]
+    fire          → lmb        (click)
+    ads           → rmb        (click)
+    reload        → r          (tap)
+    interact      → e          (tap)
+    grenade       → f          (tap)     [MCC default — not G]
+    melee         → q          (tap)     [MCC default — not V/F]
+    weapon_slot_1 → 1          (tap)
+    switch_grenade→ 2          (tap)
+    flashlight    → 4          (tap)
+    dual_wield    → c          (tap)
+    scoreboard    → tab        (tap)
+    pause         → esc        (tap)
+    look_left     → mouse rel (-220, 0)
+    look_right    → mouse rel (+220, 0)
+    look_up       → mouse rel (0, -140)
+    look_down     → mouse rel (0, +140)
     noop          → nothing
 
-Default duration 150ms. Safe ceiling 1500ms so a runaway call
-can't hold a key forever. Emits a single JSON line on stdout with
-the action + elapsed time.
-
-Requires pyautogui. No other deps.
+Safety: 150ms default, 1500ms hold ceiling. Emits one JSON line.
 """
 
 import sys
 import json
 import time
 
+# Backend selection — try the background-capable modules first,
+# then DirectInput, then fall back to pyautogui as last resort.
+# HAS_KB is true when the low-level keyboard hook is available,
+# meaning input reaches the game regardless of window focus.
 try:
-    import pyautogui
-except Exception as e:
-    sys.stderr.write("pyautogui import failed: " + str(e) + "\n")
-    sys.exit(2)
+    import keyboard as _kb
+    HAS_KB = True
+except Exception:
+    _kb = None
+    HAS_KB = False
 
-# DirectInput-aware input. pyautogui sends Windows message key
-# events which DirectInput-based games (Halo MCC, most FPS games)
-# silently ignore. pydirectinput sends SendInput with scan codes
-# so the game's input hook sees the presses as real hardware.
-# Fall back to pyautogui only if pydirectinput isn't available.
+try:
+    import mouse as _ms
+    HAS_MS = True
+except Exception:
+    _ms = None
+    HAS_MS = False
+
 try:
     import pydirectinput as pdi
-    HAS_PDI = True
-    # Disable pydirectinput's own failsafe + pause for same reason
-    # as pyautogui — Ken needs predictable behavior.
     pdi.FAILSAFE = False
     pdi.PAUSE = 0
+    HAS_PDI = True
 except Exception:
     pdi = None
     HAS_PDI = False
 
-pyautogui.FAILSAFE = False
-pyautogui.PAUSE = 0
+try:
+    import pyautogui
+    pyautogui.FAILSAFE = False
+    pyautogui.PAUSE = 0
+    HAS_PAG = True
+except Exception:
+    pyautogui = None
+    HAS_PAG = False
 
+
+# Halo 2 MCC PC default keymap (halopedia.org 2026-04-13).
+# (kind, key) — "hold" keys are held for the requested duration,
+# "tap" keys fire once.
 KEY_MAP = {
-    "move_fwd":   ("hold", "w"),
-    "move_back":  ("hold", "s"),
-    "strafe_left":("hold", "a"),
-    "strafe_right":("hold","d"),
-    "jump":       ("tap",  "space"),
-    "crouch":     ("hold", "ctrl"),
-    "sprint":     ("hold", "shift"),
-    "reload":     ("tap",  "r"),
-    "interact":   ("tap",  "e"),
-    "grenade":    ("tap",  "g"),
-    "melee":      ("tap",  "v"),
-    "swap_weapon":("tap",  "q"),
-    "pause":      ("tap",  "esc"),
+    "move_fwd":      ("hold", "w"),
+    "move_back":     ("hold", "s"),
+    "strafe_left":   ("hold", "a"),
+    "strafe_right":  ("hold", "d"),
+    "jump":          ("tap",  "space"),
+    "crouch":        ("hold", "left ctrl"),
+    "sprint":        ("hold", "left shift"),
+    "reload":        ("tap",  "r"),
+    "interact":      ("tap",  "e"),
+    "grenade":       ("tap",  "f"),
+    "melee":         ("tap",  "q"),
+    "weapon_slot_1": ("tap",  "1"),
+    "switch_grenade":("tap",  "2"),
+    "flashlight":    ("tap",  "4"),
+    "dual_wield":    ("tap",  "c"),
+    "scoreboard":    ("tap",  "tab"),
+    "pause":         ("tap",  "esc"),
 }
+
+# pydirectinput + pyautogui use different key name conventions
+# (no space between modifier and key). Translate for fallbacks.
+PDI_KEY_TRANSLATE = {
+    "left ctrl": "ctrl",
+    "left shift": "shift",
+}
+def _pdi_key(k): return PDI_KEY_TRANSLATE.get(k, k)
 
 MOUSE_MAP = {
-    "fire":        ("click", "left"),
-    "ads":         ("click", "right"),
-    "look_left":   ("rel", -220, 0),
-    "look_right":  ("rel",  220, 0),
-    "look_up":     ("rel", 0, -140),
-    "look_down":   ("rel", 0,  140),
+    "fire":       ("click", "left"),
+    "ads":        ("click", "right"),
+    "look_left":  ("rel", -220, 0),
+    "look_right": ("rel",  220, 0),
+    "look_up":    ("rel",  0, -140),
+    "look_down":  ("rel",  0,  140),
 }
 
 
-def _key_down(key):
-    if HAS_PDI: pdi.keyDown(key)
-    else:       pyautogui.keyDown(key)
+def _do_key_hold(key, duration_s):
+    """Press + hold + release a key for the given duration.
+    Prefers the keyboard module (background-capable), falls
+    through pydirectinput then pyautogui."""
+    if HAS_KB:
+        _kb.press(key)
+        time.sleep(duration_s if duration_s > 0 else 0.12)
+        _kb.release(key)
+        return "kb:hold"
+    if HAS_PDI:
+        pdi.keyDown(_pdi_key(key))
+        time.sleep(duration_s if duration_s > 0 else 0.12)
+        pdi.keyUp(_pdi_key(key))
+        return "pdi:hold"
+    if HAS_PAG:
+        pyautogui.keyDown(_pdi_key(key))
+        time.sleep(duration_s if duration_s > 0 else 0.12)
+        pyautogui.keyUp(_pdi_key(key))
+        return "pag:hold"
+    return "none:hold"
 
-def _key_up(key):
-    if HAS_PDI: pdi.keyUp(key)
-    else:       pyautogui.keyUp(key)
+def _do_key_tap(key):
+    if HAS_KB:
+        _kb.send(key)
+        return "kb:tap"
+    if HAS_PDI:
+        pdi.press(_pdi_key(key))
+        return "pdi:tap"
+    if HAS_PAG:
+        pyautogui.press(_pdi_key(key))
+        return "pag:tap"
+    return "none:tap"
 
-def _key_press(key):
-    if HAS_PDI: pdi.press(key)
-    else:       pyautogui.press(key)
+def _do_mouse_click(button, duration_s):
+    if HAS_MS:
+        _ms.press(button)
+        time.sleep(duration_s if duration_s > 0 else 0.08)
+        _ms.release(button)
+        return "ms:click"
+    if HAS_PDI:
+        pdi.mouseDown(button=button)
+        time.sleep(duration_s if duration_s > 0 else 0.08)
+        pdi.mouseUp(button=button)
+        return "pdi:click"
+    if HAS_PAG:
+        pyautogui.mouseDown(button=button)
+        time.sleep(duration_s if duration_s > 0 else 0.08)
+        pyautogui.mouseUp(button=button)
+        return "pag:click"
+    return "none:click"
 
-def _mouse_down(button):
-    if HAS_PDI: pdi.mouseDown(button=button)
-    else:       pyautogui.mouseDown(button=button)
-
-def _mouse_up(button):
-    if HAS_PDI: pdi.mouseUp(button=button)
-    else:       pyautogui.mouseUp(button=button)
-
-def _mouse_move_rel(dx, dy):
-    # pydirectinput.moveRel uses SendInput with MOUSEEVENTF_MOVE
-    # which DirectInput games read. pyautogui's moveRel uses the
-    # cursor API which games ignore for camera look.
+def _do_mouse_rel(dx, dy):
+    # `mouse` module's move() with absolute=False fires WH_MOUSE_LL
+    # events which games read regardless of focus — same background
+    # property as the keyboard hook.
+    if HAS_MS:
+        try:
+            _ms.move(dx, dy, absolute=False, duration=0)
+            return "ms:rel"
+        except Exception:
+            pass
     if HAS_PDI:
         try:
             pdi.moveRel(dx, dy, relative=True)
-            return
+            return "pdi:rel"
         except Exception:
             pass
-    pyautogui.moveRel(dx, dy, duration=0.08)
+    if HAS_PAG:
+        pyautogui.moveRel(dx, dy, duration=0.08)
+        return "pag:rel"
+    return "none:rel"
 
 
 def fire(action, duration_ms):
@@ -128,23 +208,19 @@ def fire(action, duration_ms):
     if action in KEY_MAP:
         kind, key = KEY_MAP[action]
         if kind == "hold":
-            _key_down(key)
-            time.sleep(duration_s if duration_s > 0 else 0.12)
-            _key_up(key)
+            backend = _do_key_hold(key, duration_s)
         else:
-            _key_press(key)
-        return ("pdi:" if HAS_PDI else "pag:") + "key:" + key + ":" + kind
+            backend = _do_key_tap(key)
+        return backend + ":" + key
 
     if action in MOUSE_MAP:
         spec = MOUSE_MAP[action]
         if spec[0] == "click":
-            _mouse_down(spec[1])
-            time.sleep(duration_s if duration_s > 0 else 0.08)
-            _mouse_up(spec[1])
-            return ("pdi:" if HAS_PDI else "pag:") + "mouse:" + spec[1] + ":click"
+            backend = _do_mouse_click(spec[1], duration_s)
+            return backend + ":" + spec[1]
         if spec[0] == "rel":
-            _mouse_move_rel(spec[1], spec[2])
-            return ("pdi:" if HAS_PDI else "pag:") + "mouse:rel:{},{}".format(spec[1], spec[2])
+            backend = _do_mouse_rel(spec[1], spec[2])
+            return backend + ":{},{}".format(spec[1], spec[2])
 
     if action == "noop":
         time.sleep(0.05)
@@ -164,6 +240,12 @@ def main():
         "action": action,
         "duration_ms": duration,
         "detail": detail,
+        "backends": {
+            "keyboard": HAS_KB,
+            "mouse":    HAS_MS,
+            "pdi":      HAS_PDI,
+            "pyautogui":HAS_PAG,
+        },
     }) + "\n")
     sys.stdout.flush()
 

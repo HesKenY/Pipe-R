@@ -848,6 +848,106 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
   }
 
+  // Auto-generate tasks — asks Claude to propose N new dispatchable tasks
+  // for the squad and creates them via orch.createTask(). Used by the
+  // deck's Auto Mode loop to keep the pipeline fed.
+  if (url === '/api/auto/generate-tasks' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      const count = Math.max(1, Math.min(8, Number(payload.count) || 3));
+      const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+      const orch = new Orchestrator();
+      const roster = orch.registry.list().filter(a => a.available && !a.blocked);
+      const lanes = roster.map(a => `  - ${a.id} (${a.specialistTrack || 'generalist'}): ${a.role || a.battleRole || ''}`).join('\n');
+
+      // Walk the last 8 tasks so Claude doesn't repeat recent work.
+      const recent = (orch.queue.tasks || []).slice(-8).map(t =>
+        `  - [${t.status}] ${t.type}: ${(t.objective || '').slice(0, 100)}`
+      ).join('\n') || '  (none)';
+
+      const prompt = [
+        'You are generating the next batch of dispatchable tasks for Ken\'s Pipe-R',
+        'agent squad running a Node.js command center. Tasks get routed to specialist',
+        'lanes automatically. Return a valid JSON array of EXACTLY ' + count + ' task',
+        'objects, nothing else. No prose, no markdown fences, no commentary.',
+        '',
+        'Task shape:',
+        '  { "type": "<task type>",',
+        '    "objective": "<one-line goal>",',
+        '    "scope": ["relative/path/to/file.ext"]   // optional, file(s) the agent should read',
+        '  }',
+        '',
+        'Valid types: scan, index, draft_patch, draft_test, summarize,',
+        '             memory_extract, learn, prompt_tune, general',
+        '',
+        'Available specialist lanes (the orchestrator picks one):',
+        lanes,
+        '',
+        'Recent tasks (do not repeat):',
+        recent,
+        '',
+        'Rules:',
+        '- Each objective must be specific, concrete, and actionable.',
+        '- Favor scan / summarize / draft_test / learn — they complete fast.',
+        '- draft_patch tasks must scope a real file under agent_mode/ or pipe-r.html.',
+        '- Do NOT propose tasks that require Ken\'s manual approval, opinions, or deploys.',
+        '- Output MUST start with [ and end with ] — no prose.',
+      ].join('\n');
+
+      const { spawnSync } = require('child_process');
+      const run = spawnSync('claude', ['-p'], {
+        input: prompt,
+        encoding: 'utf8',
+        timeout: 90000,
+        maxBuffer: 2 * 1024 * 1024,
+        shell: true,
+      });
+      if (run.error) throw run.error;
+      if (run.status !== 0 && !run.stdout) {
+        throw new Error(`claude exited ${run.status}: ${(run.stderr || '').trim().slice(0, 200)}`);
+      }
+      const raw = String(run.stdout || '')
+        .replace(/\u001b\[\??[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\r/g, '')
+        .trim();
+
+      // Pull the first [ ... ] block out of the response (Claude sometimes
+      // wraps JSON in ```json fences or prefixes it with commentary).
+      const firstBracket = raw.indexOf('[');
+      const lastBracket  = raw.lastIndexOf(']');
+      if (firstBracket < 0 || lastBracket <= firstBracket) {
+        return jsonResp(res, { ok: false, error: 'no JSON array in claude output', raw: raw.slice(0, 400) }, 500);
+      }
+      let proposed;
+      try {
+        proposed = JSON.parse(raw.slice(firstBracket, lastBracket + 1));
+      } catch (e) {
+        return jsonResp(res, { ok: false, error: 'JSON parse: ' + e.message, raw: raw.slice(0, 400) }, 500);
+      }
+      if (!Array.isArray(proposed)) {
+        return jsonResp(res, { ok: false, error: 'expected array' }, 500);
+      }
+
+      const created = [];
+      for (const p of proposed.slice(0, count)) {
+        if (!p || typeof p !== 'object' || !p.objective) continue;
+        const task = orch.createTask({
+          type: p.type || 'general',
+          objective: String(p.objective).slice(0, 500),
+          scope: Array.isArray(p.scope) ? p.scope.slice(0, 5) : [],
+          priority: 3,
+          requiresClaudeReview: true,
+        });
+        created.push({ id: task.id, type: task.type, objective: task.objective.slice(0, 80), assignedAgent: task.assignedAgent });
+      }
+      log(`Auto-generate: ${created.length} new tasks from claude`);
+      return jsonResp(res, { ok: true, count: created.length, created });
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
   // Auto-review — walks tasks sitting in waiting_for_claude status, asks
   // Claude Code to grade each one via `claude -p "..."`, and calls
   // orch.reviewTask(). Unsticks the squad when Ken is away and the 30s

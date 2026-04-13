@@ -7,6 +7,20 @@ design brief. Owner: Ken + Claude. Edit freely.
 
 ## 🟢 Live and working right now
 
+- **CHERP field-ready on cherp.live (2026-04-12 / 13)**: three critical
+  fixes live on main → Netlify → production. Verified via curl:
+    * `tasks.js` — `crew_tasks` identity column fix (Prefer: return=representation)
+    * `employee-card.js` — Quick Edit role worker→journeyman / general_foreman→foreman map
+    * `crews.js` — Manage tab `unassigned` ReferenceError fix
+  Deferred: `safety.js` ACE Pricing weather spike + untracked `raken-import.js`.
+- **Pipe-R autonomous loop wired**: Auto Mode button in deck top row drives
+  a 90s tick of Run Queue → Auto Review → Generate Tasks. Auto Review calls
+  `claude -p` via stdin pipe, parses APPROVE/REJECT, calls orch.reviewTask.
+  Auto Generate asks Claude for N new dispatchable tasks as JSON. Patch
+  Plan button reads the latest Live Test round + asks Claude for a
+  structured markdown patch plan (saved to agent_mode/livetest/patches/).
+  The very first patch plan caught a critical bug where runRoundV1's
+  cleanup was destroying the WS5A3Q standing Test crew — fix shipped.
 - **Tailscale mesh** — `heskeny@` tailnet with:
     - `desktop-ed797oh` (this dev box) → `100.117.92.46`
     - `laptop-nonc1i8l` (HP laptop) → `100.108.152.63`

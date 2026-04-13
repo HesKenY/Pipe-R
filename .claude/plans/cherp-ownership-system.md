@@ -1145,6 +1145,7 @@ lands FIRST so every subsequent phase is built on solid ground.
 | **2** | Schema migration: add `owner_id` everywhere + `item_shares` table + `friend_code` on user_profiles + backfill. All additive. | Low | Drop new columns/table |
 | **3** | Migrate `tasks.js` to store — reads from local first, sync on foreground. Tasks owned by creator. Sharing UI prototype. | Medium — user-facing change to the highest-traffic screen | Revert + zip restore |
 | **4** | Migrate `timeclock.js` to store + `owner_id`. Offline clock-in works end-to-end. | Medium | Same |
+| **4.5** | **Nest backend adapter (stub)** — add a `NEST()` backend to `store.js` as a parallel option alongside Supabase, selected per-instance via config flag. Pilot customers ship on Nest-backed instances from day one. Supabase stays dev/test default. See `memory/project_nest_backend_adapter.md` for the full rationale. | Medium — new backend, but `store.js` was built first specifically so this is a one-file swap | Flip config flag back to SB |
 | **5** | Migrate `safety.js` (JSA) + `mro_equipment` + `certifications` to store + `owner_id`. Each gets a Share button. | Medium | Same |
 | **6** | Friend-code + QR + invite flow from the sibling plan. Establishes the contact graph that sharing depends on. | Medium | Same |
 | **7** | Migrate `chat.js` / `messages.js` to friend-code 1:1 DMs + shared-item comment threads. Retire team_code broadcast channels. | Medium — chat UX change | Same |

@@ -501,6 +501,10 @@ async function getDashboardState() {
     trainer: dash.trainer,
     companion: dash.companion,
     party: dash.party,
+    // Phase 9+: the active subset (≤6) of the full party roster
+    // that renders on the home deck. Managed via the PC tab. Empty
+    // or missing → client treats the first 6 of `party` as active.
+    activeParty: Array.isArray(runtime.activeParty) ? runtime.activeParty : [],
     agents: dash.agents,
     projects: state.projects,
     storage: state.storage,
@@ -961,6 +965,40 @@ const server = createServer(async (req, res) => {
       const { computeAllStats } = await import('./agent_mode/core/stats.js');
       return jsonResp(res, { stats: computeAllStats() });
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // POST /api/runtime/active-party { activeParty: [ids] }
+  // Persists the active-team selection into runtime.json. Capped
+  // at 6. Validates every id exists in agents.json so a typo
+  // can't leave the runtime pointing at a ghost.
+  if (url === '/api/runtime/active-party' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { activeParty } = JSON.parse(body || '{}');
+      if (!Array.isArray(activeParty)) {
+        return jsonResp(res, { error: 'activeParty must be an array' }, 400);
+      }
+      if (activeParty.length > 6) {
+        return jsonResp(res, { error: 'active team capped at 6' }, 400);
+      }
+      // Validate ids against the live agent roster
+      const { AgentRegistry } = await import('./agent_mode/core/registry.js');
+      const reg = new AgentRegistry();
+      const knownIds = new Set((reg.agents || []).map(a => a.id));
+      const unknown = activeParty.filter(id => !knownIds.has(id));
+      if (unknown.length) {
+        return jsonResp(res, { error: 'unknown agent ids: ' + unknown.join(', ') }, 400);
+      }
+      // Write back to runtime.json preserving everything else
+      const runtimePath = join(ROOT, 'agent_mode', 'config', 'runtime.json');
+      const runtime = readRuntimeConfig();
+      runtime.activeParty = activeParty;
+      writeFileSync(runtimePath, JSON.stringify(runtime, null, 2), 'utf8');
+      log('Active party set: ' + activeParty.join(', '));
+      return jsonResp(res, { ok: true, activeParty });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
   }
 
   // Get review queue (Claude Code pulls pending work)

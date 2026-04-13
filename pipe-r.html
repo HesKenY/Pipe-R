@@ -1344,7 +1344,187 @@
     body.deck[data-deck-tab="main"] .shell-panel,
     body.deck[data-deck-tab="board"] .shell-panel,
     body.deck[data-deck-tab="metrics"] .shell-panel,
-    body.deck[data-deck-tab="steam"] .shell-panel { display: none; }
+    body.deck[data-deck-tab="steam"] .shell-panel,
+    body.deck[data-deck-tab="pc"] .shell-panel { display: none; }
+
+    /* PC tab — Pokemon box for the full roster */
+    .pc-panel { display: none; }
+    body.deck[data-deck-tab="pc"] .pc-panel {
+      display: flex;
+      flex-direction: column;
+      grid-column: 1 / -1;
+      grid-row: 1 / -1;
+      min-height: 0;
+    }
+    body.deck[data-deck-tab="pc"] .grid { display: none; }
+    body.deck[data-deck-tab="pc"] .metrics-panel,
+    body.deck[data-deck-tab="pc"] .steam-panel,
+    body.deck[data-deck-tab="pc"] .shell-panel { display: none; }
+    .pc-panel .panel-header { flex-shrink: 0; }
+    .pc-body {
+      flex: 1 1 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .pc-col {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      min-width: 0;
+    }
+    .pc-col-header {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--sw-cyan);
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(var(--sw-magenta-rgb), 0.26);
+      margin-bottom: 8px;
+    }
+    .pc-grid {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      padding-right: 4px;
+      min-height: 0;
+    }
+    .pc-card {
+      background:
+        linear-gradient(180deg, rgba(30, 10, 58, 0.86), rgba(14, 3, 32, 0.92));
+      border: 1.5px solid rgba(var(--sw-cyan-rgb), 0.22);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      color: var(--sw-text);
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+    }
+    .pc-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(var(--sw-cyan-rgb), 0.55);
+      box-shadow: 0 4px 14px rgba(var(--sw-cyan-rgb), 0.16);
+    }
+    .pc-card.active { border-color: rgba(var(--sw-magenta-rgb), 0.52); }
+    .pc-card-headline {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .pc-card-headline strong {
+      font-size: 0.84rem;
+      color: var(--sw-lavender);
+    }
+    .pc-card-headline .pc-level {
+      font-size: 0.62rem;
+      font-weight: 800;
+      color: var(--sw-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .pc-card-base {
+      font-family: ui-monospace, monospace;
+      font-size: 0.68rem;
+      color: rgba(var(--sw-cyan-rgb), 0.7);
+    }
+    .pc-card-class {
+      font-size: 0.7rem;
+      color: var(--sw-lavender);
+      font-weight: 600;
+    }
+    .pc-card-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .pc-card-stat {
+      font-size: 0.58rem;
+      text-align: center;
+      color: rgba(var(--sw-lavender-rgb), 0.74);
+    }
+    .pc-card-stat strong {
+      display: block;
+      color: var(--sw-cyan);
+      font-size: 0.74rem;
+      font-weight: 800;
+    }
+    .pc-card-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .pc-card-actions button {
+      flex: 1;
+      font-size: 0.62rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(var(--sw-magenta-rgb), 0.18);
+      border: 1px solid rgba(var(--sw-magenta-rgb), 0.42);
+      color: var(--sw-lavender);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+    }
+    .pc-card-actions button:hover { background: rgba(var(--sw-magenta-rgb), 0.32); }
+    .pc-card-actions button.primary {
+      background: rgba(var(--sw-cyan-rgb), 0.22);
+      border-color: rgba(var(--sw-cyan-rgb), 0.52);
+    }
+    .pc-card-actions button.primary:hover { background: rgba(var(--sw-cyan-rgb), 0.38); }
+
+    .pc-inspector {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgba(22, 8, 52, 0.96), rgba(8, 2, 22, 0.96));
+      border: 1.5px solid rgba(var(--sw-magenta-rgb), 0.38);
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .pc-inspector-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .pc-inspector-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--sw-lavender);
+    }
+    .pc-inspector-body {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 6px;
+      font-size: 0.74rem;
+    }
+    .pc-inspector-body .pc-detail {
+      background: rgba(10, 2, 22, 0.6);
+      border: 1px solid rgba(var(--sw-cyan-rgb), 0.2);
+      padding: 6px 8px;
+      border-radius: 6px;
+      color: var(--sw-lavender);
+    }
+    .pc-inspector-body .pc-detail label {
+      display: block;
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(var(--sw-cyan-rgb), 0.72);
+    }
+    .pc-inspector-body .pc-detail strong { font-size: 0.82rem; }
 
     .shell-log {
       flex: 1 1 auto;
@@ -2817,6 +2997,84 @@
     .stat-label { color: rgba(var(--sw-cyan-rgb),0.72); }
     .stat-value { color: var(--sw-lavender); }
 
+    /* Party cards — vaporwave override.
+       The base .agent-card / .trainer-card / .party-slot-card styles use a
+       pokemon cream+green gradient that clashes with the deep-purple
+       deck body. This block repaints them to blend into the rest of the
+       program. Softer borders, lower saturation, subtle cyan sheen. */
+    .agent-card,
+    .trainer-card,
+    .party-slot-card,
+    .companion-chip {
+      background:
+        linear-gradient(180deg, rgba(30, 10, 58, 0.86), rgba(14, 3, 32, 0.92)),
+        radial-gradient(circle at top right, rgba(var(--sw-cyan-rgb), 0.12), transparent 60%);
+      border: 1.5px solid rgba(var(--sw-magenta-rgb), 0.28);
+      box-shadow:
+        inset 0 0 0 1px rgba(var(--sw-cyan-rgb), 0.08),
+        0 6px 18px rgba(10, 2, 22, 0.55);
+      color: var(--sw-text);
+    }
+    .agent-card h3,
+    .trainer-card h3,
+    .party-slot-card h3,
+    .companion-chip strong { color: var(--sw-lavender); }
+    .agent-card .muted-code,
+    .trainer-card .muted-code,
+    .party-slot-card .muted-code { color: rgba(var(--sw-cyan-rgb), 0.72); }
+    .agent-card .card-copy,
+    .trainer-card .trainer-copy { color: rgba(var(--sw-lavender-rgb), 0.78); }
+
+    .agent-card.selectable:hover,
+    .trainer-card.selectable:hover,
+    .companion-chip:hover {
+      border-color: rgba(var(--sw-cyan-rgb), 0.55);
+      box-shadow:
+        0 0 18px rgba(var(--sw-cyan-rgb), 0.22),
+        0 6px 18px rgba(10, 2, 22, 0.65);
+    }
+    .agent-card.selected,
+    .trainer-card.selected,
+    .companion-chip.selected {
+      border-color: rgba(var(--sw-magenta-rgb), 0.72);
+      box-shadow:
+        0 0 0 2px rgba(var(--sw-magenta-rgb), 0.32),
+        0 0 22px rgba(var(--sw-magenta-rgb), 0.28),
+        0 8px 24px rgba(10, 2, 22, 0.7);
+    }
+    .agent-card.unhealthy { opacity: 0.72; filter: saturate(0.66); }
+    .agent-card.blocked { border-color: rgba(255, 68, 102, 0.55); }
+
+    /* Party readiness bar — the fallback --meter-from / --meter-to are
+       the pokemon green palette. In deck mode we want cyan → magenta. */
+    body.deck .party-hp-bar span,
+    body.deck .summary-track span {
+      background: linear-gradient(90deg,
+        rgba(var(--sw-cyan-rgb), 0.85),
+        rgba(var(--sw-magenta-rgb), 0.85));
+    }
+    body.deck .party-hp-bar {
+      background: rgba(10, 2, 22, 0.58);
+      border-color: rgba(var(--sw-cyan-rgb), 0.22);
+    }
+    body.deck .summary-track {
+      background: rgba(10, 2, 22, 0.58);
+    }
+    body.deck .summary-bar-top span { color: var(--sw-lavender); }
+    body.deck .summary-bar-top span:last-child { color: var(--sw-cyan); }
+
+    /* Party icon frames — soften the pokemon-portrait borders */
+    body.deck .party-icon-shell,
+    body.deck .party-icon-frame {
+      background: linear-gradient(180deg, rgba(30, 10, 58, 0.86), rgba(14, 3, 32, 0.92));
+      border-color: rgba(var(--sw-cyan-rgb), 0.28);
+    }
+    body.deck .slot-marker {
+      color: var(--sw-lavender);
+      background: rgba(10, 2, 22, 0.72);
+      border-color: rgba(var(--sw-magenta-rgb), 0.35);
+    }
+
     /* Selected-model summary panel — purge all the cream/green pokemon frames */
     .summary-portrait-shell {
       background: linear-gradient(180deg, rgba(30, 10, 56, 0.92), rgba(14, 3, 32, 0.96));
@@ -3029,7 +3287,7 @@
       <div class="title-wrap">
         <div class="eyebrow">Pipe-R Ops Deck</div>
         <h1 id="deck-title">Ken AI Ops Center</h1>
-        <div class="subtitle" id="deck-subtitle">Vaporwave command deck for Ken AI, the six-agent squad, and the learning companion lane.</div>
+        <div class="subtitle" id="deck-subtitle"></div>
       </div>
       <div class="status-cluster" id="status-cluster"></div>
     </header>
@@ -3038,6 +3296,7 @@
       <div class="button-row">
         <button id="tab-main-btn" class="deck-tab-btn active" type="button">Deck</button>
         <button id="tab-board-btn" class="deck-tab-btn" type="button">Board</button>
+        <button id="tab-pc-btn" class="deck-tab-btn" type="button" title="Roster PC — swap active party, inspect model stats">PC</button>
         <button id="tab-metrics-btn" class="deck-tab-btn" type="button">Metrics</button>
         <button id="tab-steam-btn" class="deck-tab-btn" type="button">Steam</button>
         <button id="tab-shell-btn" class="deck-tab-btn" type="button">Shell</button>
@@ -3359,6 +3618,49 @@
           <div class="empty">Scanning Steam library…</div>
         </div>
       </section>
+
+      <!-- PC tab: full roster browser + active-party selector.
+           Pokemon-PC metaphor — lets Ken swap which 6 agents are
+           actively rendered on the Deck tab, and dig into stats
+           for any registered model (active or benched). -->
+      <section class="panel pc-panel" id="pc-panel-section">
+        <div class="panel-header">
+          <div>
+            <div class="panel-kicker">Roster PC</div>
+            <h2 class="panel-title">Squad Bench</h2>
+          </div>
+          <div class="metrics-head-meta">
+            <span class="badge" id="pc-active-count">0 active</span>
+            <span class="badge" id="pc-bench-count">0 benched</span>
+            <button id="pc-refresh-btn" class="secondary" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="pc-body">
+          <div class="pc-col">
+            <div class="pc-col-header">Active Team (Home Screen)</div>
+            <div class="pc-grid" id="pc-active-grid">
+              <div class="empty">Loading roster…</div>
+            </div>
+          </div>
+          <div class="pc-col">
+            <div class="pc-col-header">Bench</div>
+            <div class="pc-grid" id="pc-bench-grid">
+              <div class="empty">Nothing on the bench.</div>
+            </div>
+          </div>
+        </div>
+        <div class="pc-inspector" id="pc-inspector" hidden>
+          <div class="pc-inspector-head">
+            <div>
+              <div class="panel-kicker">Model Inspector</div>
+              <h3 id="pc-inspector-name">—</h3>
+              <div class="muted-code" id="pc-inspector-base">—</div>
+            </div>
+            <button id="pc-inspector-close" class="secondary" type="button">Close</button>
+          </div>
+          <div class="pc-inspector-body" id="pc-inspector-body"></div>
+        </div>
+      </section>
       <!-- emerald-textbox removed — GBA aesthetic retired 2026-04-12 -->
       <div id="emerald-textbox" hidden></div>
     </section>
@@ -3633,6 +3935,18 @@
       tabMetricsBtn: document.getElementById('tab-metrics-btn'),
       tabSteamBtn: document.getElementById('tab-steam-btn'),
       tabShellBtn: document.getElementById('tab-shell-btn'),
+      tabPcBtn: document.getElementById('tab-pc-btn'),
+      pcPanel: document.getElementById('pc-panel-section'),
+      pcActiveGrid: document.getElementById('pc-active-grid'),
+      pcBenchGrid: document.getElementById('pc-bench-grid'),
+      pcActiveCount: document.getElementById('pc-active-count'),
+      pcBenchCount: document.getElementById('pc-bench-count'),
+      pcRefreshBtn: document.getElementById('pc-refresh-btn'),
+      pcInspector: document.getElementById('pc-inspector'),
+      pcInspectorName: document.getElementById('pc-inspector-name'),
+      pcInspectorBase: document.getElementById('pc-inspector-base'),
+      pcInspectorBody: document.getElementById('pc-inspector-body'),
+      pcInspectorClose: document.getElementById('pc-inspector-close'),
       shellPanel: document.getElementById('shell-panel-section'),
       shellLog: document.getElementById('shell-log'),
       shellForm: document.getElementById('shell-form'),
@@ -4150,13 +4464,21 @@
     }
 
     function renderParty(dashboard) {
-      const party = dashboard.party || [];
+      const fullParty = dashboard.party || [];
+      // Phase 9+: the home deck renders only the ACTIVE team (≤6),
+      // not the full roster. Full roster lives on the PC tab.
+      // Fallback: if runtime has no activeParty set, show the first
+      // 6 — preserves existing behavior for fresh installs.
+      const activeIds = Array.isArray(dashboard.activeParty) && dashboard.activeParty.length
+        ? dashboard.activeParty
+        : fullParty.slice(0, 6).map(a => a.id);
+      const party = fullParty.filter(a => activeIds.includes(a.id));
       const theme = { ...themeFallback, ...(dashboard.theme || {}) };
       const selected = getSelectedAgent(dashboard);
       els.partyHeading.textContent = theme.partyLabel;
-      els.partyCount.textContent = `${party.length} slots`;
+      els.partyCount.textContent = `${party.length}/${fullParty.length} active`;
       if (!party.length) {
-        els.partyGrid.innerHTML = '<div class="empty">No party agents registered.</div>';
+        els.partyGrid.innerHTML = '<div class="empty">No active agents. Deploy some from the PC tab.</div>';
         return;
       }
       els.partyGrid.innerHTML = party.map(agent => {
@@ -4826,7 +5148,7 @@
       const dashboard = state.dashboard;
       const theme = { ...themeFallback, ...(dashboard.theme || {}) };
       els.deckTitle.textContent = `${theme.trainerLabel} Ops Center`;
-      els.deckSubtitle.textContent = `${theme.workbenchLabel}. Left column hosts the squad + task queue, right column is telemetry + direct line to the selected model.`;
+      els.deckSubtitle.textContent = '';
       els.trainerHeading.textContent = theme.trainerLabel;
       els.modeBadge.textContent = (dashboard.system?.mode || dashboard.mode || 'hybrid').toUpperCase();
       els.modeBadge.className = `badge ${(dashboard.system?.mode || dashboard.mode) === 'offline' ? 'warn' : 'ok'}`;
@@ -5644,7 +5966,7 @@
 
     function setDeckTab(tab) {
       if (!document.body.classList.contains('deck')) return;
-      const valid = ['main', 'board', 'metrics', 'steam', 'shell'];
+      const valid = ['main', 'board', 'metrics', 'steam', 'shell', 'pc'];
       const next = valid.includes(tab) ? tab : 'main';
       document.body.dataset.deckTab = next;
       els.tabMainBtn?.classList.toggle('active', next === 'main');
@@ -5652,6 +5974,7 @@
       els.tabMetricsBtn?.classList.toggle('active', next === 'metrics');
       els.tabSteamBtn?.classList.toggle('active', next === 'steam');
       els.tabShellBtn?.classList.toggle('active', next === 'shell');
+      els.tabPcBtn?.classList.toggle('active', next === 'pc');
       if (next === 'metrics') {
         loadMetrics();
         startMetricsPolling();
@@ -5664,12 +5987,170 @@
       if (next === 'shell') {
         setTimeout(() => els.shellInput?.focus(), 100);
       }
+      if (next === 'pc') {
+        renderPcRoster();
+      }
     }
     els.tabMainBtn?.addEventListener('click', () => setDeckTab('main'));
     els.tabBoardBtn?.addEventListener('click', () => setDeckTab('board'));
     els.tabMetricsBtn?.addEventListener('click', () => setDeckTab('metrics'));
     els.tabSteamBtn?.addEventListener('click', () => setDeckTab('steam'));
     els.tabShellBtn?.addEventListener('click', () => setDeckTab('shell'));
+    els.tabPcBtn?.addEventListener('click', () => setDeckTab('pc'));
+    els.pcRefreshBtn?.addEventListener('click', () => renderPcRoster());
+    els.pcInspectorClose?.addEventListener('click', () => {
+      if (els.pcInspector) els.pcInspector.hidden = true;
+    });
+
+    // PC roster — read dashboard.party (all registered) + the
+    // currently-active subset from runtime.activeParty (falling
+    // back to the first 6). Swap moves an id in/out of the active
+    // list and posts /api/runtime/active-party to persist.
+    function renderPcRoster() {
+      const dash = state.dashboard;
+      if (!dash || !els.pcActiveGrid || !els.pcBenchGrid) return;
+      const allParty = Array.isArray(dash.party) ? dash.party : [];
+      const activeIds = Array.isArray(dash.activeParty) && dash.activeParty.length
+        ? dash.activeParty
+        : allParty.slice(0, 6).map(a => a.id);
+
+      const active = allParty.filter(a => activeIds.includes(a.id));
+      const bench  = allParty.filter(a => !activeIds.includes(a.id));
+
+      els.pcActiveCount.textContent = `${active.length} active`;
+      els.pcBenchCount.textContent  = `${bench.length} benched`;
+
+      const renderCard = (agent, isActive) => {
+        const cs = agent.computedStats;
+        const level = agent.level || cs?.level || 1;
+        const cls = cs?.class || 'Untested';
+        const code = cs?.stats?.code ?? 0;
+        const recon = cs?.stats?.recon ?? 0;
+        const qa = cs?.stats?.qa ?? 0;
+        const speed = cs?.stats?.speed ?? 0;
+        const actionLabel = isActive ? 'Bench' : 'Deploy';
+        const actionClass = isActive ? '' : 'primary';
+        return `
+          <article class="pc-card ${isActive ? 'active' : ''}" data-agent-id="${escapeHtml(agent.id)}">
+            <div class="pc-card-headline">
+              <strong>${escapeHtml(agent.displayName || agent.id)}</strong>
+              <span class="pc-level">Lv ${level}</span>
+            </div>
+            <div class="pc-card-base">${escapeHtml(agent.base || agent.id)}</div>
+            <div class="pc-card-class">${escapeHtml(cls)}</div>
+            <div class="pc-card-stats">
+              <div class="pc-card-stat"><strong>${code}</strong>CODE</div>
+              <div class="pc-card-stat"><strong>${recon}</strong>RECON</div>
+              <div class="pc-card-stat"><strong>${qa}</strong>QA</div>
+              <div class="pc-card-stat"><strong>${speed}</strong>SPEED</div>
+            </div>
+            <div class="pc-card-actions">
+              <button class="primary" data-action="inspect">Inspect</button>
+              <button data-action="swap" class="${actionClass}">${actionLabel}</button>
+            </div>
+          </article>
+        `;
+      };
+
+      els.pcActiveGrid.innerHTML = active.length
+        ? active.map(a => renderCard(a, true)).join('')
+        : '<div class="empty">No active agents — deploy some from the bench.</div>';
+      els.pcBenchGrid.innerHTML = bench.length
+        ? bench.map(a => renderCard(a, false)).join('')
+        : '<div class="empty">Bench is empty — everyone is active.</div>';
+
+      const bind = (container) => {
+        container.querySelectorAll('.pc-card').forEach(card => {
+          const agentId = card.dataset.agentId;
+          card.querySelectorAll('[data-action]').forEach(btn => {
+            btn.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              const action = btn.dataset.action;
+              if (action === 'inspect') {
+                showPcInspector(agentId);
+              } else if (action === 'swap') {
+                swapPcActive(agentId);
+              }
+            });
+          });
+        });
+      };
+      bind(els.pcActiveGrid);
+      bind(els.pcBenchGrid);
+    }
+
+    function showPcInspector(agentId) {
+      if (!els.pcInspector) return;
+      const dash = state.dashboard;
+      const agent = (dash?.party || []).find(a => a.id === agentId);
+      if (!agent) return;
+      const cs = agent.computedStats;
+      const counts = cs?.counts || {};
+      const stats = cs?.stats || {};
+      els.pcInspectorName.textContent = agent.displayName || agent.id;
+      els.pcInspectorBase.textContent = agent.base || agent.id;
+      const detail = (label, value) =>
+        `<div class="pc-detail"><label>${escapeHtml(label)}</label><strong>${escapeHtml(String(value))}</strong></div>`;
+      els.pcInspectorBody.innerHTML = [
+        detail('Level', cs?.level ?? '—'),
+        detail('Class', cs?.class ?? 'Untested'),
+        detail('XP', cs?.xp ?? 0),
+        detail('Readiness', cs?.readiness ?? 0),
+        detail('Code', stats.code ?? 0),
+        detail('Recon', stats.recon ?? 0),
+        detail('QA', stats.qa ?? 0),
+        detail('Docs', stats.docs ?? 0),
+        detail('Speed', stats.speed ?? 0),
+        detail('Grit', stats.grit ?? 0),
+        detail('Volume', stats.volume ?? 0),
+        detail('Attempts', counts.attempts ?? 0),
+        detail('Approved', counts.approved ?? 0),
+        detail('Rejected', counts.rejected ?? 0),
+        detail('Successes', counts.successful ?? 0),
+        detail('Notes size', agent.notesLength ?? 0),
+        detail('Chat turns', agent.chatTurns ?? 0),
+        detail('Blocked', agent.blocked ? 'Yes' : 'No'),
+      ].join('');
+      els.pcInspector.hidden = false;
+    }
+
+    async function swapPcActive(agentId) {
+      const dash = state.dashboard;
+      if (!dash) return;
+      const allParty = Array.isArray(dash.party) ? dash.party : [];
+      const currentActive = Array.isArray(dash.activeParty) && dash.activeParty.length
+        ? [...dash.activeParty]
+        : allParty.slice(0, 6).map(a => a.id);
+
+      let nextActive;
+      if (currentActive.includes(agentId)) {
+        nextActive = currentActive.filter(id => id !== agentId);
+      } else {
+        if (currentActive.length >= 6) {
+          alert('Active team is full (6). Bench someone first.');
+          return;
+        }
+        nextActive = [...currentActive, agentId];
+      }
+      try {
+        const res = await fetchJson('/api/runtime/active-party', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activeParty: nextActive }),
+        });
+        if (res && res.ok) {
+          // Update local cache so the UI reflects immediately.
+          state.dashboard.activeParty = nextActive;
+          renderPcRoster();
+          // Re-render the main deck party with the new active set.
+          if (typeof render === 'function') render();
+        } else {
+          alert('Swap failed: ' + (res?.error || 'unknown'));
+        }
+      } catch (e) {
+        alert('Swap failed: ' + e.message);
+      }
+    }
 
     // === PowerShell tab ================================================
     const SHELL_HISTORY_KEY = 'pipe-r.shell-history';

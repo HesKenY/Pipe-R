@@ -848,6 +848,97 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
   }
 
+  // Auto-review — walks tasks sitting in waiting_for_claude status, asks
+  // Claude Code to grade each one via `claude -p "..."`, and calls
+  // orch.reviewTask(). Unsticks the squad when Ken is away and the 30s
+  // auto-exec loop has nothing to pick up because everything is blocked
+  // on human review. Cap per click so Ken keeps control.
+  if (url === '/api/review/auto-run' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const payload = JSON.parse(body || '{}');
+      const cap = Math.max(1, Math.min(20, Number(payload.max) || 6));
+      const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
+      const orch = new Orchestrator();
+      const packet = orch.buildClaudeReentryPacket();
+      const pending = (packet.tasks || packet.pending || packet.queue || []).filter(t => {
+        const full = orch.queue.get(t.id);
+        return full && full.status === 'waiting_for_claude';
+      });
+      // Fallback: walk the raw queue directly if the reentry packet shape surprises us.
+      const targets = pending.length
+        ? pending
+        : orch.queue.tasks.filter(t => t.status === 'waiting_for_claude');
+      const slice = targets.slice(0, cap);
+
+      const results = [];
+      for (const t of slice) {
+        const full = orch.queue.get(t.id) || t;
+        const output = String(full.output || full.result || '').slice(0, 2000);
+        const prompt = [
+          'You are reviewing a dispatched agent task for Ken\'s Pipe-R squad.',
+          'Return EXACTLY one token on the first line: APPROVE or REJECT.',
+          'Then one short line with the reason (under 80 chars).',
+          '',
+          'Rules:',
+          '- APPROVE if the output actually addresses the objective and is not garbage.',
+          '- APPROVE if the output is short but in-voice and on-task.',
+          '- REJECT if the output is empty, a refusal, wall of unrelated text, or wrong domain.',
+          '- Do NOT approve plumbing/pokemon analogies or "as an AI" disclaimers.',
+          '',
+          `Task type: ${full.type || 'general'}`,
+          `Assigned agent: ${full.assignedAgent || '(auto)'}`,
+          `Objective: ${(full.objective || '').slice(0, 400)}`,
+          '',
+          'Output:',
+          output || '(no output captured)',
+        ].join('\n');
+
+        // Pipe the prompt via stdin to avoid command-line length limits
+        // and PowerShell quoting corruption — same pattern executor.js
+        // uses for ollama. `claude -p` reads the prompt from stdin when
+        // no positional arg is passed.
+        const { spawnSync } = require('child_process');
+        let verdictLine = '';
+        let reason = '';
+        try {
+          const run = spawnSync('claude', ['-p'], {
+            input: prompt,
+            encoding: 'utf8',
+            timeout: 120000,
+            maxBuffer: 2 * 1024 * 1024,
+            shell: true,
+          });
+          if (run.error) throw run.error;
+          if (run.status !== 0 && !run.stdout) {
+            throw new Error(`claude exited ${run.status}: ${(run.stderr || '').trim().slice(0, 200)}`);
+          }
+          const clean = String(run.stdout || '')
+            .replace(/\u001b\[\??[0-9;]*[a-zA-Z]/g, '')
+            .replace(/\r/g, '')
+            .trim();
+          const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+          verdictLine = (lines[0] || '').toUpperCase();
+          reason = (lines[1] || '').slice(0, 200);
+          const approved = verdictLine.includes('APPROVE');
+          orch.reviewTask(full.id, approved, reason || (approved ? 'claude auto-approve' : 'claude auto-reject'));
+          results.push({ id: full.id, agent: full.assignedAgent, verdict: approved ? 'APPROVE' : 'REJECT', reason });
+        } catch (e) {
+          results.push({ id: full.id, agent: full.assignedAgent, error: e.message.slice(0, 200) });
+        }
+      }
+
+      log(`Auto-review: ${results.filter(r => r.verdict === 'APPROVE').length} approved, ${results.filter(r => r.verdict === 'REJECT').length} rejected, ${results.filter(r => r.error).length} errored of ${results.length}`);
+      return jsonResp(res, {
+        count: results.length,
+        remaining: Math.max(0, targets.length - slice.length),
+        results,
+      });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
   // Run everything sitting in the queue — processes queued tasks through
   // the executor one at a time and returns a compact summary. Wired to the
   // deck's "Run Queue" button so Ken can punch the work forward manually
@@ -888,6 +979,12 @@ const server = createServer(async (req, res) => {
     try {
       const lt = await import('./agent_mode/core/livetest.js');
       return jsonResp(res, { rounds: lt.listRounds() });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/livetest/results' && req.method === 'GET') {
+    try {
+      const lt = await import('./agent_mode/core/livetest.js');
+      return jsonResp(res, { results: lt.listResults({ limit: 100 }) });
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
   if (url.startsWith('/api/livetest/rounds/') && req.method === 'GET') {
@@ -994,6 +1091,37 @@ const server = createServer(async (req, res) => {
       _nowPlayingCache = { ts: 0, data: null };
       try { return jsonResp(res, JSON.parse(out)); }
       catch { return jsonResp(res, { raw: out }); }
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
+  // Macro — sends a real OS-level keystroke to the currently foreground
+  // window via System.Windows.Forms.SendKeys. Used by the deck's AFK mode
+  // to punch Enter on whatever window Ken has focused (Claude Code
+  // terminal, a game, a chat app, whatever) every N seconds.
+  if (url === '/api/macro/send' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { key } = JSON.parse(body || '{}');
+      // Valid SendKeys tokens: "{ENTER}" "{TAB}" "{F5}" " " "a" etc.
+      // Whitelist common AFK keys so random strings can't be injected.
+      const map = {
+        'enter': '{ENTER}',
+        'space': ' ',
+        'tab':   '{TAB}',
+        'f15':   '{F15}',
+        'esc':   '{ESC}',
+      };
+      const token = map[String(key || 'enter').toLowerCase()] || '{ENTER}';
+      // PowerShell SendKeys. Single-quoted to avoid escaping, token is
+      // from the whitelist so no injection risk.
+      const cmd = `Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('${token}')`;
+      execSync(
+        `powershell -NoProfile -ExecutionPolicy Bypass -Command "${cmd}"`,
+        { encoding: 'utf8', timeout: 3000 }
+      );
+      return jsonResp(res, { ok: true, key: token });
     } catch (e) {
       return jsonResp(res, { ok: false, error: e.message }, 500);
     }

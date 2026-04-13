@@ -2961,6 +2961,7 @@
         <button id="tab-shell-btn" class="deck-tab-btn" type="button">Shell</button>
         <button id="refresh-btn">Refresh Now</button>
         <button id="run-queue-btn" class="secondary">Run Queue</button>
+        <button id="auto-review-btn" class="secondary">Auto Review</button>
         <button id="live-test-btn" class="secondary">Live Test v1</button>
         <button id="afk-btn" class="secondary">AFK: OFF</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
@@ -3432,6 +3433,7 @@
       modeBadge: document.getElementById('mode-badge'),
       refreshBtn: document.getElementById('refresh-btn'),
       runQueueBtn: document.getElementById('run-queue-btn'),
+      autoReviewBtn: document.getElementById('auto-review-btn'),
       liveTestBtn: document.getElementById('live-test-btn'),
       afkBtn: document.getElementById('afk-btn'),
       syncBtn: document.getElementById('sync-btn'),
@@ -4641,6 +4643,39 @@
     }
     els.runQueueBtn?.addEventListener('click', runQueueNow);
 
+    // Auto Review — punches waiting_for_claude tasks through `claude -p`
+    // and marks each APPROVE / REJECT via orch.reviewTask. Unsticks the
+    // squad when nothing new can run because everything needs review.
+    async function runAutoReview() {
+      if (!els.autoReviewBtn) return;
+      const btn = els.autoReviewBtn;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Reviewing…';
+      setBanner('Auto-review: calling Claude on pending tasks…', 'warn');
+      try {
+        const data = await fetchJson('/api/review/auto-run', {
+          method: 'POST',
+          body: JSON.stringify({ max: 8 }),
+        });
+        const approved = (data.results || []).filter(r => r.verdict === 'APPROVE').length;
+        const rejected = (data.results || []).filter(r => r.verdict === 'REJECT').length;
+        const errored  = (data.results || []).filter(r => r.error).length;
+        if (!data.count) {
+          setBanner('Nothing pending review.', 'ok');
+        } else {
+          setBanner(`Auto-review: ${approved} approved · ${rejected} rejected · ${errored} errored · ${data.remaining} remaining.`, errored ? 'warn' : 'ok');
+        }
+        await loadAll(true);
+      } catch (e) {
+        setBanner('Auto-review failed: ' + e.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+    els.autoReviewBtn?.addEventListener('click', runAutoReview);
+
     // Live Test v1 — fires a full 6-agent dual-team round against a
     // CHERP team_code. Prompts for the target crew code each run so Ken
     // can point it at whichever instance crew he wants. Default remembers
@@ -4685,9 +4720,11 @@
     }
     els.liveTestBtn?.addEventListener('click', runLiveTestV1);
 
-    // AFK mode — fires a synthetic Enter keydown on whatever has focus
-    // every 5s. Keeps remote sessions + agent prompts alive when Ken
-    // steps away. Persists to localStorage so it survives reload.
+    // AFK mode — calls /api/macro/send which fires a real OS-level Enter
+    // via System.Windows.Forms.SendKeys on the dev box. Press hits
+    // whatever window the OS has foregrounded — Claude Code terminal,
+    // game, chat, whatever. Browser JS can't do system keypresses, so
+    // this has to round-trip through the server.
     const AFK_LS_KEY = 'pipe-r.afk-mode';
     let _afkTimer = null;
     function setAfkButtonLabel() {
@@ -4696,19 +4733,22 @@
       els.afkBtn.textContent = 'AFK: ' + (on ? 'ON' : 'OFF');
       els.afkBtn.classList.toggle('agent-off', on);
     }
-    function afkTick() {
-      const target = document.activeElement || document.body;
-      const evOpts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
-      target.dispatchEvent(new KeyboardEvent('keydown', evOpts));
-      target.dispatchEvent(new KeyboardEvent('keypress', evOpts));
-      target.dispatchEvent(new KeyboardEvent('keyup', evOpts));
+    async function afkTick() {
+      try {
+        await fetchJson('/api/macro/send', {
+          method: 'POST',
+          body: JSON.stringify({ key: 'enter' }),
+        });
+      } catch {}
     }
     function startAfk() {
       if (_afkTimer) return;
+      // Fire immediately + every 5s after
+      afkTick();
       _afkTimer = window.setInterval(afkTick, 5000);
       localStorage.setItem(AFK_LS_KEY, '1');
       setAfkButtonLabel();
-      setBanner('AFK mode ON — synthetic Enter every 5s.', 'warn');
+      setBanner('AFK mode ON — firing Enter into foreground window every 5s.', 'warn');
     }
     function stopAfk() {
       if (_afkTimer) { clearInterval(_afkTimer); _afkTimer = null; }

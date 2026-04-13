@@ -12,7 +12,7 @@
 // designed in .claude/WORKLIST.md and will land in v1 once the plumbing
 // here is proven against the demo instance.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
@@ -22,6 +22,7 @@ const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const LT_DIR = join(ROOT, 'agent_mode', 'livetest');
 const SCENARIOS_DIR = join(LT_DIR, 'scenarios');
 const ROUNDS_DIR = join(LT_DIR, 'rounds');
+const RESULTS_LOG = join(LT_DIR, 'results.jsonl');
 
 // CHERP Supabase credentials — same anon key the web app uses. Safe to
 // embed here because the key is already public in cherp.live's js/config.js.
@@ -93,6 +94,46 @@ function listRounds() {
       } catch { return null; }
     })
     .filter(Boolean);
+}
+
+// Append a one-line summary of a completed round to the results log so
+// curate.js + future Ken AI fine-tunes can read the whole history without
+// walking every per-round JSON file.
+function logRoundResult(round, mode = 'v0') {
+  try {
+    if (!existsSync(LT_DIR)) mkdirSync(LT_DIR, { recursive: true });
+    const ops = round.operations || [];
+    const okOps = ops.filter(o => o.ok).length;
+    const entry = {
+      ts: round.finishedAt || new Date().toISOString(),
+      id: round.id,
+      mode,
+      scenarioId: round.scenarioId,
+      teamCode: round.teamCode,
+      instanceUrl: round.instanceUrl,
+      durationMs: round.durationMs,
+      opsTotal: ops.length,
+      opsOk: okOps,
+      opsFail: ops.length - okOps,
+      success: !!round.ok,
+      teamA: (round.teamA || []).map(t => ({ persona: t.persona, ok: !!t.ok, elapsedMs: t.elapsedMs || 0 })),
+      teamB: (round.teamB || []).map(t => ({ persona: t.persona, ok: !!t.ok, elapsedMs: t.elapsedMs || 0 })),
+      trainerVerdict: (round.trainer && (round.trainer.output || '').split('\n')[0] || '').slice(0, 120),
+    };
+    appendFileSync(RESULTS_LOG, JSON.stringify(entry) + '\n', 'utf8');
+  } catch {}
+}
+
+export function listResults({ limit = 50 } = {}) {
+  if (!existsSync(RESULTS_LOG)) return [];
+  let raw = '';
+  try { raw = readFileSync(RESULTS_LOG, 'utf8'); } catch { return []; }
+  const lines = raw.split('\n').filter(Boolean).slice(-limit);
+  const out = [];
+  for (const line of lines) {
+    try { out.push(JSON.parse(line)); } catch {}
+  }
+  return out.reverse();
 }
 
 function getRound(id) {
@@ -506,6 +547,7 @@ export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8
   };
 
   writeFileSync(join(ROUNDS_DIR, `${roundId}.json`), JSON.stringify(round, null, 2));
+  logRoundResult(round, 'v0');
   return round;
 }
 
@@ -772,7 +814,8 @@ export async function runRoundV1({ scenarioId, instanceUrl, cleanup = true, team
   };
   const outFile = join(ROUNDS_DIR, `${v1Record.id}.json`);
   writeFileSync(outFile, JSON.stringify(v1Record, null, 2));
+  logRoundResult(v1Record, 'v1');
   return v1Record;
 }
 
-export { listScenarios, loadScenario, listRounds, getRound };
+export { listScenarios, loadScenario, listRounds, getRound, listResults };

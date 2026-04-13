@@ -28,6 +28,178 @@ Emergency backup already captured at `~/Desktop/cherp emergency.zip`.
 - `team_codes` + `crew_members` tables stay as active org metadata.
   No drops.
 
+## Resolved decisions — Ken 2026-04-13 answers
+
+Captured here as load-bearing architecture. Every bullet below is
+**approved and must be honored** through every phase. Any plan item
+that contradicts one of these must be rewritten.
+
+### Ownership (section A resolved)
+
+- **A1 Workers own their own tasks, foremen see progress via
+  downstream visibility** (reports_to chain). Individual task system
+  ships FIRST and must be test-green. Foreman-downstream view is a
+  second visit on top.
+- **A2 Multi-assignee = task copy per assignee.** When a foreman
+  "assigns" one task to three workers, the system clones the task
+  into three independently-owned rows. Each assignee owns their
+  copy. Edits are independent thereafter — if Worker B's copy
+  evolves, Worker A's copy is unchanged. The foreman sees the whole
+  cohort via downstream visibility.
+- **A3 Placeholder names for unregistered workers.** Foreman types
+  "Mike" in the assignee field. If no matching user_profile exists,
+  CHERP creates a `task_placeholder` row (or an internal
+  `pending_user` stub) with the typed name. The task's assignment
+  points at the placeholder. When "Mike" signs up and his
+  display_name matches, the signup flow prompts "There are N
+  pending tasks assigned to you — claim them?" → links the
+  placeholder to his new user_profiles.id. Formal signup completes
+  the loop.
+- **A4 MRO stays request-based for now.** Not inventory tracking.
+  An MRO row is "I need X delivered to the site tomorrow." No
+  company-asset ownership. Park the virtual "Company" user idea.
+- **A5 Historical orphans** — null owner_id, admin claim UI.
+
+### Hierarchy + reports_to (section B resolved)
+
+- **B1 Recursive depth cap = 5** ✓
+- **B2 Vacated foreman = ghosted placeholder.** When a foreman
+  leaves (or is deactivated), their row gets a `status:
+  'placeholder'` flag, their user card is greyed out and marked
+  "unavailable". The `reports_to` rows pointing at them stay intact
+  so the chain doesn't break. A push notification fires to the
+  next level of supervision ("GF needed: replace foreman X on crew
+  Y") with a deep link to the reassignment screen. Crew + workers
+  stay visible + functional while the seat is vacant.
+- **B3 Crews are hot-swappable at the worker level.** A worker can
+  request to leave crew A and join crew B. Request fires a
+  notification to the receiving foreman with an approval link.
+  Approve = move the worker, update reports_to, notify the original
+  foreman. Reject = nothing changes.
+- **B4 Demotion gets the same clean path.** Foreman demoted →
+  their reports_to rows walk up one level automatically (to their
+  own supervisor), and a notification fires to the new supervisor
+  listing the incoming direct reports. If the demotion target
+  disagrees with the reassignment, they use the normal reassign
+  flow to redistribute.
+- **B5 Ghosted snapshot** — placeholder user rows preserve the
+  display_name, role title, crew association, but show as greyed-
+  out with a "seat vacant — awaiting assignment" badge. No login
+  possible against a ghosted row.
+- **B6 Prevent circular references via chronological order.**
+  Since `reports_to` is set at hire time and only changes via
+  explicit reassignment, the system can enforce: "when setting
+  reports_to = X, walk X's chain upward; if the walk ever returns
+  to the subject, reject." Plus a 5-level depth cap for safety.
+- **B7 Drill-down supervisor navigation.** GF's Manage tab shows
+  their direct reports (foremen). Tapping a foreman drills into
+  THAT foreman's workers. Another tap drills into the worker's
+  tasks/timecards. Not one flat query — layered navigation with
+  breadcrumbs.
+
+### Conflicts + offline (section C resolved)
+
+- **C1 Save both edits, never silently drop.** Every edit is
+  timestamped + signed with the account that made it. Notes are
+  append-merged. For scalar-field clashes (description, priority,
+  status) on the same record, the LOSING edit is preserved in an
+  `edit_conflicts` table and a notification fires to the next
+  higher supervisor in the chain to make the call: "Worker A
+  changed the task description to X, Worker B changed it to Y.
+  Which one stands?" The chosen version applies; the rejected
+  version is kept in audit for reference. **Merge information,
+  never delete.**
+- **C2 Task notes append-merge** — JSON array sorted by timestamp,
+  both edits survive.
+- **C3 Timecard approval flow — full spec:**
+  - **Workers can only clock in/out themselves** — no external
+    punch-in capability.
+  - **Foremen can EDIT existing timecards** owned by their
+    downstream, but cannot CREATE new punches for them.
+  - **Superintendents can add / remove / edit** any timecard in
+    their chain.
+  - **Workers request changes** to their own timecards (e.g. "I
+    forgot to clock out at 4pm, please fix to 4:30pm"). Request
+    pushes up to the next editable level in the chain (foreman,
+    then superintendent). On approve, the edit applies immediately.
+  - **Daily sync + weekly sync cadence** — timecards batch-submit
+    once per day AND once per week.
+  - **Worker approves their own full week report** before it
+    flows to payroll. The week summary shows every punch, any
+    edits made by foreman/super, and a big "Approve for payroll"
+    button. Payroll only sees approved weeks.
+- **C4 Per-install device UUID** on every edit for conflict
+  attribution.
+- **C5 CACHE_VERSION bump on store schema changes.**
+- **C6 IndexedDB retention policy + photo offload to Supabase
+  Storage on sync.**
+
+### New architecture pieces these answers introduce
+
+Three new cross-cutting systems have to land alongside the store:
+
+1. **Notifications + approval chain table**
+   ```sql
+   CREATE TABLE notifications (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     recipient_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL CHECK (kind IN (
+       'crew_swap_request','crew_swap_approved','crew_swap_rejected',
+       'foreman_vacant','demotion_reassignment','timecard_edit_request',
+       'timecard_edit_approved','timecard_edit_rejected',
+       'conflict_resolution_needed','task_shared','placeholder_claim'
+     )),
+     title TEXT NOT NULL,
+     body TEXT,
+     action_link TEXT,      -- hash route the recipient taps into
+     related_item_type TEXT,
+     related_item_id TEXT,
+     read_at TIMESTAMPTZ,
+     responded_at TIMESTAMPTZ,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+   );
+   ```
+
+2. **Placeholder users table**
+   ```sql
+   CREATE TABLE pending_users (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     display_name TEXT NOT NULL,
+     created_by UUID REFERENCES user_profiles(id),
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+     claimed_by_user_id UUID REFERENCES user_profiles(id),  -- set on claim
+     claimed_at TIMESTAMPTZ
+   );
+   ```
+   Assignee fields on tasks become `assigned_to_user_id UUID` (real
+   user) OR `assigned_to_pending_id UUID` (placeholder). On signup,
+   CHERP scans `pending_users` for name matches and offers to claim.
+
+3. **Edit conflict escalation table**
+   ```sql
+   CREATE TABLE edit_conflicts (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     item_type TEXT NOT NULL,
+     item_id TEXT NOT NULL,
+     field_name TEXT NOT NULL,
+     edit_a_value TEXT,
+     edit_a_by UUID REFERENCES user_profiles(id),
+     edit_a_at TIMESTAMPTZ NOT NULL,
+     edit_b_value TEXT,
+     edit_b_by UUID REFERENCES user_profiles(id),
+     edit_b_at TIMESTAMPTZ NOT NULL,
+     resolver_id UUID REFERENCES user_profiles(id),
+     resolved_value TEXT,
+     resolved_at TIMESTAMPTZ,
+     status TEXT NOT NULL DEFAULT 'pending'
+       CHECK (status IN ('pending','resolved','both_kept'))
+   );
+   ```
+
+These three tables go into the phase 2 migration alongside owner_id.
+
+---
+
 ## Theorycraft — issues to solve before we build
 
 Read this first. Every item is a design trap I want Ken's sign-off on
@@ -312,6 +484,409 @@ before I write code that commits to an answer. Organized by category.
 2. **The patch plan generator already caught the first bug** in the
    v1 runner during the last session. Keep running patch plans
    after every migration phase to catch regressions early.
+
+## Simulated conflict tests
+
+Walking each scenario end-to-end with the approved rules above to
+verify the system actually handles it seamlessly. Format per test:
+actors → timeline → expected outcome → verification step.
+
+### SIM-1 Two-device same-user clock-in
+
+**Actors**: Worker Mike has CHERP on his phone AND his tablet. Both
+are offline (no cell, job site basement).
+
+**Timeline**:
+- 08:00 Mike clocks in on the phone. Local store writes a
+  `crew_timecards` row with `device_id=phone-uuid`, `user_id=mike`,
+  `clock_in=08:00`. Queued for sync.
+- 08:02 Mike notices the tablet open, taps "Clock in" on it. Local
+  store on the tablet doesn't know about the phone's row yet. Writes
+  a SECOND row with `device_id=tablet-uuid`, same user, `clock_in=08:02`.
+- 09:00 Mike steps outside, phone reconnects first, syncs the 08:00
+  row → server.
+- 09:01 Tablet reconnects, tries to sync the 08:02 row. Server already
+  has an active open-shift row for Mike.
+
+**Desired outcome**: the tablet's sync detects an existing open shift,
+merges the two rows into one (earliest clock_in wins = 08:00), keeps
+the losing edit in `edit_conflicts`, notifies Mike "you clocked in on
+two devices — we kept the 08:00 punch from your phone." No duplicate
+timecard, no lost punch, no payroll confusion.
+
+**Fix baked into store**: every timecard write checks for an open
+shift for the same user_id before inserting. If one exists, the newer
+attempt becomes a note on the existing row instead of a new row.
+
+**Seamless**: ✅ — Mike never sees a duplicate, the system picks the
+first-clock-in-wins, both attempts are audit-logged.
+
+---
+
+### SIM-2 Concurrent edit of the same task description
+
+**Actors**: Foreman A and Foreman B both edit Worker X's task
+"Demo old cabinets" offline (X reports to both via multi-crew).
+
+**Timeline**:
+- 13:00 Foreman A edits the task description to "Demo old cabinets,
+  save the pantry doors", offline. Stored with edit_a_at=13:00,
+  device_id=A's phone.
+- 13:02 Foreman B edits the same task description to "Demo old
+  cabinets, keep the soffit above", offline. Stored with edit_b_at=13:02,
+  device_id=B's phone.
+- 13:30 Both foremen reconnect within a minute of each other.
+- Foreman A syncs first. Server accepts, task description becomes A's
+  version.
+- Foreman B syncs. Store detects the remote `updated_at > local.synced_at`
+  AND the field `description` changed AND B's local edit differs from
+  both the pre-edit state and the new remote state.
+
+**Desired outcome per C1**: don't silently clobber. Create an
+`edit_conflicts` row (both versions preserved), fire a notification to
+the next higher supervisor in the chain (probably the superintendent
+who oversees both foremen) with a deep link to the resolve screen. Both
+A and B see a yellow "conflict pending" badge on the task. The
+superintendent taps the notification, sees both versions side-by-side,
+picks one (or types a third), and applies.
+
+**Fix baked into store**: on sync, if local edit conflicts with remote
+edit on the same field, write to `edit_conflicts` instead of overwriting.
+Both values survive.
+
+**Seamless**: ⚠️ PARTIAL — seamless for data preservation (nothing lost),
+NOT seamless for user experience (both foremen see a pending-conflict
+badge until resolved). Accept that trade — C1 explicitly wants "merge
+information rather than delete."
+
+---
+
+### SIM-3 Notes append-merge
+
+**Actors**: Worker M and Foreman F both add notes to the same task
+offline.
+
+**Timeline**:
+- 10:00 Worker M adds note "Ran into hidden plumbing behind the wall,
+  called the plumber" offline. Local notes array: [{text: "Ran into...",
+  by: M, at: 10:00, device_id: m-phone}].
+- 10:15 Foreman F adds note "Approved overtime for this job" offline.
+  Local notes array: [{text: "Approved overtime...", by: F, at: 10:15,
+  device_id: f-phone}].
+- 10:30 Both sync. Store merges the notes arrays by sorting on `at`.
+
+**Desired outcome**: final notes array has BOTH entries in chronological
+order, each with byline + device. No conflict, no escalation, no data
+loss.
+
+**Fix**: store's sync resolver treats JSON-array fields as append-merge
+by default.
+
+**Seamless**: ✅ — no user intervention needed, both notes visible
+immediately.
+
+---
+
+### SIM-4 Share revocation race
+
+**Actors**: Foreman F reassigns task T from Worker A to Worker B while
+A is editing it offline.
+
+**Timeline**:
+- 11:00 Task T is assigned to Worker A (implicit share:
+  owner=F, shared_with=A, can_edit=true).
+- 11:05 A goes offline, starts editing the task progress to 50%.
+- 11:10 F, online, reassigns T to Worker B. Server:
+  - Revokes A's share (sets revoked_at).
+  - Creates new share for B.
+  - Updates `assigned_to_user_id` to B.
+- 11:30 A comes back online, tries to sync their local progress=50%
+  edit. Server checks: A no longer has an active share on this task.
+
+**Desired outcome**: A's edit gets preserved in the `edit_conflicts`
+table (they made a legitimate edit before the revocation reached them),
+a notification fires to F saying "Worker A updated task T after
+reassignment — here's what they changed: progress=50%. Apply it or
+discard?" F can choose to apply A's edit to the now-B-owned task or
+discard it. A's app shows a toast: "Task T was reassigned while you
+were offline. Your progress update was passed to the foreman."
+
+**Fix baked into store**: the sync engine checks share state BEFORE
+writing. If the writer's share is revoked, route the edit to an
+escalation path instead of failing.
+
+**Seamless**: ✅ — A's work isn't lost, F has the final call, no silent
+drop.
+
+---
+
+### SIM-5 Hierarchy reorg during timecard edit
+
+**Actors**: GF reassigns Worker X from Foreman A → Foreman B.
+Foreman A is mid-edit of X's timecard offline.
+
+**Timeline**:
+- 07:00 X reports to A (A is X's upstream foreman).
+- 07:30 A, offline, opens X's timecard and edits clock_out to 16:30.
+- 08:00 GF, online, updates X's reports_to = B. Server writes the change.
+- 08:15 A comes online. Tries to sync the timecard edit. Store checks:
+  does A still have edit access to X's timecard? Via downstream
+  visibility, NO — A is no longer X's foreman.
+
+**Desired outcome per B2+C3**: A's edit is preserved in `edit_conflicts`
++ a notification fires to B (the NEW foreman) saying "Former foreman A
+edited X's timecard at 07:30 (clock_out=16:30). Apply or discard?" B
+has immediate edit rights now and can decide. A sees a toast: "X was
+transferred to a different crew during your edit. Your timecard change
+was handed off to their new foreman for review."
+
+**Fix**: sync engine checks the writer's current permission (via
+reports_to chain + crew membership, at sync time, not at edit time).
+Permission-less edits escalate instead of failing.
+
+**Seamless**: ✅ — A's data survives, B gets the hand-off with context,
+no manual coordination needed between the two foremen.
+
+---
+
+### SIM-6 Delete-vs-edit race
+
+**Actors**: Foreman F deletes task T offline. Worker M edits task T
+offline during the same window.
+
+**Timeline**:
+- 09:00 F marks task T for deletion offline. Local: `deleted: true`.
+- 09:10 M adds a note and marks progress=75% offline. M doesn't know
+  the task was marked deleted because they're also offline.
+- 09:30 F syncs first. Server soft-deletes T (sets deleted_at).
+- 09:45 M syncs. Store checks: task T is soft-deleted. M's edit can't
+  just overwrite.
+
+**Desired outcome**: M's note + progress are preserved in a "zombie"
+audit entry linked to the deleted task. A notification fires to F:
+"Worker M updated task T after you deleted it — note + progress=75%.
+Undelete to keep their work, or discard?" F decides.
+
+**Fix baked into store**: use soft-delete (deleted_at timestamp)
+instead of hard delete. Edits arriving after a soft-delete escalate to
+the deleter via notification.
+
+**Seamless**: ✅ — M's work preserved, F has the final call.
+
+---
+
+### SIM-7 Employee ID collision on simultaneous signup
+
+**Actors**: Two users hit the CHERP signup form within the same
+second. Both get display_name starting with "KD".
+
+**Timeline**:
+- 10:00:000 User 1 submits signup. Client generates `KD-04829`.
+- 10:00:001 User 2 submits signup. Client also generates `KD-04829`
+  (unlikely with a 100k suffix space but possible).
+- 10:00:050 User 1's row inserts, `employee_id=KD-04829` claimed.
+- 10:00:051 User 2's row tries to insert, UNIQUE constraint fails with
+  23505.
+
+**Desired outcome**: User 2's signup retries with a new random suffix
+automatically (client-side, transparent). Retry up to 5 times. If all
+5 collide, escalate to random letters (not initials) for the 6th try.
+User 2 never sees an error unless all 6 fail in a row (~probability
+zero at 100k space).
+
+**Fix baked into signup**: catch 23505 on INSERT, regenerate code,
+retry. No user-facing error message unless 6 retries exhaust.
+
+**Seamless**: ✅ — neither user knows there was a collision.
+
+---
+
+### SIM-8 Stale service worker cache
+
+**Actors**: Worker on their phone. Didn't open CHERP for a week. In
+that week, phase 5 shipped and added a new `owner_id` column to
+`worker_certifications`.
+
+**Timeline**:
+- Day 0 Worker last used CHERP. SW cached app shell v3.1.
+- Day 7 Phase 5 ships. Service worker in the deployment is v3.2 with
+  the new store schema.
+- Day 7 Worker opens CHERP. SW activation check: worker's local
+  CACHE_VERSION=3.1, deployed version=3.2. Mismatch.
+
+**Desired outcome**: SW detects the version mismatch, forces a full
+reload of the app shell + IndexedDB schema upgrade + hard-reload to
+pick up new code. Worker sees a brief "Updating CHERP..." splash, then
+the new app. Their local unsynced edits (if any) survive the upgrade
+via a dedicated `pending_sync` object store that the schema upgrade
+preserves across migrations.
+
+**Fix baked into service worker**: every deploy bumps CACHE_VERSION.
+On activation, SW clears old caches + triggers IndexedDB schema
+upgrade via `onupgradeneeded`. Migration logic maps old schema to new
+schema, preserving `pending_sync` unchanged.
+
+**Seamless**: ✅ — one-second splash screen, everything preserved.
+
+---
+
+### SIM-9 Timecard approval flow end-to-end
+
+**Actors**: Worker W submits timecards for the week. Foreman F approves
+edits. Superintendent S processes payroll.
+
+**Timeline**:
+- Mon 07:00 W clocks in. Local row, syncs on reconnect.
+- Mon 16:00 W clocks out. Syncs.
+- Tue-Fri W repeats. All punches owned by W, visible to F via downstream
+  visibility.
+- Fri 16:30 W notices Tue's clock-out was wrong (forgot to punch). W
+  opens the timecard for Tue, taps "Request edit" → types "Forgot to
+  clock out, should be 16:30" → submits. Store writes a `notifications`
+  row with `kind=timecard_edit_request`, `recipient=F`.
+- Fri 16:35 F gets the notification, taps through. Sees W's Tuesday
+  punch, the requested edit, the original time, and two buttons:
+  "Approve" / "Reject". F taps approve. Store updates the timecard
+  row with the edited clock_out, writes an audit note signed by F
+  ("edited per W's request at 16:35 Fri"), writes a `notifications`
+  row back to W ("Your Tuesday timecard was approved").
+- Sat 09:00 W opens the week report. Sees every punch for the week,
+  F's approval note, and a big "Approve week for payroll" button. W
+  reviews everything, taps approve. The week's timecards get marked
+  `worker_approved_at = now()`, locking further worker edits.
+- Mon S runs payroll. Query: all `crew_timecards` where
+  `worker_approved_at IS NOT NULL AND week = <last_week>`. Those flow
+  to payroll. Unapproved timecards don't.
+
+**Desired outcome**: W approves their own week, S processes only
+approved weeks, F sees + approves edits. Daily sync (every 24h) + weekly
+sync (Sunday night batch to ensure everything is in the store before
+Monday payroll run).
+
+**Fix baked into schema**:
+- `crew_timecards.worker_approved_at TIMESTAMPTZ` column
+- `crew_timecards.edited_by UUID REFERENCES user_profiles(id)`
+- `crew_timecards.edit_reason TEXT`
+- Notifications table for the request → approve flow
+
+**Seamless**: ✅ — every actor has a clear step, nothing breaks offline,
+payroll never sees unapproved data.
+
+---
+
+### SIM-10 Orphan items after user delete
+
+**Actors**: Superintendent deletes Worker X's account. X had 40 tasks,
+12 timecards, and 3 certifications in the system.
+
+**Timeline**:
+- Day 0 X's row gets soft-deleted (sets `user_profiles.is_active=false`
+  and `deactivated_at=now`). Actual row stays to preserve FK integrity.
+- Day 0 All items owned by X have a dangling owner_id from a feed
+  perspective — they still exist, but no active user to feed them to.
+- Day 1 F (X's former foreman) opens the Manage tab. Downstream query
+  returns X's items because FOR 30 DAYS after deactivation, the
+  chain walk includes deactivated users with `deactivated_at >
+  now() - 30 days`.
+- Day 31 X's items drop out of F's default view. They're still in the
+  DB, still visible via an "Archived" admin filter.
+
+**Desired outcome**: a 30-day grace window where deactivated users'
+work is still in their foreman's feed so anything in progress can be
+wrapped up. After 30 days, items archive (soft-hidden) but never
+delete. Admin can always surface them.
+
+**Fix baked into visibility query**: the downstream walk explicitly
+includes `is_active=true OR deactivated_at > now() - interval '30 days'`.
+
+**Seamless**: ✅ — transitions are grace-gated, nothing snaps out of
+view immediately.
+
+---
+
+### SIM-11 Photo blob sync lag
+
+**Actors**: Worker W attaches a 4 MB photo to a task offline.
+
+**Timeline**:
+- 11:00 W takes a photo, attaches to task T. Local store writes the
+  task row with `photo_b64=<4MB base64>` AND queues a
+  `pending_photo_upload` job with the blob.
+- 11:05 W back online. Store sync fires.
+- 11:06 Task row sync: store PATCHes the remote with the task fields
+  but NOT the b64 photo (too big for PostgREST). Instead, it POSTs
+  the blob to Supabase Storage at
+  `photos/<task_id>/<uuid>.jpg`, gets back a URL, then PATCHes the
+  task row with `photo_url=<url>` and clears the local b64.
+- 11:07 Foreman F opens the task on their device, sees the photo via
+  `<img src=photo_url>`.
+
+**Failure case**: upload fails (network flaky, Storage quota hit).
+Store keeps the blob local, the task row shows "photo pending upload"
+until the next sync attempt. Every 60s the sync engine retries
+`pending_photo_upload` jobs. After 10 failures it surfaces a banner
+"Photo upload stuck — tap to retry or dismiss."
+
+**Fix baked into store**: photos are a separate queue from task data.
+Task metadata syncs fast, photos sync whenever they can. UI shows a
+small "📷 uploading" badge on tasks with pending photos.
+
+**Seamless**: ✅ — task data never blocked by photo upload, photo
+eventually lands, worst case shows a retry prompt.
+
+---
+
+### SIM-12 IndexedDB corruption mid-write
+
+**Actors**: W's phone crashes mid-write (OS kill, battery died).
+
+**Timeline**:
+- 12:00 W taps "Clock out" while offline. Store opens an IndexedDB
+  transaction to write a timecard row + a pending_sync entry + a
+  notification ("clocked out 12:00").
+- 12:00:050 Phone dies with the transaction half-complete. IDB rolls
+  back the transaction atomically.
+- 12:30 W boots phone, opens CHERP. The clock-out did NOT persist.
+  W sees the punch screen still showing "CLOCKED IN since 08:00".
+  W taps clock-out again. Works.
+
+**Desired outcome**: IndexedDB's atomic transactions mean we NEVER see
+half-writes. W just has to retry. If the store detects a "clocked in
+>12 hours" state on app open, it flags "did you forget to clock out?"
+as a nudge.
+
+**Fix**: store only writes via IDB transactions that encompass BOTH
+the data row AND the sync queue entry. Atomic or nothing.
+
+**Seamless**: ⚠️ PARTIAL — user has to retry, but nothing is corrupted
+and nothing is silently dropped. Accept.
+
+---
+
+### Summary — what the sims proved
+
+| # | Scenario | Seamless? | Mechanism |
+|---|---|---|---|
+| 1 | Two-device clock-in | ✅ | First-wins + merge-on-write |
+| 2 | Concurrent description edit | ⚠️ Partial | Preserve both + escalate |
+| 3 | Notes append-merge | ✅ | Array merge by timestamp |
+| 4 | Share revocation during edit | ✅ | Escalate to current owner |
+| 5 | Hierarchy reorg during edit | ✅ | Escalate to new supervisor |
+| 6 | Delete vs edit race | ✅ | Soft-delete + zombie escalation |
+| 7 | Employee ID collision | ✅ | Retry loop, invisible |
+| 8 | Stale SW cache | ✅ | Version bump + forced upgrade |
+| 9 | Timecard weekly approval | ✅ | Explicit approve button |
+| 10 | Orphan items after delete | ✅ | 30-day grace + archive |
+| 11 | Photo blob sync lag | ✅ | Separate queue + retry |
+| 12 | IDB corruption mid-write | ⚠️ Partial | Atomic tx, user retries |
+
+**12 of 12** scenarios have a clear resolution. **10 of 12** are fully
+seamless (user never sees friction). **2 of 12** (scalar-edit conflict
++ mid-write crash) require at most one user action to resolve.
+
+No scenario silently drops data. Every conflict is either auto-resolved
+or escalated up the chain with a notification. Every edit is attributed
+to a device_id + user_id + timestamp for audit.
 
 ### J. Deploy + rollback
 

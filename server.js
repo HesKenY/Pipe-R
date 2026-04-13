@@ -582,6 +582,36 @@ const server = createServer(async (req, res) => {
     return serveFile(res, join(ROOT, 'remote.html'), 'text/html');
   }
 
+  // Direct downloads — serves files dropped into the input/ folder so
+  // they're reachable from any tailnet browser. Used as a fallback when
+  // Taildrop doesn't show up on the receiving side. URL form:
+  //   /dl/<filename>   (e.g. /dl/hp-remote-v3.zip)
+  // Only allows files with safe names from the input directory.
+  if (url.startsWith('/dl/') && req.method === 'GET') {
+    const requested = basename(decodeURIComponent(url.slice('/dl/'.length)));
+    if (!/^[A-Za-z0-9._-]+$/.test(requested)) {
+      res.writeHead(400);
+      res.end('bad filename');
+      return;
+    }
+    const filePath = join(ROOT, 'input', requested);
+    if (!existsSync(filePath)) {
+      res.writeHead(404);
+      res.end('not found: ' + requested);
+      return;
+    }
+    const ext = requested.toLowerCase().split('.').pop();
+    const mime = ext === 'zip' ? 'application/zip'
+      : ext === 'html' ? 'text/html; charset=utf-8'
+      : ext === 'js' ? 'application/javascript; charset=utf-8'
+      : ext === 'txt' || ext === 'md' ? 'text/plain; charset=utf-8'
+      : ext === 'png' ? 'image/png'
+      : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+      : 'application/octet-stream';
+    res.setHeader('Content-Disposition', `attachment; filename="${requested}"`);
+    return serveBinaryFile(res, filePath, mime);
+  }
+
   if (url.startsWith('/assets/pokedex/')) {
     const requested = basename(decodeURIComponent(url.slice('/assets/pokedex/'.length)));
     const ok = /^\d{4}(?:-icon|-icons)?\.png$/i.test(requested)
@@ -874,14 +904,25 @@ const server = createServer(async (req, res) => {
     try {
       const payload = JSON.parse(body || '{}');
       const lt = await import('./agent_mode/core/livetest.js');
-      log(`LiveTest start: ${payload.scenarioId} → ${payload.instanceUrl || '(default)'}`);
-      const round = await lt.runRound({
-        scenarioId: payload.scenarioId,
-        instanceUrl: payload.instanceUrl,
-        observer: payload.observer || 'llama3.1:8b',
-        cleanup: payload.cleanup !== false,
-        teamCode: payload.teamCode,
-      });
+      const mode = payload.mode === 'v1' ? 'v1' : 'v0';
+      log(`LiveTest start (${mode}): ${payload.scenarioId} → ${payload.instanceUrl || '(default)'}`);
+      let round;
+      if (mode === 'v1') {
+        round = await lt.runRoundV1({
+          scenarioId: payload.scenarioId,
+          instanceUrl: payload.instanceUrl,
+          cleanup: payload.cleanup !== false,
+          teamCode: payload.teamCode,
+        });
+      } else {
+        round = await lt.runRound({
+          scenarioId: payload.scenarioId,
+          instanceUrl: payload.instanceUrl,
+          observer: payload.observer || 'llama3.1:8b',
+          cleanup: payload.cleanup !== false,
+          teamCode: payload.teamCode,
+        });
+      }
       log(`LiveTest done: ${round.id} ops=${round.operations.length} ok=${round.ok}`);
       return jsonResp(res, round);
     } catch (e) {

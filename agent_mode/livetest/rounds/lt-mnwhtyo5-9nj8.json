@@ -1,0 +1,287 @@
+{
+  "id": "lt-mnwhtyo5-9nj8",
+  "scenarioId": "kitchen-remodel-3day",
+  "scenarioName": "3-day kitchen remodel — 1 foreman + 3 workers",
+  "instanceUrl": "https://cherp.live/demo.html",
+  "teamCode": "WS5A3Q",
+  "observer": "llama3.1:8b",
+  "startedAt": "2026-04-13T01:07:52.901Z",
+  "finishedAt": "2026-04-13T01:08:13.804Z",
+  "durationMs": 20903,
+  "ok": false,
+  "operations": [
+    {
+      "kind": "signup_user",
+      "ok": true,
+      "status": 201,
+      "summary": "Sim Foreman (foreman) · simlt_tyo5_simforeman"
+    },
+    {
+      "kind": "signup_user",
+      "ok": true,
+      "status": 201,
+      "summary": "Sim Worker 1 (journeyman) · simlt_tyo5_simworker1"
+    },
+    {
+      "kind": "signup_user",
+      "ok": true,
+      "status": 201,
+      "summary": "Sim Worker 2 (journeyman) · simlt_tyo5_simworker2"
+    },
+    {
+      "kind": "signup_user",
+      "ok": true,
+      "status": 201,
+      "summary": "Sim Worker 3 (journeyman) · simlt_tyo5_simworker3"
+    },
+    {
+      "kind": "create_crew",
+      "ok": true,
+      "status": 0,
+      "summary": "reusing existing team_code=WS5A3Q (skipped creation)"
+    },
+    {
+      "kind": "user_join_crew",
+      "ok": true,
+      "status": 204,
+      "summary": "Sim Foreman → WS5A3Q"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Foreman (foreman)",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_members\" violates foreign key constraint \"crew_members_team_code_fkey\""
+    },
+    {
+      "kind": "user_join_crew",
+      "ok": true,
+      "status": 204,
+      "summary": "Sim Worker 1 → WS5A3Q"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Worker 1 (journeyman)",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_members\" violates foreign key constraint \"crew_members_team_code_fkey\""
+    },
+    {
+      "kind": "user_join_crew",
+      "ok": true,
+      "status": 204,
+      "summary": "Sim Worker 2 → WS5A3Q"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Worker 2 (journeyman)",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_members\" violates foreign key constraint \"crew_members_team_code_fkey\""
+    },
+    {
+      "kind": "user_join_crew",
+      "ok": true,
+      "status": 204,
+      "summary": "Sim Worker 3 → WS5A3Q"
+    },
+    {
+      "kind": "add_member",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Worker 3 (journeyman)",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_members\" violates foreign key constraint \"crew_members_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "URGENT → Sim Worker 1: Demo existing cabinets, protect floor",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "URGENT → Sim Foreman: Rough-in new plumbing for island sink",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "NORMAL → Sim Worker 2: Photograph conditions before demo",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "NORMAL → Sim Foreman: Drop new romex for under-cab lights",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "LOW → Sim Worker 3: Haul debris to dumpster, sweep site",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "NORMAL → Sim Worker 1: Set temporary bracing for upper cabinets",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "create_task",
+      "ok": false,
+      "status": 409,
+      "summary": "LOW → Sim Worker 2: Stage new cabinet boxes in the garage",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_tasks\" violates foreign key constraint \"crew_tasks_team_code_fkey\""
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 0",
+      "errorMsg": "no server id captured (task create failed upstream)"
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 2",
+      "errorMsg": "no server id captured (task create failed upstream)"
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 0",
+      "errorMsg": "no server id captured (task create failed upstream)"
+    },
+    {
+      "kind": "progress_update",
+      "ok": false,
+      "status": 0,
+      "summary": "task_index 4",
+      "errorMsg": "no server id captured (task create failed upstream)"
+    },
+    {
+      "kind": "timecard",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Foreman 8h",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_timecards\" violates foreign key constraint \"crew_timecards_team_code_fkey\""
+    },
+    {
+      "kind": "timecard",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Worker 1 8h",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_timecards\" violates foreign key constraint \"crew_timecards_team_code_fkey\""
+    },
+    {
+      "kind": "timecard",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Worker 2 8h",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_timecards\" violates foreign key constraint \"crew_timecards_team_code_fkey\""
+    },
+    {
+      "kind": "timecard",
+      "ok": false,
+      "status": 409,
+      "summary": "Sim Worker 3 8h",
+      "errorCode": "23503",
+      "errorMsg": "insert or update on table \"crew_timecards\" violates foreign key constraint \"crew_timecards_team_code_fkey\""
+    },
+    {
+      "kind": "daily_log",
+      "ok": true,
+      "status": 201,
+      "summary": "foreman end-of-day note"
+    },
+    {
+      "kind": "crew_message",
+      "ok": true,
+      "status": 201,
+      "summary": "foreman → channel"
+    },
+    {
+      "kind": "cleanup_message",
+      "ok": true,
+      "status": 204,
+      "summary": "messages?id=eq.8b8426fb-9693-4db2-ab8c-cd00c3565d8a"
+    },
+    {
+      "kind": "cleanup_daily_log",
+      "ok": true,
+      "status": 204,
+      "summary": "daily_logs?id=eq.424667d3-d905-4123-ae06-80d7986e848e"
+    },
+    {
+      "kind": "cleanup_members",
+      "ok": true,
+      "status": 204,
+      "summary": "crew_members?team_code=eq.WS5A3Q"
+    },
+    {
+      "kind": "cleanup_crew",
+      "ok": true,
+      "status": 204,
+      "summary": "team_codes?code=eq.WS5A3Q"
+    },
+    {
+      "kind": "cleanup_user",
+      "ok": false,
+      "status": 409,
+      "summary": "user_profiles?id=eq.e2cda2d5-2968-49e8-b80c-4e6a771e3873",
+      "errorCode": "23503",
+      "errorMsg": "update or delete on table \"user_profiles\" violates foreign key constraint \"messages_sender_id_fkey\" on table \"messages\""
+    },
+    {
+      "kind": "cleanup_user",
+      "ok": true,
+      "status": 204,
+      "summary": "user_profiles?id=eq.6d09ed55-884c-498f-a34c-a91b750a2be4"
+    },
+    {
+      "kind": "cleanup_user",
+      "ok": true,
+      "status": 204,
+      "summary": "user_profiles?id=eq.4264597d-8698-4e30-8660-91e1c7445adf"
+    },
+    {
+      "kind": "cleanup_user",
+      "ok": true,
+      "status": 204,
+      "summary": "user_profiles?id=eq.5845fe6b-e8ac-4fdc-b8ee-40c7e30355de"
+    }
+  ],
+  "debrief": "VERDICT: fail\nSUMMARY: The agent squad failed to complete the kitchen remodel scenario du\ndue to unrecoverable database errors and foreign key constraint violations.\nviolations.\n\nCRITERIA:\n  - crew created successfully: met — reused existing team code\n  - 3 members joined: not met — add_member errors\n  - all 5 tasks created: not met — create_task errors\n  - at least 2 task progress updates landed: not met — progress_update erro\nerrors\n  - no unrecoverable PostgREST errors: not met — multiple error entries\n\nANOMALIES:\n  - Multiple \"insert or update on table\" errors due to foreign key constrai\nconstraint violations.\n\nNEXT:\n- Investigate the underlying cause of the database constraint issues and ad\nadjust code accordingly.",
+  "debriefError": null,
+  "acceptCriteria": [
+    "crew created successfully",
+    "3 members joined",
+    "all 5 tasks created",
+    "at least 2 task progress updates landed",
+    "no unrecoverable PostgREST errors"
+  ]
+}

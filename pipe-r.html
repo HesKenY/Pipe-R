@@ -2961,6 +2961,8 @@
         <button id="tab-shell-btn" class="deck-tab-btn" type="button">Shell</button>
         <button id="refresh-btn">Refresh Now</button>
         <button id="run-queue-btn" class="secondary">Run Queue</button>
+        <button id="live-test-btn" class="secondary">Live Test v1</button>
+        <button id="afk-btn" class="secondary">AFK: OFF</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
         <button id="pause-btn">Agent Mode: ON</button>
         <button id="remote-btn">Open Remote Deck</button>
@@ -3430,6 +3432,8 @@
       modeBadge: document.getElementById('mode-badge'),
       refreshBtn: document.getElementById('refresh-btn'),
       runQueueBtn: document.getElementById('run-queue-btn'),
+      liveTestBtn: document.getElementById('live-test-btn'),
+      afkBtn: document.getElementById('afk-btn'),
       syncBtn: document.getElementById('sync-btn'),
       pauseBtn: document.getElementById('pause-btn'),
       remoteBtn: document.getElementById('remote-btn'),
@@ -4636,6 +4640,86 @@
       }
     }
     els.runQueueBtn?.addEventListener('click', runQueueNow);
+
+    // Live Test v1 — fires a full 6-agent dual-team round against a
+    // CHERP team_code. Prompts for the target crew code each run so Ken
+    // can point it at whichever instance crew he wants. Default remembers
+    // last used. Takes ~5-10 min wall time for the full squad.
+    const LT_TEAMCODE_LS_KEY = 'pipe-r.livetest.teamcode';
+    async function runLiveTestV1() {
+      if (!els.liveTestBtn) return;
+      const btn = els.liveTestBtn;
+      const orig = btn.textContent;
+      const last = localStorage.getItem(LT_TEAMCODE_LS_KEY) || 'WS5A3Q';
+      const teamCode = (window.prompt(
+        'Live Test v1 target team_code (must exist on cherp.live):',
+        last
+      ) || '').trim();
+      if (!teamCode) return;
+      localStorage.setItem(LT_TEAMCODE_LS_KEY, teamCode);
+      if (!confirm(`Fire Live Test v1 round against team_code=${teamCode}? Full 6-agent squad, 5-10 min wall time.`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Running v1…';
+      setBanner(`Live Test v1 firing at ${teamCode}… (6 agents + trainer + companion)`, 'warn');
+      try {
+        const data = await fetchJson('/api/livetest/start', {
+          method: 'POST',
+          body: JSON.stringify({
+            mode: 'v1',
+            scenarioId: 'kitchen-remodel-3day',
+            teamCode,
+            cleanup: true,
+          }),
+        });
+        const teamA = (data.teamA || []).filter(t => t.ok).length;
+        const teamB = (data.teamB || []).filter(t => t.ok).length;
+        const ops = (data.operations || []).filter(o => o.ok).length;
+        const total = (data.operations || []).length;
+        setBanner(`Live Test v1 done · ${ops}/${total} ops · Team A ${teamA}/3 · Team B ${teamB}/3 · ${Math.round(data.durationMs/1000)}s`, data.ok ? 'ok' : 'warn');
+      } catch (e) {
+        setBanner('Live Test v1 failed: ' + e.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+    els.liveTestBtn?.addEventListener('click', runLiveTestV1);
+
+    // AFK mode — fires a synthetic Enter keydown on whatever has focus
+    // every 5s. Keeps remote sessions + agent prompts alive when Ken
+    // steps away. Persists to localStorage so it survives reload.
+    const AFK_LS_KEY = 'pipe-r.afk-mode';
+    let _afkTimer = null;
+    function setAfkButtonLabel() {
+      if (!els.afkBtn) return;
+      const on = !!_afkTimer;
+      els.afkBtn.textContent = 'AFK: ' + (on ? 'ON' : 'OFF');
+      els.afkBtn.classList.toggle('agent-off', on);
+    }
+    function afkTick() {
+      const target = document.activeElement || document.body;
+      const evOpts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+      target.dispatchEvent(new KeyboardEvent('keydown', evOpts));
+      target.dispatchEvent(new KeyboardEvent('keypress', evOpts));
+      target.dispatchEvent(new KeyboardEvent('keyup', evOpts));
+    }
+    function startAfk() {
+      if (_afkTimer) return;
+      _afkTimer = window.setInterval(afkTick, 5000);
+      localStorage.setItem(AFK_LS_KEY, '1');
+      setAfkButtonLabel();
+      setBanner('AFK mode ON — synthetic Enter every 5s.', 'warn');
+    }
+    function stopAfk() {
+      if (_afkTimer) { clearInterval(_afkTimer); _afkTimer = null; }
+      localStorage.removeItem(AFK_LS_KEY);
+      setAfkButtonLabel();
+      setBanner('AFK mode OFF.', 'ok');
+    }
+    function toggleAfk() { _afkTimer ? stopAfk() : startAfk(); }
+    els.afkBtn?.addEventListener('click', toggleAfk);
+    if (localStorage.getItem(AFK_LS_KEY) === '1') startAfk();
+    setAfkButtonLabel();
     els.pauseBtn.addEventListener('click', toggleAutoExec);
     els.remoteBtn.addEventListener('click', () => { window.location.href = '/remote'; });
     window.addEventListener('keydown', handleDeckKeydown);

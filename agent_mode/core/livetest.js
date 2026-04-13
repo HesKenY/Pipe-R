@@ -706,8 +706,10 @@ export async function runRoundV1({ scenarioId, instanceUrl, cleanup = true, team
   }
   const teamB = [];
   for (const slot of V1_ROSTER.teamB) {
-    // Alakazam has a slow cold start — give it more room.
-    const tout = slot.id === 'jefferferson:latest' ? 180000 : 120000;
+    // Umbreon + Alakazam both have slow cold starts on a fresh session
+    // (Umbr30n timed out at 120s in the first v1 round). Bumped to 180s.
+    const tout = (slot.id === 'jefferferson:latest' || slot.id === 'jefferyjefferferson:latest')
+      ? 180000 : 120000;
     teamB.push(await dispatchV1Agent(slot, ctx, opsHeader, tout));
   }
 

@@ -73,7 +73,7 @@ The same `notes.md` loader runs in both the chat endpoint (`POST /api/chat`) and
 - **Blocked agents**: agents with `"blocked": true` in `agents.json` are skipped by `orchestrator._tryAutoAssign` and render with a red `BLOCKED` badge on the deck + remote. Direct dispatch by id still works.
 - **Remote deck**: `remote.html` is now a vertical stack mirroring the deck (Trainer Bench → Party → Stats → Chat → Dispatch → Queue). Fold 6 cover (≤420px) and inner (≥721px) breakpoints. PIN is **0615** (was 1996 — updated in `runtime.json` and the server.js fallback).
 
-### API surface (post-2026-04-12)
+### API surface (post-2026-04-12 / 13)
 
 | Endpoint | Method | Purpose |
 |---|---|---|
@@ -84,6 +84,26 @@ The same `notes.md` loader runs in both the chat endpoint (`POST /api/chat`) and
 | `/api/chat/:agentId/log` | DELETE | wipe chat-log.jsonl (training log stays intact) |
 | `/api/chat/:agentId/training` | GET | last 40 training-log entries for this agent |
 | `/api/training/review` | POST | `{ lineNo, approved, notes? }` → marks training-log row reviewed |
+| `/api/livetest/scenarios` | GET | list available Live Test scenarios |
+| `/api/livetest/rounds` | GET | list last 40 rounds (summary view) |
+| `/api/livetest/rounds/:id` | GET | full round record with ops + team outputs |
+| `/api/livetest/start` | POST | `{ scenarioId, teamCode?, mode?: 'v0'\|'v1', cleanup? }` — fires a round |
+| `/api/livetest/results` | GET | last 100 round summaries from `results.jsonl` |
+| `/api/livetest/patch-plan` | POST | `{ roundId? }` — asks Claude to draft a structured markdown patch plan for a round |
+| `/api/livetest/patches` | GET | list saved patch plans |
+| `/api/livetest/patches/:id` | GET | single patch plan as JSON |
+| `/api/queue/run` | POST | execute queued tasks through orchestrator (up to 10 per call) |
+| `/api/review/auto-run` | POST | `{ max? }` — call `claude -p` on each `waiting_for_claude` task, APPROVE/REJECT via orch.reviewTask |
+| `/api/auto/generate-tasks` | POST | `{ count? }` — ask Claude for N new dispatchable tasks as JSON, createTask each |
+| `/api/metrics` | GET | CPU / RAM / GPU / disk / loaded ollama models (2s cache) |
+| `/api/now-playing` | GET | Windows SMTC currently-playing media (1.5s cache) |
+| `/api/now-playing/control` | POST | `{ action: play\|pause\|toggle\|next\|prev }` — fires SMTC transport |
+| `/api/volume` | GET/POST | read/set system + per-app (Spotify) volume via Core Audio COM |
+| `/api/wallpaper-colors` | GET | dominant colors from current main-display wallpaper (for auto theme) |
+| `/api/macro/send` | POST | `{ key: enter\|space\|tab\|f15\|esc }` — SendKeys macro into foreground window |
+| `/api/shell/run` | POST | `{ command }` — runs a PowerShell command (auto-wraps bare `claude <text>` into `claude -p "..."`) |
+| `/api/steam/library` | GET | installed Steam games from libraryfolders.vdf + localconfig.vdf playtime |
+| `/api/dl/:filename` | GET | serve a file from the input/ folder (for Tailscale/LAN file transfer) |
 
 ### Known Issues / Gotchas
 
@@ -158,6 +178,127 @@ Both repos are private. CHERP-Nest (`https://github.com/HesKenY/CHERP-Nest.git`)
 - **Notes modal:** per-agent `notes.md` editor as a full-screen overlay (not inline — it used to squash the chat).
 - **Chat panel:** tied to selected agent, live loop against `/api/chat`, turns feed both `chat-log.jsonl` and `training-log.jsonl`. Log button opens a training-log viewer overlay with Approve/Reject buttons per row.
 - **Now Playing strip:** shows SMTC data, pulsing dot on playback, source badge.
+
+## Session 2026-04-12 / 13 — what shipped
+
+Big-ticket additions this session. Everything below is live, committed, and
+verified — read this to catch up on what exists before proposing new work.
+
+### Live Test Mode (v0 + v1)
+
+`agent_mode/core/livetest.js` runs scripted scenarios against a real CHERP
+instance + optionally fans out to the full agent squad. Two modes:
+
+- **v0** (`runRound`): one observer agent (P0ryg0n) reads the operation log
+  and writes a debrief. Scripted CHERP operations: signup user_profiles,
+  create crew (or reuse), add crew_members, create crew_tasks, progress
+  updates, timecards, daily log, crew message, reverse-order cleanup.
+- **v1** (`runRoundV1`): layers the 6-agent dual-team split on top of v0's
+  operation engine. Team A (D3c1du3y3 Foreman / 5c1z0r Worker / P0ryg0n
+  Apprentice) roleplays the crew. Team B (R0t0m Integration / Umbr30n QA /
+  4l4k4z4m Archive) audits from the outside. Ken AI makes the trainer
+  decision. M3w proposes one prompt/notes improvement. Each round persists
+  to `agent_mode/livetest/rounds/ltv1-<id>.json`.
+
+**Default target**: `cherp.live/demo.html` + `team_code=WS5A3Q` (standing
+Test crew). Pass `reuseExistingCrew` or `teamCode` to the runner to point
+at a pre-existing crew — cleanup will only remove rows the round itself
+created, keyed by the `simlt-<team>-<name>` device_id pattern. **Never
+lets cleanup drop `team_codes?code=eq.<teamCode>` when reuse is set** —
+this was the critical bug caught by the first patch plan.
+
+Scenarios: `agent_mode/livetest/scenarios/kitchen-remodel-3day.json` —
+1 foreman + 3 journeymen workers (CHERP's `user_profiles.role` CHECK
+constraint rejects `worker` so "Worker" labels map to `journeyman`).
+
+Results log: `agent_mode/livetest/results.jsonl` — one compact JSON line
+per completed round with id, mode, teamCode, duration, ops pass/fail,
+team A/B passes, trainer verdict first line. Readable via
+`GET /api/livetest/results`.
+
+### Patch Plan generator
+
+`POST /api/livetest/patch-plan` reads the latest (or specified) round,
+formats Team B findings + operation log + trainer decision + companion
+proposal, and pipes to `claude -p` asking for structured markdown with
+fixed sections: Round summary / Issues (severity + evidence) / Proposed
+fixes (target / change / test / risk / confidence) / Deploy gate.
+
+Saves to `agent_mode/livetest/patches/<roundId>.md`. Deck button "Patch
+Plan" opens a full modal with Copy-to-clipboard. The loop is Live Test →
+Team B finds issues → Patch Plan drafts fixes → Ken tests → deploy.
+
+### Auto Mode closed loop
+
+Deck button "Auto Mode: ON/OFF" drives a 90s tick on the frontend:
+1. Run Queue — executes queued tasks via `orch.executeTask` (cap 10)
+2. Auto Review — calls `claude -p` on waiting_for_claude tasks (cap 6).
+   Pipes the prompt via stdin, parses first-line APPROVE/REJECT, calls
+   `orch.reviewTask`.
+3. If queue is thin (<4 in flight), calls `POST /api/auto/generate-tasks`
+   which asks Claude for N new dispatchable tasks as JSON, createTask
+   each. Task types, agent roster, and last 8 tasks are all included in
+   the prompt so Claude proposes non-duplicate work.
+
+Single-flight guard prevents overlapping ticks. Persists to localStorage.
+Drained 14 real pending tasks in one run during this session with 0
+errors (6 approve / 8 reject). Claude correctly caught hallucinated
+React Native code from cherp-piper and generic templates from llama3.1,
+approved a concrete CSV export from qwen2.5-coder.
+
+### System control surface
+
+- **Volume sliders** — `.claude/bin/volume.ps1` inline C# COM interop with
+  IAudioEndpointVolume (master) + IAudioSessionManager2 +
+  ISimpleAudioVolume (per-process). GET + POST `/api/volume` with
+  `{target: 'system'|'app', value: 0..1, app?: 'Spotify'}`. Deck now-
+  playing card has two sliders (SYS + SPT) that debounce input 120ms.
+- **Now-playing transport** — SMTC via `.claude/bin/smtc-control.ps1` for
+  play/pause/toggle/next/prev. Works with Spotify desktop + any SMTC-
+  aware app.
+- **Wallpaper-matched theme** — `.claude/bin/wallpaper-colors.ps1` reads
+  TranscodedWallpaper (Wallpaper Engine aware), grid-samples 48x48 via
+  System.Drawing.Bitmap, filters near-gray (sat > 0.28), picks 2 most-
+  saturated with 30° hue separation, brightens to fixed HSL luminance.
+  `applyWallpaperColors` sets `--sw-magenta/-rgb`, `--sw-cyan/-rgb`,
+  `--sw-lavender/-rgb`, `--sw-bg-0/1/2`, `--sw-shell-0/1` CSS vars so
+  body gradient + shell bg + every accent retints. Default theme.
+- **AFK mode** — real OS-level keypress macro via
+  `[System.Windows.Forms.SendKeys]::SendWait('{ENTER}')`. Deck button
+  toggles a 5s tick that POSTs `/api/macro/send`. Fires into whatever
+  Windows window has foreground focus. Whitelisted keys only.
+- **Shell tab on deck** — full PowerShell terminal in the deck Shell
+  tab. `POST /api/shell/run` with 30s timeout + 4MB buffer. Bare
+  `claude <text>` auto-wraps to `claude -p "<text>"` on the server so
+  the shell feels like a Claude REPL.
+
+### Tailscale + Remote clients
+
+- **Tailscale mesh** (`heskeny@` account):
+    - `desktop-ed797oh` (dev box) → `100.117.92.46`
+    - `laptop-nonc1i8l` (HP laptop) → `100.108.152.63`
+  Lets the laptop + phone hit the Pipe-R server from any network
+  (home, hotspot, work) without port-forwarding. Windows firewall rule
+  "Node.js JavaScript Runtime" already allows inbound 7777 on
+  Private+Public. `tailscale file cp <file> <peer>:` moves files between
+  machines. `/dl/<filename>` route on the server serves files from
+  `input/` as a fallback when Taildrop drops them into an inbox.
+- **HP Remote v3** at `clients/hp-remote/` — standalone HTML client
+  (no build) with 5 tabs: CLAUDE (prompt box), SHELL (terminal), DECK
+  (embeds `pipe-r.html?deck=1` in iframe), METRICS (same), STEAM (same).
+  Live wallpaper color sync so the laptop tints exactly like the main
+  deck. Points at `http://100.117.92.46:7777` via the Tailscale IP.
+  Distributed as `hp-remote-v3.zip` on Ken's Desktop. Includes
+  `check-deps.ps1` that detects Tailscale + offers winget install of
+  Node.js / Claude Code CLI.
+- **PipeR-Remote-Android** (`C:\Users\Ken\Desktop\PipeR-Remote-Android\`)
+  — Kotlin + Compose + WebView wrapper pointing at the full ops deck via
+  Tailscale IP. App label "Pipe-R v3", v3.0.0. URL configurable via
+  Settings FAB. Error overlay with Tailscale-specific diagnostic hints.
+- **CHERP-Android** (`C:\Users\Ken\Desktop\CHERP-Android\`) — identical
+  WebView template pointing at `https://cherp.live/demo.html`. App label
+  "CHERP", applicationId `com.hesken.cherp`. Both Android projects
+  install side-by-side without collision.
 
 ## Known gotchas learned this session
 

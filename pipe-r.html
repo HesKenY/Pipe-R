@@ -3888,7 +3888,34 @@
       `;
     }
 
+    // Phase 9+: real stats from agent_mode/core/stats.js (stamped
+    // on each agent by server.js getDashboardState). Falls back to
+    // the old placeholder heuristics for agents with zero training
+    // history (so a fresh agent still shows something).
     function getAgentMetrics(agent) {
+      const cs = agent?.computedStats;
+      if (cs) {
+        return {
+          attempts:  cs.counts?.attempts || 0,
+          successPct: cs.counts?.attempts
+            ? Math.round((cs.counts.successful / cs.counts.attempts) * 100)
+            : 0,
+          readiness: cs.readiness,
+          volume:    cs.stats?.volume || 0,
+          cohesion:  cs.stats?.grit || 0, // grit stands in for cohesion
+          code:      cs.stats?.code  || 0,
+          recon:     cs.stats?.recon || 0,
+          qa:        cs.stats?.qa    || 0,
+          docs:      cs.stats?.docs  || 0,
+          speed:     cs.stats?.speed || 0,
+          grit:      cs.stats?.grit  || 0,
+          class:     cs.class || 'Untested',
+          xp:        cs.xp || 0,
+          xpInLevel: cs.xpInLevel || 0,
+          xpForLevel: cs.xpForLevel || 100,
+        };
+      }
+      // Legacy fallback — no training data yet
       const attempts = agent?.attempts || ((agent?.tasksCompleted || 0) + (agent?.tasksFailed || 0));
       const successPct = agent?.teamRole === 'trainer'
         ? 88
@@ -3904,10 +3931,15 @@
         : agent?.teamRole === 'companion'
           ? 98
           : agent?.preferredPartnerName ? 92 : 64;
-      return { attempts, successPct, readiness, volume, cohesion };
+      return { attempts, successPct, readiness, volume, cohesion,
+               code: 0, recon: 0, qa: 0, docs: 0, speed: 50, grit: 0,
+               class: 'Untested', xp: 0, xpInLevel: 0, xpForLevel: 100 };
     }
 
     function getAgentLevel(agent) {
+      // Real level from the training-log-grounded stats engine.
+      if (typeof agent?.level === 'number' && agent.level > 0) return agent.level;
+      // Legacy fallback for agents the stats engine doesn't know about
       const metrics = getAgentMetrics(agent);
       const base = agent?.teamRole === 'trainer' ? 99 : agent?.teamRole === 'companion' ? 42 : 24;
       return Math.max(base, Math.min(99, base + Math.round(metrics.successPct / 6) + Math.min(18, metrics.attempts * 4)));
@@ -4209,22 +4241,69 @@
 
       let summaryPage = '';
       if (tab === 'stats') {
-        summaryPage = `
-          <section class="summary-page">
-            <div class="summary-stat-grid">
-              <div class="summary-stat"><label>Level</label><strong>${level}</strong></div>
-              <div class="summary-stat"><label>Status</label><strong>${escapeHtml(standing.label)}</strong></div>
-              <div class="summary-stat"><label>Wins</label><strong>${agent.tasksCompleted || (agent.teamRole === 'trainer' ? 'Lead' : 0)}</strong></div>
-              <div class="summary-stat"><label>Losses</label><strong>${agent.tasksFailed || 0}</strong></div>
-            </div>
-            <div class="summary-bars">
-              ${summaryBar('Readiness', metrics.readiness)}
-              ${summaryBar('Success', metrics.successPct)}
-              ${summaryBar('Volume', metrics.volume)}
-              ${summaryBar('Cohesion', metrics.cohesion)}
-            </div>
-          </section>
-        `;
+        // Phase 9+: show real programming-ability stats. When an
+        // agent has computedStats stamped by the server, we render
+        // the full coding/recon/qa/docs/speed/grit grid. Otherwise
+        // fall back to the legacy four-bar layout.
+        const cs = agent.computedStats;
+        if (cs) {
+          const xpPct = cs.xpForLevel ? Math.round((cs.xpInLevel / cs.xpForLevel) * 100) : 0;
+          const className = cs.class || 'Untested';
+          const learning = agent.learning || {};
+          const trajectoryTone = learning.trajectory === 'rising' ? 'ok' :
+                                 learning.trajectory === 'falling' ? 'danger' : '';
+          summaryPage = `
+            <section class="summary-page">
+              <div class="summary-stat-grid">
+                <div class="summary-stat"><label>Level</label><strong>${cs.level}</strong></div>
+                <div class="summary-stat"><label>Class</label><strong>${escapeHtml(className)}</strong></div>
+                <div class="summary-stat"><label>XP</label><strong>${cs.xp}</strong></div>
+                <div class="summary-stat"><label>Readiness</label><strong>${cs.readiness}</strong></div>
+              </div>
+              <div class="summary-bars">
+                ${summaryBar('XP to next', xpPct)}
+                ${summaryBar('Code', cs.stats.code)}
+                ${summaryBar('Recon', cs.stats.recon)}
+                ${summaryBar('QA', cs.stats.qa)}
+                ${summaryBar('Docs', cs.stats.docs)}
+                ${summaryBar('Speed', cs.stats.speed)}
+                ${summaryBar('Grit', cs.stats.grit)}
+                ${summaryBar('Volume', cs.stats.volume)}
+              </div>
+              <div class="summary-stat-grid" style="margin-top:8px;">
+                <div class="summary-stat"><label>Attempts</label><strong>${cs.counts.attempts}</strong></div>
+                <div class="summary-stat"><label>Approved</label><strong>${cs.counts.approved}</strong></div>
+                <div class="summary-stat"><label>Rejected</label><strong>${cs.counts.rejected}</strong></div>
+                <div class="summary-stat"><label>Successes</label><strong>${cs.counts.successful}</strong></div>
+              </div>
+              ${learning.count ? `
+                <div class="summary-stat-grid" style="margin-top:8px;">
+                  <div class="summary-stat"><label>Recent approvals</label><strong>${learning.approveRate}%</strong></div>
+                  <div class="summary-stat"><label>Recent XP gained</label><strong>${learning.xpLast}</strong></div>
+                  <div class="summary-stat"><label>Events tracked</label><strong>${learning.count}</strong></div>
+                  <div class="summary-stat"><label>Trajectory</label><strong>${badge(learning.trajectory || '—', trajectoryTone)}</strong></div>
+                </div>
+              ` : ''}
+            </section>
+          `;
+        } else {
+          summaryPage = `
+            <section class="summary-page">
+              <div class="summary-stat-grid">
+                <div class="summary-stat"><label>Level</label><strong>${level}</strong></div>
+                <div class="summary-stat"><label>Status</label><strong>${escapeHtml(standing.label)}</strong></div>
+                <div class="summary-stat"><label>Wins</label><strong>${agent.tasksCompleted || (agent.teamRole === 'trainer' ? 'Lead' : 0)}</strong></div>
+                <div class="summary-stat"><label>Losses</label><strong>${agent.tasksFailed || 0}</strong></div>
+              </div>
+              <div class="summary-bars">
+                ${summaryBar('Readiness', metrics.readiness)}
+                ${summaryBar('Success', metrics.successPct)}
+                ${summaryBar('Volume', metrics.volume)}
+                ${summaryBar('Cohesion', metrics.cohesion)}
+              </div>
+            </section>
+          `;
+        }
       } else if (tab === 'memo') {
         summaryPage = `
           <section class="summary-page">

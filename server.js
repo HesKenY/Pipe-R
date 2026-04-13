@@ -411,6 +411,25 @@ async function getDashboardState() {
 
   // Surface per-agent memory state (hasNotes, turnCount) on each agent so
   // the deck can render a marker on party cards whose notes have been tuned.
+  // Phase 9+ stamps real computed stats (level, xp, class, code/recon/qa/docs
+  // bucket rates) from agent_mode/core/stats.js so the deck reflects actual
+  // programming ability, not placeholder bars.
+  let computedStats = {};
+  let learningSummaries = {};
+  try {
+    const statsMod = await import('./agent_mode/core/stats.js');
+    computedStats = statsMod.getStatsCached(2000);
+  } catch (e) { log('Stats compute failed: ' + e.message); }
+  try {
+    const learningMod = await import('./agent_mode/core/learning.js');
+    const ids = [];
+    if (dash.trainer) ids.push(dash.trainer.id);
+    if (dash.companion) ids.push(dash.companion.id);
+    if (Array.isArray(dash.party)) dash.party.forEach(a => ids.push(a.id));
+    if (Array.isArray(dash.agents)) dash.agents.forEach(a => ids.push(a.id));
+    learningSummaries = learningMod.summarizeAllLearning(ids, 30);
+  } catch (e) { log('Learning summary failed: ' + e.message); }
+
   try {
     const mem = await import('./agent_mode/core/memory.js');
     const stamp = (agent) => {
@@ -420,6 +439,18 @@ async function getDashboardState() {
       agent.hasNotes = /\S/.test(notes) && !/^#[^\n]*\n\s*(Durable memory|$)/i.test(notes.trim().slice(0, 80));
       agent.notesLength = notes.length;
       agent.chatTurns = log.length;
+      // Phase 9+ — stamp the computed programming-ability stats on the
+      // agent so the deck renders real data without a second roundtrip.
+      const cs = computedStats[agent.id];
+      if (cs) {
+        agent.computedStats = cs;
+        agent.level = cs.level;
+        agent.xp = cs.xp;
+        agent.computedClass = cs.class;
+        agent.computedReadiness = cs.readiness;
+      }
+      const ls = learningSummaries[agent.id];
+      if (ls) agent.learning = ls;
       return agent;
     };
     if (dash.trainer) stamp(dash.trainer);
@@ -879,6 +910,59 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // ─ Phase 9+: dream / learning / stats endpoints ─────────────
+  // POST /api/agent/dream { agentId, windowSize? } — fires a
+  // reflection pass for one agent. Writes dreams.jsonl + stamps
+  // strong insights into notes.md. Long-running (60–120s).
+  if (url === '/api/agent/dream' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { agentId, windowSize } = JSON.parse(body || '{}');
+      if (!agentId) return jsonResp(res, { error: 'agentId required' }, 400);
+      const { AgentRegistry } = await import('./agent_mode/core/registry.js');
+      const reg = new AgentRegistry();
+      const agent = (reg.agents || []).find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'Agent not found' }, 404);
+      const { dreamAgent } = await import('./agent_mode/core/dreams.js');
+      const result = await dreamAgent(agent, { windowSize: windowSize || 12 });
+      if (!result.ok) return jsonResp(res, { ok: false, reason: result.reason }, 500);
+      log(`Agent dream: ${agentId} learned=${result.entry.learned.length} patterns=${result.entry.patterns.length}`);
+      return jsonResp(res, { ok: true, entry: result.entry });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
+    }
+  }
+
+  // GET /api/agent/dream/:agentId — recent dreams for an agent
+  if (url.startsWith('/api/agent/dream/') && req.method === 'GET') {
+    try {
+      const agentId = decodeURIComponent(url.slice('/api/agent/dream/'.length).split('?')[0]);
+      const { readDreams } = await import('./agent_mode/core/dreams.js');
+      return jsonResp(res, { agentId, dreams: readDreams(agentId, 20) });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // GET /api/agent/learning/:agentId — recent learning events
+  if (url.startsWith('/api/agent/learning/') && req.method === 'GET') {
+    try {
+      const agentId = decodeURIComponent(url.slice('/api/agent/learning/'.length).split('?')[0]);
+      const { readLearning, summarizeLearning } = await import('./agent_mode/core/learning.js');
+      return jsonResp(res, {
+        agentId,
+        events: readLearning(agentId, 100),
+        summary: summarizeLearning(agentId, 30),
+      });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // GET /api/agent/stats — computed stats for all agents
+  if (url === '/api/agent/stats' && req.method === 'GET') {
+    try {
+      const { computeAllStats } = await import('./agent_mode/core/stats.js');
+      return jsonResp(res, { stats: computeAllStats() });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
   // Get review queue (Claude Code pulls pending work)
   if (url === '/api/review' && req.method === 'GET') {
     try {
@@ -895,8 +979,36 @@ const server = createServer(async (req, res) => {
       const { Orchestrator } = await import('./agent_mode/core/orchestrator.js');
       const orch = new Orchestrator();
       const { taskId, approved, notes } = JSON.parse(body);
+      // Look up the task BEFORE reviewing so we can stamp the
+      // learning event with its model + type + objective.
+      let taskSnap = null;
+      try {
+        const all = orch.tasks || (orch.queue && orch.queue.all && orch.queue.all()) || [];
+        taskSnap = all.find(t => t.id === taskId) || null;
+      } catch (_) {}
       orch.reviewTask(taskId, approved, notes || '');
       log(`Review: ${taskId} ${approved ? 'APPROVED' : 'REJECTED'}`);
+
+      // Phase 9+ — write a learning event for this agent
+      try {
+        const { recordLearning } = await import('./agent_mode/core/learning.js');
+        const assigned = taskSnap?.assignedAgent || taskSnap?.agent || null;
+        if (assigned) {
+          recordLearning(assigned, {
+            taskId,
+            taskType: taskSnap?.type || 'unknown',
+            outcome: approved ? 'approve' : 'reject',
+            xpGain: approved ? 30 : 0,
+            elapsed: taskSnap?.elapsedMs || 0,
+            attempt: taskSnap?.attempts || 1,
+            note: notes || '',
+            objective: taskSnap?.objective || '',
+          });
+        }
+        const { invalidateStatsCache } = await import('./agent_mode/core/stats.js');
+        invalidateStatsCache();
+      } catch (le) { log('learning stamp failed: ' + le.message); }
+
       return jsonResp(res, { result: approved ? 'Approved' : 'Rejected', taskId });
     } catch (e) { return jsonResp(res, { error: e.message }, 400); }
   }

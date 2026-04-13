@@ -53,15 +53,40 @@ Route code tasks to Qwen/ForgeAgent. Route construction domain queries to CHERP 
 
 M3w was built 2026-04-12 from `agent_mode/m3w/Modelfile` (FROM llama3.1:8b + SYSTEM profile from `agent_mode/m3w/profile.md`). Rebuild after profile edits: `ollama create m3w-learning -f agent_mode/m3w/Modelfile`.
 
-### Per-agent memory system (2026-04-12)
+### Per-agent memory, dreams, and learning (2026-04-12 / 13)
 
 Every registered agent gets its own directory under `agent_mode/memories/<slug>/` (slug = id with colons replaced by hyphens). `server.js` scaffolds these at boot via `agent_mode/core/memory.js` ensureAllMemoryDirs. Each dir contains:
 
 - **`notes.md`** — durable, editable standing instructions + facts. Injected into every chat turn AND every dispatched task by `executor._buildPrompt()`. Source of truth for "I always want agent X to do Y". Edit the file or use the deck's Notes button.
 - **`chat-log.jsonl`** — append-only audit of every chat turn (role, content, ts). Cleared by the deck's Clear button (hits `DELETE /api/chat/:agentId/log`).
 - **`charter.md`** — mirror of the agent's training charter, copied from `agent_mode/training/charters/` on first boot.
+- **`learning.jsonl`** — per-agent learning event log (2026-04-13). Every review outcome (approve / reject / fail) appends a row: `{ at, taskId, taskType, outcome, xpGain, elapsed, attempt, note, objective }`. Written by `agent_mode/core/learning.js` hooked into the `POST /api/review` path.
+- **`dreams.jsonl`** — per-agent reflection log (2026-04-13). Written by `agent_mode/core/dreams.js` when a dream is fired via `POST /api/agent/dream`. Each entry has the agent's parsed LEARNED / PATTERNS / QUESTIONS / GAPS bullets plus the full raw response. Strong insights (top 3 learned + top 3 patterns) get stamped into `notes.md` under a `## Dreamed YYYY-MM-DD` block so they flow into future task prompts automatically.
 
-The same `notes.md` loader runs in both the chat endpoint (`POST /api/chat`) and the executor's task dispatch path (`executor.js _buildPrompt`), so there is ONE source of truth per agent. Write it once, it applies everywhere.
+The same `notes.md` loader runs in both the chat endpoint (`POST /api/chat`) and the executor's task dispatch path (`executor.js _buildPrompt`), so there is ONE source of truth per agent. Write it once, it applies everywhere. Dreams feed into notes.md, and notes.md feeds into every future dispatch — that's the closed loop.
+
+### Real stats engine (2026-04-13)
+
+`agent_mode/core/stats.js` computes programming-ability stats per agent by reading `training-log.jsonl` and grouping rows by `model`. Every stat is grounded in actual outcomes — no placeholder bars.
+
+**Stats surface (0–100 where applicable):**
+
+- **code** — approval rate on `draft_patch` / `draft_test` / `implement` / `refactor` / `fix` / `patch` tasks
+- **recon** — approval rate on `scan` / `analyze` / `map` / `investigate` / `trace`
+- **qa** — approval rate on `review` / `audit` / `lint` / `test` / `critique`
+- **docs** — approval rate on `summarize` / `document` / `learn` / `extract` / `memory_extract`
+- **speed** — inverse of median elapsed (5s → 100, 60s → 50, 120s → 10)
+- **grit** — % of successful tasks completed on first attempt
+- **volume** — log-scaled attempt count
+- **xp** — weighted total from APPROVED tasks only (first-attempt approval gets a 1.25× bonus)
+- **level** — soft polynomial curve (100 / 240 / 430 / 680 / 1000 / 1400 / 1890 / 2480 / …)
+- **class** — dominant archetype: **Implementor** / **Pathfinder** / **Auditor** / **Archivist** / **Untested**
+
+Public API: `computeAgentStats(agentId)`, `computeAllStats()`, `xpToLevel(xp)`, `levelThreshold(level)`, `getStatsCached(ttlMs)`, `invalidateStatsCache()`.
+
+The dashboard endpoint (`/api/dashboard`) stamps every agent with `computedStats`, `level`, `xp`, `computedClass`, `computedReadiness`, and `learning` (recent trajectory summary). The deck's `renderSummary` stats tab shows the full breakdown when present and falls back to the legacy four-bar layout for agents the stats engine doesn't know about yet.
+
+**A task is "approved" if `reviewed === true && approved === true`. A task is "successful" if `success === true`.** These are DIFFERENT — a successful dispatch can still be rejected in review (hallucinated code, wrong approach, etc.). Only approvals grant XP.
 
 ### Deck + chat surface (2026-04-12)
 
@@ -95,6 +120,12 @@ The same `notes.md` loader runs in both the chat endpoint (`POST /api/chat`) and
 | `/api/queue/run` | POST | execute queued tasks through orchestrator (up to 10 per call) |
 | `/api/review/auto-run` | POST | `{ max? }` — call `claude -p` on each `waiting_for_claude` task, APPROVE/REJECT via orch.reviewTask |
 | `/api/auto/generate-tasks` | POST | `{ count? }` — ask Claude for N new dispatchable tasks as JSON, createTask each |
+| `/api/agent/heal` | POST | `{ agentId }` — clear failure cooldown flags |
+| `/api/agent/warm` | POST | `{ agentId }` — spawn `ollama run <base>` to warm the model (2026-04-13) |
+| `/api/agent/dream` | POST | `{ agentId, windowSize? }` — fire reflection pass, write dreams.jsonl + stamp notes.md (2026-04-13) |
+| `/api/agent/dream/:agentId` | GET | recent dream entries for one agent |
+| `/api/agent/learning/:agentId` | GET | recent learning events + trajectory summary |
+| `/api/agent/stats` | GET | bulk computed stats for all agents (training-log-grounded) |
 | `/api/metrics` | GET | CPU / RAM / GPU / disk / loaded ollama models (2s cache) |
 | `/api/now-playing` | GET | Windows SMTC currently-playing media (1.5s cache) |
 | `/api/now-playing/control` | POST | `{ action: play\|pause\|toggle\|next\|prev }` — fires SMTC transport |
@@ -131,10 +162,46 @@ The Claude project folder (this repo) is a private git repo pushed to two remote
 
 Both repos are private. CHERP-Nest (`https://github.com/HesKenY/CHERP-Nest.git`) and CHERP (`https://github.com/HesKenY/CHERP.git`) are separate repos with their own remotes.
 
+## Parallel agents — Claude + Codex side-by-side (2026-04-13)
+
+As of 2026-04-13 this repo is worked by **two AI coding agents in
+parallel**, each in its own working folder:
+
+- **Claude** (Anthropic Claude Code CLI) — `C:\Users\Ken\Desktop\Claude`
+- **Codex** (OpenAI Codex CLI) — `C:\Users\Ken\Desktop\Codex`
+
+Both folders are separate clones of the same git repo sharing the
+same remotes (`origin` = `HesKenY/CHERP-Backup`, `pipe-r` =
+`HesKenY/Pipe-R`). Coordination is **shared remote, shared main** —
+no feature branches for routine work. See `AGENTS.md` at repo root
+for the full coordination protocol (pulling, pushing, who works on
+what, handoff docs, working-tree isolation, the four-repo sweep).
+
+- **`AGENTS.md`** — primary Codex + Claude coordination file. Both
+  agents read it.
+- **`.claude/CODEX_BRIEF.md`** — consolidated port of Claude's
+  auto-memory so Codex has the same context. User profile, voice
+  rules, design principles, project ecosystem, security notes,
+  full phase history, meta-rules. Kept in sync with Claude's
+  `~/.claude/projects/<slug>/memory/` folder.
+- **`.claude/HANDOFF_<yyyy-mm-dd>_<topic>.md`** — handoff logs the
+  agents leave each other after shipping something non-trivial.
+  Read the most recent one at session start.
+- **`.claude/logs/{claude,codex,shared}.log`** — per-agent session
+  logs (gitignored). The `shared.log` is a joint notification
+  channel both agents append to, one line per event.
+
+The old `.claude/CODEX_REBUILD_INTEGRATION_PLAN.md` reflected a
+different parallel-Codex arrangement (separate `Pipe-R Rebuild
+(Codex)/workspace/` directory). That plan is superseded by the
+two-clone setup documented above — keep it for historical reference
+but don't execute its merge procedure.
+
 ## Related workstreams
 
-- **`.claude/CODEX_REBUILD_INTEGRATION_PLAN.md`** — Codex is working on a Pipe-R rebuild in `C:\Users\Ken\Desktop\Pipe-R Rebuild (Codex)\workspace`. Plan file catalogs what they shipped (retry cap, web UIs, trainer theming), flags high-risk merge conflicts (queue.js, executor.js, orchestrator.js, agents.json, profile.md), and proposes a merge procedure. Do not execute without Ken's go-ahead.
-- **`.claude/WORKLIST.md`** — running punch list + Live Test Mode design brief. Edit freely; Claude reads it at the start of a session.
+- **`.claude/WORKLIST.md`** — running punch list + Live Test Mode
+  design brief. Edit freely; both agents read it at session start
+  and use it as the coordination surface when work overlaps.
 
 ## Live Test Mode (2026-04-12)
 

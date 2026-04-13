@@ -2088,10 +2088,63 @@
       border: 1px solid rgba(var(--sw-magenta-rgb),0.32);
       box-shadow: 0 0 18px rgba(var(--sw-magenta-rgb),0.2), inset 0 0 24px rgba(var(--sw-cyan-rgb),0.08);
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto 1fr auto auto auto;
       gap: 14px;
       align-items: center;
     }
+    .np-volumes {
+      display: grid;
+      gap: 4px;
+      min-width: 150px;
+    }
+    .np-vol-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 32px;
+      gap: 8px;
+      align-items: center;
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.56rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(var(--sw-cyan-rgb), 0.82);
+    }
+    .np-vol-row input[type="range"] {
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(var(--sw-cyan-rgb), 0.78) var(--p, 0%), rgba(255,255,255,0.12) var(--p, 0%));
+      outline: none;
+      cursor: pointer;
+      margin: 0;
+    }
+    .np-vol-row input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #ffd6f6;
+      box-shadow: 0 0 8px rgba(var(--sw-magenta-rgb), 0.9);
+      border: none;
+      cursor: pointer;
+    }
+    .np-vol-row input[type="range"]::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #ffd6f6;
+      box-shadow: 0 0 8px rgba(var(--sw-magenta-rgb), 0.9);
+      border: none;
+      cursor: pointer;
+    }
+    .np-vol-val {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.62rem;
+      color: rgba(var(--sw-lavender-rgb), 0.78);
+      text-align: right;
+    }
+    body.deck .np-volumes { min-width: 130px; }
+    body.deck .np-vol-row { font-size: 0.5rem; grid-template-columns: 24px 1fr 28px; }
     .np-status-dot {
       width: 12px;
       height: 12px;
@@ -2881,6 +2934,10 @@
           <button class="np-btn np-play-btn" id="np-play-btn" type="button" title="Play/Pause">⏯</button>
           <button class="np-btn" id="np-next-btn"   type="button" title="Next">⏭</button>
         </div>
+        <div class="np-volumes">
+          <label class="np-vol-row"><span>SYS</span><input type="range" id="vol-system" min="0" max="100" value="0" /><span class="np-vol-val" id="vol-system-val">—</span></label>
+          <label class="np-vol-row"><span>SPT</span><input type="range" id="vol-app" min="0" max="100" value="0" /><span class="np-vol-val" id="vol-app-val">—</span></label>
+        </div>
         <div class="np-source" id="np-source"></div>
       </div>
       <button id="settings-btn" class="spotify-config" type="button" title="Settings">⚙ SETTINGS</button>
@@ -3417,6 +3474,10 @@
       npPrevBtn: document.getElementById('np-prev-btn'),
       npPlayBtn: document.getElementById('np-play-btn'),
       npNextBtn: document.getElementById('np-next-btn'),
+      volSystem: document.getElementById('vol-system'),
+      volSystemVal: document.getElementById('vol-system-val'),
+      volApp: document.getElementById('vol-app'),
+      volAppVal: document.getElementById('vol-app-val'),
       tabMainBtn: document.getElementById('tab-main-btn'),
       tabBoardBtn: document.getElementById('tab-board-btn'),
       tabMetricsBtn: document.getElementById('tab-metrics-btn'),
@@ -4661,6 +4722,69 @@
     els.npPrevBtn?.addEventListener('click', () => npControl('prev'));
     els.npPlayBtn?.addEventListener('click', () => npControl('toggle'));
     els.npNextBtn?.addEventListener('click', () => npControl('next'));
+
+    // === Volume sliders (system + Spotify app) =========================
+    let _volSuppressSystem = false;
+    let _volSuppressApp = false;
+    async function loadVolumes() {
+      try {
+        const data = await fetchJson('/api/volume');
+        if (!data.ok) return;
+        if (!_volSuppressSystem && typeof data.system === 'number') {
+          const pct = Math.round(data.system * 100);
+          els.volSystem.value = pct;
+          els.volSystem.style.setProperty('--p', pct + '%');
+          els.volSystemVal.textContent = pct + '%';
+        }
+        if (!_volSuppressApp) {
+          if (typeof data.appVolume === 'number') {
+            const pct = Math.round(data.appVolume * 100);
+            els.volApp.value = pct;
+            els.volApp.style.setProperty('--p', pct + '%');
+            els.volApp.disabled = false;
+            els.volAppVal.textContent = pct + '%';
+          } else {
+            els.volApp.disabled = true;
+            els.volAppVal.textContent = 'N/A';
+            els.volApp.style.setProperty('--p', '0%');
+          }
+        }
+      } catch {}
+    }
+    let _volDebounceSystem = null;
+    let _volDebounceApp = null;
+    async function writeVolume(target, value) {
+      try {
+        await fetchJson('/api/volume', {
+          method: 'POST',
+          body: JSON.stringify({ target, value: value / 100, app: 'Spotify' }),
+        });
+      } catch {}
+    }
+    els.volSystem?.addEventListener('input', (event) => {
+      const v = parseInt(event.target.value, 10);
+      els.volSystem.style.setProperty('--p', v + '%');
+      els.volSystemVal.textContent = v + '%';
+      _volSuppressSystem = true;
+      clearTimeout(_volDebounceSystem);
+      _volDebounceSystem = setTimeout(async () => {
+        await writeVolume('system', v);
+        _volSuppressSystem = false;
+      }, 120);
+    });
+    els.volApp?.addEventListener('input', (event) => {
+      const v = parseInt(event.target.value, 10);
+      els.volApp.style.setProperty('--p', v + '%');
+      els.volAppVal.textContent = v + '%';
+      _volSuppressApp = true;
+      clearTimeout(_volDebounceApp);
+      _volDebounceApp = setTimeout(async () => {
+        await writeVolume('app', v);
+        _volSuppressApp = false;
+      }, 120);
+    });
+    loadVolumes();
+    window.setInterval(loadVolumes, 4000);
 
     // === Color theme ====================================================
     const WALLPAPER_LS_KEY = 'pipe-r.wallpaper-colors';

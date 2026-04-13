@@ -900,6 +900,42 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  // Volume — GET current system + Spotify app volumes, POST { target, value }
+  // to set. target = 'system' | 'app'. Uses Core Audio API via volume.ps1.
+  if (url === '/api/volume' && req.method === 'GET') {
+    try {
+      const script = join(ROOT, '.claude', 'bin', 'volume.ps1');
+      if (!existsSync(script)) return jsonResp(res, { ok: false, error: 'volume.ps1 missing' }, 500);
+      const out = execSync(
+        `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" get`,
+        { encoding: 'utf8', timeout: 8000 }
+      ).trim();
+      try { return jsonResp(res, JSON.parse(out)); }
+      catch { return jsonResp(res, { ok: false, raw: out.slice(0, 200) }); }
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+  if (url === '/api/volume' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { target, value, app } = JSON.parse(body || '{}');
+      if (!['system', 'app'].includes(target)) return jsonResp(res, { ok: false, error: 'target must be system|app' }, 400);
+      const v = Math.max(0, Math.min(1, Number(value)));
+      if (!Number.isFinite(v)) return jsonResp(res, { ok: false, error: 'value must be 0..1' }, 400);
+      const script = join(ROOT, '.claude', 'bin', 'volume.ps1');
+      const appName = app || 'Spotify';
+      const cmd = target === 'system'
+        ? `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" set system -Value ${v}`
+        : `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" set-app -Target "${appName.replace(/"/g,'')}" -Value ${v}`;
+      const out = execSync(cmd, { encoding: 'utf8', timeout: 8000 }).trim();
+      try { return jsonResp(res, JSON.parse(out)); }
+      catch { return jsonResp(res, { ok: false, raw: out.slice(0, 200) }); }
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
   // Now playing transport control — POST { action } with play/pause/toggle/next/prev
   if (url === '/api/now-playing/control' && req.method === 'POST') {
     const body = await readBody(req);

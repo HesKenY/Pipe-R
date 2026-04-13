@@ -36,8 +36,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const MEMORIES_DIR = join(__dirname, '..', 'memories');
 const KEN_AI_SLUG = 'ken-ai-latest';
 const HALO_LOG    = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-log.jsonl');
+const NOTES_PATH  = join(MEMORIES_DIR, KEN_AI_SLUG, 'notes.md');
 const TICK_PY     = join(__dirname, 'halo_tick.py');
 const DO_PY       = join(__dirname, 'halo_do.py');
+
+// Cache notes.md contents on first read so we don't re-slurp it
+// every 4-second tick. Invalidated on process restart.
+let _notesCache = null;
+function readKenNotes() {
+  if (_notesCache != null) return _notesCache;
+  try { _notesCache = existsSync(NOTES_PATH) ? readFileSync(NOTES_PATH, 'utf8') : ''; }
+  catch (e) { _notesCache = ''; }
+  return _notesCache;
+}
 
 const VALID_ACTIONS = new Set([
   'move_fwd', 'move_back', 'strafe_left', 'strafe_right',
@@ -85,11 +96,12 @@ function captureState() {
 }
 
 /* ── Build the ollama prompt for one tick.
-   Includes the last 3 (state, action) pairs for context so
-   the agent can chain thinking across ticks. The system line
-   is injected by the model's SYSTEM profile + notes.md (which
-   got the Halo coaching addendum 2026-04-13). ── */
+   Includes the last 3 (state, action) pairs for context + the
+   full notes.md content (executor.js does this for dispatched
+   tasks; we have to do it ourselves because this module calls
+   ollama directly via spawnSync, not through the orchestrator). ── */
 function buildPrompt(state, history) {
+  const notes = readKenNotes();
   const stateStr = JSON.stringify({
     ammo: state.ammo, shield: state.shield,
     radar: state.radar, center: state.center,
@@ -100,14 +112,25 @@ function buildPrompt(state, history) {
     `turn ${i + 1}: you did ${h.action} — after: ammo=${h.stateAfter?.ammo || '?'} shield=${h.stateAfter?.shield || '?'}`
   ).join('\n');
 
+  // Strong anti-noop bias. The HUD OCR is garbage on 5K so
+  // noop is always the "safest" token and the model will
+  // default to it forever. Force movement unless there's an
+  // overwhelming reason not to.
+  const stateIsEmpty = !state.ammo && !state.shield && !state.radar && !state.center;
+  const antiNoopHint = stateIsEmpty
+    ? '\n\nHUD OCR is empty this tick. PICK A MOVEMENT ACTION to generate visual change for the next tick (move_fwd, strafe_left, strafe_right, look_left, or look_right). DO NOT pick noop.'
+    : '\n\nPick the most useful action for what you can see. noop is only correct if you are in a menu or cutscene.';
+
   return (
-    'you are playing halo mcc. the hud OCR below is your only eyes.\n' +
-    'respond with EXACTLY one action word from this list — no prose, no punctuation, no explanation:\n' +
+    (notes ? notes + '\n\n---\n\n' : '') +
+    'you are playing halo mcc right now, live. the hud OCR below is your only eyes (tesseract cropped on a 5120x1440 screen — it is noisy and will often be empty).\n\n' +
+    'respond with EXACTLY one action word from this list — nothing else, no prose, no punctuation:\n' +
     '  move_fwd move_back strafe_left strafe_right jump crouch sprint\n' +
     '  reload interact grenade melee swap_weapon fire ads\n' +
     '  look_left look_right look_up look_down noop pause\n\n' +
-    (historyBlock ? 'recent history:\n' + historyBlock + '\n\n' : '') +
-    'current state (HUD text from OCR — may be noisy):\n' + stateStr + '\n\n' +
+    (historyBlock ? 'recent history (last 3 turns):\n' + historyBlock + '\n\n' : '') +
+    'current hud state:\n' + stateStr +
+    antiNoopHint + '\n\n' +
     'your one-word action:'
   );
 }

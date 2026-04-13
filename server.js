@@ -967,6 +967,51 @@ const server = createServer(async (req, res) => {
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
 
+  // ─ Halo MCC learning agent (2026-04-13) ─────────────────────
+  // POST /api/halo/start { tickMs?, model? } — begin the loop
+  // POST /api/halo/stop                      — halt the loop
+  // POST /api/halo/tick                      — fire exactly one
+  //                                             tick for testing
+  // GET  /api/halo/status                    — running flag + stats
+  // GET  /api/halo/log                       — recent tick log entries
+  if (url === '/api/halo/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startLoop } = await import('./agent_mode/halo/agent.js');
+      const r = startLoop(opts);
+      log('Halo agent started: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/stop' && req.method === 'POST') {
+    try {
+      const { stopLoop } = await import('./agent_mode/halo/agent.js');
+      const r = stopLoop();
+      log('Halo agent stopped: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/tick' && req.method === 'POST') {
+    try {
+      const { tickOnce } = await import('./agent_mode/halo/agent.js');
+      const r = await tickOnce();
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/status' && req.method === 'GET') {
+    try {
+      const { status: haloStatus } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, haloStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/log' && req.method === 'GET') {
+    try {
+      const { readRecentLog } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, { log: readRecentLog(50) });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped
   // at 6. Validates every id exists in agents.json so a typo

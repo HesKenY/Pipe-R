@@ -378,6 +378,51 @@ Construction crew management platform deployed to cherp.live via Netlify. Key th
 - **Service worker:** Can cache stale files. Bump cache version or use one-time buster when deploying breaking changes
 - **Hardcoded fallback users** in `js/config.js` allow PIN login when Supabase is unreachable
 
+### CHERP ownership migration (in-flight, 2026-04-13)
+
+Shipping the plan in `.claude/plans/cherp-ownership-system.md` — moving CHERP from team_code-scoped to individual ownership + explicit sharing + offline-first. Emergency backup at `C:/Users/Ken/Desktop/cherp emergency.zip` (commit d9aac2d).
+
+**Phase 1 ✅ — `js/store.js`** (CHERP `dev` branch, commit 79c4c65)
+- IndexedDB-backed read-through cache + write-through queue wrapping `SB()`
+- Object stores: `rows` ([table,id] key), `queue` (autoinc), `meta` (sync timestamps)
+- Public API: `store.list/get/create/update/delete/syncNow/onSync/pendingCount/isOnline`
+- 30s stale threshold, 5-retry cap, temp-id → server-id swap on create flush
+- Zero existing screens touched — opt-in per-screen migration starts phase 3
+- Wired into `demo.html` after `utils.js`
+
+**Phase 2 ✅ — additive schema migration** (CHERP `dev` branch, commit 89656be; applied to Supabase live 2026-04-13)
+- `user_profiles.role` CHECK expanded: +`worker`, +`general_foreman` (fixes the known signup 400)
+- `user_profiles.employee_id` UNIQUE (nullable) + `reports_to` self-FK with depth chain
+- Nullable `owner_id` UUID on: `crew_tasks`, `crew_timecards`, `jsa_reports`, `mro_equipment`, `daily_logs`, `certifications`, `messages`
+- New tables: `item_shares` (first-class sharing graph), `notifications` (approval chain + share invites + conflict alerts), `pending_users` (placeholder rows before signup), `edit_conflicts` (concurrent edit escalation log)
+- All RLS-scoped to owner/recipient/loser. Migration file: `workspace/CHERP/migrations/2026-04-13_ownership_phase2.sql`
+- Verified live via REST: `item_shares` returns `[]`, `user_profiles.employee_id`+`reports_to` columns present
+
+**Phase 3 (next) — `tasks.js` → store.js migration**
+- Reads from local first (IDB), background sync to remote
+- Tasks owned by creator via `owner_id = _s.id` when set, no-ops cleanly if absent
+- Sharing UI prototype on task cards
+
+**Phase 4.5 — future Nest backend adapter**
+- Plan stub added 2026-04-13. Add a `NEST()` backend to `store.js` as a parallel option, selected per-instance. Pilot customers (JSBackyard, REVV) ship on Nest-backed instances from day one. Supabase stays as dev/test default. Full rationale in `memory/project_nest_backend_adapter.md`. Do NOT start this until phase 3 proves the store abstraction.
+
+**Resolved ownership decisions (Ken 2026-04-13):**
+- Workers own their tasks, share with each other explicitly
+- Foremen see tasks of workers beneath them via `reports_to` recursive CTE (depth cap 5)
+- Teams/crews stay as a layered feature (not core), team_code survives as legacy metadata
+- Last-write-wins default, concurrent-edit escalates to owner via `edit_conflicts` + notification
+- Notes field is append-merge so two offline editors merge cleanly
+- 30-day grace before orphan cleanup after user delete
+- 12 simulated conflict tests in plan (SIM-1..12): 10 fully seamless, 2 partial (concurrent edit escalates, IDB corruption uses atomic tx)
+
+### CHERP known schema gotchas (read before touching DB code)
+
+- **`crew_tasks.id`** is `BIGINT GENERATED ALWAYS AS IDENTITY`. Never send client id in POST; use `Prefer: return=representation`
+- **`daily_logs`** has NO `team_code` — uses `company_id` + `created_by` UUID
+- **`messages`** has NO `team_code` — uses `sender_id` UUID + `channel`. Content column is `body` not `content`
+- **`crew_timecards`** uses client-gen TEXT `id`. Columns: `user_id`, `user_name`, `hours`, `date`
+- **`user_profiles.role`** CHECK constraint — as of phase 2, `worker` and `general_foreman` are now valid (previously rejected with 400)
+
 ## Related Repos
 
 | Project | Repo | Domain | Notes |

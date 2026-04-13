@@ -7,8 +7,21 @@ design brief. Owner: Ken + Claude. Edit freely.
 
 ## 🟢 Live and working right now
 
+- **Tailscale mesh** — `heskeny@` tailnet with:
+    - `desktop-ed797oh` (this dev box) → `100.117.92.46`
+    - `laptop-nonc1i8l` (HP laptop) → `100.108.152.63`
+  The hp-remote client uses the dev box's tailnet IP as the Server URL so
+  it works from any network (home, work hotspot, coffee shop). Send files
+  between machines via `tailscale file cp <file> <peer>:`. Inbound TCP 7777
+  is already allowed on the Node.js firewall rule for Private+Public.
+- **hp-remote v3** laptop client at `clients/hp-remote/` — 5 tabs (Claude,
+  Shell, Deck iframe, Metrics, Steam) + check-deps.ps1 + README with
+  Tailscale walkthrough. Shipped as `hp-remote-v3.zip` via Taildrop.
 - **Pipe-R deck** (`DECK.bat` → `pipe-r.html?deck=1`) — 1920×720 chromeless
-  Chrome app window. Deck / Board tabs. Trainer with Ken AI pixel portrait.
+  Chrome app window. Deck / Board / Metrics / Steam / Shell tabs. Vaporwave
+  theme with wallpaper-matched colors (default). Orbitron display font.
+  Spotify now-playing card with transport controls + system/app volume
+  sliders via Core Audio COM interop.
 - **Eight registered agents** — Ken AI, 5c1z0r, R0t0m, D3c1du3y3, P0ryg0n,
   Umbr30n, 4l4k4z4m (unblocked, slow cold start), M3w (built today).
 - **Per-agent memory system** — `agent_mode/memories/<slug>/` with

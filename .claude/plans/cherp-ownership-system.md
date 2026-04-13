@@ -1,4 +1,4 @@
-# CHERP — Offline-first + explicit sharing
+# CHERP — Ownership System
 
 Morning plan 2026-04-13. Pending Ken approval before any code changes.
 Emergency backup already captured at `~/Desktop/cherp emergency.zip`.
@@ -8,15 +8,329 @@ Emergency backup already captured at `~/Desktop/cherp emergency.zip`.
 - **Offline-first is THE anchor.** Every screen must function against
   the local device store first, sync to remote second. No screen
   should hit Supabase on the main thread of a user action.
-- **Sharing system, not broadcast.** Data is owned by the individual
-  who created it. They share it explicitly to specific other users.
-  No more team_code broadcast channels, no more "everyone on the
-  crew sees everything automatically".
-- `team_codes` + `crew_members` tables become legacy metadata —
-  present but unused by the new screens. No drops.
-- Friend code + QR system from the sibling plan (`.claude/plans/
-  friend-code-qr-rollout.md`) becomes the default way to establish a
-  share relationship between two users.
+- **Ownership system** is the name of the whole architecture. Data is
+  owned by the individual who created it.
+- **Sharing is explicit**, not broadcast. Two paths:
+    1. Direct share to a specific person via employee ID
+    2. Role hierarchy (`reports_to` chain) — a foreman automatically
+       sees items owned by workers under them, a general foreman sees
+       foremen + workers under them, etc.
+- **Teams / crews are a LAYERED feature**, not legacy, not core.
+  Stay fully supported as an optional organizational unit on top of
+  individual ownership. Groups come later as a priority push.
+- **Employee IDs** (the previously-named "friend codes") are the
+  public user identity. Format `KD-4829`. QR scan, direct typing,
+  invite flow all work through them. Sibling plan:
+  `.claude/plans/employee-id-qr-rollout.md`.
+- **Manage tab** is the supervisor workspace where a foreman checks
+  tasks + progress of workers under them, edits worker info, approves
+  timecards. Manage tab is driven by the role hierarchy visibility.
+- `team_codes` + `crew_members` tables stay as active org metadata.
+  No drops.
+
+## Theorycraft — issues to solve before we build
+
+Read this first. Every item is a design trap I want Ken's sign-off on
+before I write code that commits to an answer. Organized by category.
+
+### A. Data model + ownership semantics
+
+1. **Who owns an assigned task — creator or assignee?**
+   Current plan: creator owns, assignee sees it via either (a) implicit
+   auto-share or (b) the reports_to hierarchy. Problem: if a foreman
+   creates a task and assigns it to a non-reporting contractor,
+   neither mechanism surfaces it. Proposal: on task create with
+   `assigned_to_user_id`, also write an implicit `item_shares` row
+   (`owner_id=creator, shared_with=assignee, can_edit=true`). The
+   share auto-revokes if the assignee changes.
+
+2. **Multiple assignees on one task.** Current schema has
+   `assigned_to TEXT` singular. Construction reality: "Two guys on
+   the wall, Mike and Jose." Options: (a) keep singular, make "assign
+   to crew" a create-N-tasks macro instead, (b) many-to-many via a
+   `task_assignees` junction table, (c) JSON array column. Ugliest
+   but most flexible: (b). Simplest: (a). Recommendation (a) —
+   matches how Ken says tasks work in the field.
+
+3. **Assigning to someone who hasn't signed up yet.** Foreman creates
+   a task for "New Guy" who doesn't have a user_profile row. Options:
+   (a) reject, force signup first, (b) allow a text-only assignee and
+   link retroactively when the row appears, (c) create a placeholder
+   profile. Recommendation (a) — require real user first, matches
+   the ownership story.
+
+4. **Company-owned assets (MRO tools, shared certifications).** A
+   drill belongs to the company, not a person. Options: (a) virtual
+   "Company" user_profile row that owns all shared assets, (b) new
+   `owner_org_id` column, (c) null owner_id + explicit "company
+   scope" boolean. Recommendation (a) — simplest, reuses the
+   `item_shares` table for "check out to worker X", doesn't bloat
+   schema. The demo superuser row already exists and can serve.
+
+5. **Historical orphans.** After backfilling `owner_id` by matching
+   `display_name`, rows where the creator's display_name no longer
+   exists get null. Options: (a) leave null, surface in admin "claim"
+   UI, (b) auto-assign to nearest active superintendent, (c) delete.
+   Recommendation (a) — never destroy data, let admin resolve.
+
+### B. Role hierarchy + reports_to
+
+1. **Recursive depth.** `reports_to` chain lookup needs a `WHERE
+   depth < 5` guard to avoid infinite loops from bad data. Real
+   construction hierarchies are 3-4 levels deep (apprentice →
+   journeyman → foreman → GF → superintendent). 5 is the safety cap.
+
+2. **Orphan foreman.** Foreman leaves the company. Their row gets
+   deactivated (`is_active = false`). Every worker with
+   `reports_to = <deleted foreman>` becomes invisible to upstream
+   supervisors because the chain breaks. Fix: ON DELETE SET NULL +
+   a "reports_to_backup" or nightly re-parent job. Recommendation:
+   when a foreman deactivates, auto-reassign their direct reports to
+   the foreman's own supervisor (chain walk up by one). Triggered
+   via admin action, not automatic.
+
+3. **Multi-foreman workers.** Journeyman works for foreman A on
+   Mondays and foreman B on Tuesdays. Single `reports_to` column
+   can't express that. Options: (a) many-to-many via `supervisors`
+   junction table, (b) primary + "loaned to" tag, (c) use crews —
+   worker is in crew A + crew B, each crew has a foreman, visibility
+   walks crew membership instead of reports_to. Recommendation (c)
+   is the cleanest — lets us fold crews back into the hierarchy
+   story without parallel plumbing.
+
+4. **Role upgrades mid-employment.** Apprentice → journeyman →
+   foreman. Existing tasks stay owned by them; their `reports_to`
+   starts getting populated by new hires. Upward visibility works
+   instantly. One-directional promotion is clean.
+
+5. **Role downgrades.** Foreman demoted to journeyman. They still
+   have workers with `reports_to` pointing at them. Options: (a)
+   auto-reassign to their own supervisor (chain walks up), (b) block
+   demotion until manual reassignment, (c) leave dangling and hide
+   them from those workers' chain. Recommendation (a) with an
+   audit-log warning, because (b) blocks legitimate demotions behind
+   admin paperwork.
+
+6. **Circular references.** Data-integrity trap. Two users somehow
+   get reports_to pointing at each other. Recursive CTE loops until
+   the depth guard kicks in. Fix: CHECK constraint or trigger on
+   user_profiles UPDATE that walks up 5 levels and errors if it ever
+   returns to the starting id.
+
+7. **"GF sees all foremen under them" via recursive CTE cost.** For
+   a 200-user company this is a millisecond query. For 10,000-user
+   enterprise it starts to matter. Not a problem for CHERP's current
+   scale but worth noting in case of growth — at scale the pattern
+   is a materialized `reporting_chain UUID[]` column updated by a
+   trigger.
+
+### C. Offline-first conflict scenarios
+
+1. **Two foremen both editing the same shared task offline.** Both
+   come online, sync in order, second write clobbers first. Losing
+   foreman sees their edit gone with no warning. Fix: on client
+   sync, detect remote `updated_at > local.synced_at` and surface a
+   banner + keep losing edits in `store_audit` local table.
+   Acceptable because scalar-field conflicts are rare; the common
+   case is additive (notes, photos) which we append-merge.
+
+2. **Append-merge for task notes.** `crew_tasks.notes` is already a
+   JSON array of `{text, by, at}`. Two users add notes offline —
+   merge by concatenating both arrays and sorting by `at`. Safe.
+
+3. **Worker clocked in offline, supervisor looks at phone, sees old
+   state.** Supervisor's local cache doesn't know yet. Fix: the
+   clock-in banner shows "as of <timestamp>, device online/offline",
+   and the store has a 30s stale-read policy that silently
+   background-refreshes on tab focus.
+
+4. **Same user signing in on two devices offline.** Edits diverge.
+   Store needs a per-install device ID (not per-user) so conflict
+   detection knows "this edit came from device X, this other edit
+   from device Y." Generate via `crypto.randomUUID()` on first run,
+   store in localStorage. Device ID gets written into every edit as
+   an audit field.
+
+5. **Service worker cache staleness.** Phone opens app offline, sees
+   cached app shell from before a schema change, tries to write to
+   an `owner_id` column that was removed in a later version, store
+   errors. Fix: bump `CACHE_VERSION` constant on every deploy that
+   changes the store schema, service worker hard-refreshes on
+   version mismatch.
+
+6. **IndexedDB quota exhaustion.** 5 GB per origin on Chrome Android.
+   A year of tasks + photo blobs could blow it. Retention policy:
+   keep the full current 30 days + only completed/closed items for
+   prior 11 months, then summarize + evict. Photos are the heavyweight
+   — consider offloading to Supabase Storage lazily on upload instead
+   of keeping the b64 locally forever.
+
+### D. Employee ID collisions + security
+
+1. **Initials collision blow-up.** "KD-" prefix only has 10k codes.
+   Two Ken Dawsons in a 500-person company is realistic; a third
+   makes the retry loop slow. Fix: widen suffix to 5 digits (100k
+   codes per pair) OR abandon initials for pure random
+   alphanumerics. Recommendation: 2 letters + 5 digits (`KD-04829`),
+   still sayable, 676 * 100,000 = 67.6M space.
+
+2. **Enumeration attack.** Knowing the format, an attacker brutes the
+   whole space. 10k options at 1 req/sec = 3 hours; 100k = 28 hours.
+   Mitigation: (a) rate limit employee-id lookups per IP, (b) require
+   auth to query, (c) server-side the invite flow so the recipient
+   never sees the sender's raw ID until they accept. Recommendation:
+   all three. An unauthenticated "who is KD-4829" lookup is
+   unnecessary.
+
+3. **Invite spam.** Malicious foreman sends 1000 invites per minute
+   to every employee ID they can guess. Rate limit: 50 invites per
+   foreman per 24h hard cap, 5 per minute soft cap. Recipients can
+   block a sender to kill future invites from them.
+
+4. **Employee leaves, ID retirement.** Retire permanently, never
+   recycle. Old tasks + history stay attached. Reactivation brings
+   the same ID back.
+
+5. **Typo scenario.** Foreman mistypes `KD-4829` as `KD-4928` and
+   sends an invite to the wrong person. They get an invite from a
+   stranger, decline. No harm. But warn on send: "Send invite to
+   KD-4928 (Maria Gonzales)?" — show the recipient name in a
+   confirmation so the foreman catches the typo. Needs a lookup
+   endpoint that returns display_name for an employee_id, gated to
+   foreman+ role.
+
+### E. Crews as layered feature friction
+
+1. **Dual visibility rules**: "I can see this task because I own it"
+   vs "I can see this task because I'm on the same crew as the
+   owner" vs "I can see this task because I'm the owner's foreman".
+   Three overlapping rules will confuse users. Fix: every item card
+   shows a small "Why can I see this?" chip — `MINE`, `SHARED BY X`,
+   `CREW Y`, `REPORTS TO ME`. Makes mental model visible.
+
+2. **Zero-crew users.** Legacy code assumes `_s.teamCode` is always
+   set. Breaking assumption. Audit: grep every `_s.teamCode`
+   reference and make them nullable-safe. Phases 1 + 2 cover this.
+
+3. **Multi-crew users.** Schema already allows it (multiple
+   crew_members rows). Old screens assumed 1:1. Audit: every place
+   that reads `_s.teamCode` as "my crew" needs to become "my crews"
+   (plural). Probably 15-20 call sites.
+
+4. **Multi-crew foreman.** A foreman owns 3 crews. Their Manage tab
+   needs a crew picker at the top. Keep it simple: tabs or dropdown.
+
+5. **Crew chat vs 1:1 chat.** After migration, chat has two shapes:
+   1:1 DM by employee ID and crew channel. The crew channel is a
+   shared item owned by the foreman, auto-shared with every crew
+   member. Sends are broadcast into the shared channel, not per-
+   recipient. Works without new primitives.
+
+### F. Manage tab (supervisor workspace)
+
+1. **Scope control.** Foreman's Manage tab shows workers where
+   `reports_to = me OR (worker is in a crew where I'm foreman)`.
+   GF's Manage tab shows everyone who reports to anyone who reports
+   to me, recursively. Capped at 5 levels.
+
+2. **Approval UX for timecards.** Current flow: foreman sees all
+   timecards for their team_code. New flow: foreman sees timecards
+   where the owner is downstream (reports_to chain). Approval
+   action sets `approved: true, approved_by: <foreman_id>,
+   approved_at: <now>`. Worker's share of the timecard auto-
+   elevates can_edit to false after approval so they can't
+   retroactively change hours.
+
+3. **Bulk-edit worker info (Quick Edit).** Already exists in
+   `employee-card.js`. Needs downstream gating: GF can edit workers
+   in their chain, foreman can edit workers in their chain, both
+   can't edit peers or upstream. RLS + client check.
+
+4. **Progress dashboard.** Foreman wants "percent complete" across
+   all downstream tasks. Straight query: `count(done=true) /
+   count(*)` for tasks where `owner_id IN (my chain)`. Cache the
+   rollup in localStorage with 60s TTL so the dashboard is instant.
+
+5. **Task reassignment inside the chain.** Foreman drags a task
+   from Worker A to Worker B. Reassignment writes a new
+   `assigned_to_user_id`, revokes the old implicit share, creates a
+   new one. Audit-logged.
+
+### G. Migration data integrity
+
+1. **Ambiguous display_name backfill.** Multiple user_profiles rows
+   with the same display_name means `UPDATE owner_id FROM
+   user_profiles WHERE display_name = created_by` picks an arbitrary
+   one. Fix: during backfill, if ambiguous, leave owner_id null and
+   surface in admin for manual resolution.
+
+2. **Reports_to backfill for existing users.** We don't know who
+   reports to whom today. Options: (a) leave null, let superintendent
+   manually set via admin UI, (b) infer from team_code + is_foreman
+   — if I'm a worker in crew X, I report to the foreman of crew X.
+   Recommendation (b) with manual override. Runs once in phase 2,
+   never again.
+
+3. **Role CHECK constraint drift.** `user_profiles.role` CHECK
+   allows `('apprentice','journeyman','foreman','superintendent','admin','superuser')`
+   but `config.js` ROLE_RANK has `worker` and `general_foreman`.
+   Flagged in CHERP CLAUDE.md. Fix in phase 2 migration: expand the
+   CHECK constraint to include `worker` + `general_foreman`, OR
+   drop them from ROLE_RANK. Recommendation: expand the DB
+   constraint — ROLE_RANK is the source of truth for UX, the DB
+   should match.
+
+### H. Android wrapper / service worker gotchas
+
+1. **WebView IndexedDB persistence.** Android WebView treats each
+   installed app as a separate origin. Users who browse to
+   cherp.live in Chrome AND install the Android wrapper have two
+   separate local stores. Not fixable without deep linking; just
+   document it.
+
+2. **Service worker scope.** CHERP's existing service worker
+   registers at the root. The wrapper loads `/demo.html` so the
+   SW scope is `/`. Should work but needs verification after the
+   store ships.
+
+3. **Camera permission timing.** Phase 6 QR scanner asks for camera.
+   Needs `WebChromeClient.onPermissionRequest` override in
+   MainActivity.kt. Not a blocker, just a rebuild.
+
+4. **Offline install experience.** First launch of the wrapper on a
+   fresh phone requires an initial sync to populate IndexedDB. If
+   the phone is offline on first run, the app is empty until sync.
+   Show a "First sync needed — connect to WiFi" banner.
+
+### I. Pipe-R Live Test Mode impact
+
+1. **WS5A3Q-based scenarios still work in phases 1-5** because
+   team_code columns stay. New scenario
+   `kitchen-remodel-3day-ownership.json` arrives in phase 6 using
+   the ownership flow instead. Team B (Umbr30n QA) grades both.
+
+2. **The patch plan generator already caught the first bug** in the
+   v1 runner during the last session. Keep running patch plans
+   after every migration phase to catch regressions early.
+
+### J. Deploy + rollback
+
+1. **Netlify auto-deploys main → cherp.live.** A broken commit is
+   live in ~30 seconds. Mitigation: every phase lands on `dev`
+   branch first, Netlify deploy preview URL smoke-tested in Ken's
+   browser, then merged to `main`. No exceptions.
+
+2. **Emergency rollback.** `cherp emergency.zip` is a cold snapshot
+   of files. The real rollback is `git revert <commit>` followed by
+   push. Supabase schema changes revert via a rollback migration
+   that drops the added columns — write it alongside every forward
+   migration.
+
+3. **Hotfix path during migration.** If a bug ships during phase 3,
+   we need to hotfix it without blocking phase 4. Branches:
+   `main` = production, `dev` = integration, `phase-N` = feature
+   branch for each phase. Merge phase-N into dev, test, merge dev
+   into main when green.
 
 ## 0. Decision to make
 

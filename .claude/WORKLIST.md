@@ -356,4 +356,36 @@ Just enough to prove the pipeline works end-to-end:
 
 ---
 
-Last updated: 2026-04-12 by Claude Opus 4.6 (Pipe-R session)
+---
+
+## Deck: Agents tab (noted 2026-04-13)
+
+Add a new top-level tab called **Agents** to `pipe-r.html`. Everything
+related to Agent Mode moves into this tab:
+
+- AFK macro button
+- Auto Mode toggle
+- Live Test Mode launcher (scenario picker + v0/v1 runner)
+- "Claude request for check" / Auto Review button
+- Run Queue / Patch Plan buttons
+- Agent Mode ON/OFF toggle
+
+Replicate the **squad view** inside the Agents tab as well — the Trainer
+card + 6-party row + companion, same layout as the Deck tab, so the full
+roster is visible without switching tabs. Rationale: the Deck tab gets
+too busy when agent-mode controls mix with stats/now-playing/chat.
+Separating agent ops into its own tab cleans the Deck while giving the
+whole agent mode its own surface.
+
+Touch:
+- `pipe-r.html`: new `data-deck-tab="agents"` section, tab button in
+  the tab strip, CSS rules to show/hide by `body[data-deck-tab="agents"]`
+- Move buttons out of wherever they live today (Deck tab's button row,
+  any floating toolbars)
+- Reuse the existing party/trainer card HTML so the squad renders
+  identically in both places — probably wire via a render function
+  called from both tabs
+
+---
+
+Last updated: 2026-04-13 by Claude Opus 4.6 (CHERP ownership migration session)

@@ -2964,6 +2964,7 @@
         <button id="auto-review-btn" class="secondary">Auto Review</button>
         <button id="auto-mode-btn" class="secondary">Auto Mode: OFF</button>
         <button id="live-test-btn" class="secondary">Live Test v1</button>
+        <button id="patch-plan-btn" class="secondary">Patch Plan</button>
         <button id="afk-btn" class="secondary">AFK: OFF</button>
         <button id="sync-btn" class="secondary">Run Sheets Sync</button>
         <button id="pause-btn">Agent Mode: ON</button>
@@ -3321,6 +3322,25 @@
     </div>
   </div>
 
+  <!-- Patch Plan modal — shows the markdown returned from the patch-plan endpoint -->
+  <div class="modal-scrim" id="patch-plan-modal" hidden>
+    <div class="modal-card" style="width: min(900px, 100%)">
+      <header class="modal-head">
+        <div>
+          <div class="panel-kicker">Live Test</div>
+          <h2 class="panel-title" id="patch-plan-title">Patch Plan</h2>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button id="patch-plan-copy-btn" class="secondary" type="button">Copy</button>
+          <button id="patch-plan-close-btn" class="secondary" type="button">Close</button>
+        </div>
+      </header>
+      <div class="modal-body">
+        <pre id="patch-plan-body" style="white-space:pre-wrap; word-break:break-word; font-family:'JetBrains Mono',monospace; font-size:0.82rem; line-height:1.5; margin:0; padding:14px 18px; background: linear-gradient(180deg, rgba(14,3,32,0.96), rgba(6,1,14,0.98)); border:1px solid rgba(var(--sw-cyan-rgb),0.32); border-radius:12px; color:#e4f0cf; max-height:65vh; overflow:auto;">Generating plan…</pre>
+      </div>
+    </div>
+  </div>
+
   <!-- Steam game detail modal — portrait view with launch button -->
   <div class="modal-scrim" id="steam-modal" hidden>
     <div class="modal-card steam-modal-card">
@@ -3437,6 +3457,12 @@
       autoReviewBtn: document.getElementById('auto-review-btn'),
       autoModeBtn: document.getElementById('auto-mode-btn'),
       liveTestBtn: document.getElementById('live-test-btn'),
+      patchPlanBtn: document.getElementById('patch-plan-btn'),
+      patchPlanModal: document.getElementById('patch-plan-modal'),
+      patchPlanTitle: document.getElementById('patch-plan-title'),
+      patchPlanBody: document.getElementById('patch-plan-body'),
+      patchPlanCloseBtn: document.getElementById('patch-plan-close-btn'),
+      patchPlanCopyBtn: document.getElementById('patch-plan-copy-btn'),
       afkBtn: document.getElementById('afk-btn'),
       syncBtn: document.getElementById('sync-btn'),
       pauseBtn: document.getElementById('pause-btn'),
@@ -4798,6 +4824,53 @@
       }
     }
     els.liveTestBtn?.addEventListener('click', runLiveTestV1);
+
+    // Patch Plan — asks Claude to draft a structured patch plan for the
+    // latest Live Test round. Modal shows the markdown, Copy button
+    // clones it to clipboard for pasting into a PR / commit message.
+    async function runPatchPlan() {
+      if (!els.patchPlanBtn) return;
+      const btn = els.patchPlanBtn;
+      const orig = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Drafting…';
+      els.patchPlanModal.hidden = false;
+      els.patchPlanBody.textContent = 'Generating plan from latest round…';
+      setBanner('Drafting patch plan from latest Live Test round…', 'warn');
+      try {
+        const data = await fetchJson('/api/livetest/patch-plan', {
+          method: 'POST',
+          body: JSON.stringify({}), // latest round
+        });
+        if (data.ok) {
+          els.patchPlanTitle.textContent = `Patch Plan · ${data.roundId}`;
+          els.patchPlanBody.textContent = data.markdown || '(empty)';
+          setBanner(`Patch plan saved to ${data.file}`, 'ok');
+        } else {
+          els.patchPlanBody.textContent = 'ERROR: ' + (data.error || 'unknown');
+          setBanner('Patch plan failed: ' + (data.error || 'unknown'), 'danger');
+        }
+      } catch (e) {
+        els.patchPlanBody.textContent = 'ERROR: ' + e.message;
+        setBanner('Patch plan failed: ' + e.message, 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }
+    }
+    els.patchPlanBtn?.addEventListener('click', runPatchPlan);
+    els.patchPlanCloseBtn?.addEventListener('click', () => { els.patchPlanModal.hidden = true; });
+    els.patchPlanModal?.addEventListener('click', (event) => {
+      if (event.target === els.patchPlanModal) els.patchPlanModal.hidden = true;
+    });
+    els.patchPlanCopyBtn?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(els.patchPlanBody.textContent || '');
+        const orig = els.patchPlanCopyBtn.textContent;
+        els.patchPlanCopyBtn.textContent = 'Copied';
+        setTimeout(() => { els.patchPlanCopyBtn.textContent = orig; }, 1200);
+      } catch {}
+    });
 
     // AFK mode — calls /api/macro/send which fires a real OS-level Enter
     // via System.Windows.Forms.SendKeys on the dev box. Press hits

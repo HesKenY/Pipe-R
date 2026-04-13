@@ -124,7 +124,7 @@ function logRoundResult(round, mode = 'v0') {
   } catch {}
 }
 
-export function listResults({ limit = 50 } = {}) {
+function listResults({ limit = 50 } = {}) {
   if (!existsSync(RESULTS_LOG)) return [];
   let raw = '';
   try { raw = readFileSync(RESULTS_LOG, 'utf8'); } catch { return []; }
@@ -493,8 +493,11 @@ export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8
   }
 
   // 9. CLEANUP (reverse order to respect FKs)
-  //    messages + daily_logs have no team_code column — delete by row id.
-  //    crew_timecards has team_code (nullable FK), ok to delete by that.
+  //    When reuseExistingCrew is set (e.g. teamCode=WS5A3Q), we MUST NOT
+  //    delete the team_codes row or the blanket crew_members wipe — those
+  //    belong to the standing Test crew. Only remove rows the round itself
+  //    inserted, tracked by id. This bug nuked WS5A3Q once in v1 before
+  //    Claude's patch plan caught it.
   if (cleanup) {
     const del = async (kind, path) => {
       const res = await sbFetch(path, { method: 'DELETE', headers: { 'Prefer': 'return=minimal' } });
@@ -512,8 +515,18 @@ export async function runRound({ scenarioId, instanceUrl, observer = 'llama3.1:8
     for (const id of taskRowIds.filter(Boolean)) {
       await del('cleanup_task', `crew_tasks?id=eq.${id}`);
     }
-    await del('cleanup_members', `crew_members?team_code=eq.${teamCode}`);
-    await del('cleanup_crew', `team_codes?code=eq.${teamCode}`);
+    if (reuseExistingCrew) {
+      // Re-used a standing crew — only remove the sim members we created,
+      // by their specific device_id pattern so real crew members stay put.
+      for (const m of scenario.seed.members) {
+        const deviceId = `simlt-${teamCode}-${m.name.replace(/\s+/g, '-')}`;
+        await del('cleanup_sim_member', `crew_members?team_code=eq.${teamCode}&device_id=eq.${encodeURIComponent(deviceId)}`);
+      }
+      // DO NOT touch team_codes — that's the standing crew.
+    } else {
+      await del('cleanup_members', `crew_members?team_code=eq.${teamCode}`);
+      await del('cleanup_crew', `team_codes?code=eq.${teamCode}`);
+    }
     for (const uid of userProfileIds.filter(Boolean)) {
       await del('cleanup_user', `user_profiles?id=eq.${uid}`);
     }

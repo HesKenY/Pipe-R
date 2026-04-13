@@ -1087,6 +1087,167 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, { results: lt.listResults({ limit: 100 }) });
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+
+  // Patch plan — takes a round id (or latest), asks Claude to read Team B's
+  // findings + the operation log, and returns a structured patch plan
+  // markdown doc. Saved to agent_mode/livetest/patches/<roundId>.md.
+  // Plans are proposals only — Ken tests them before deploying to main.
+  if (url === '/api/livetest/patch-plan' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { roundId } = JSON.parse(body || '{}');
+      const lt = await import('./agent_mode/core/livetest.js');
+
+      let round = null;
+      if (roundId) round = lt.getRound(roundId);
+      if (!round) {
+        // Fall back to latest v1 round, then latest v0.
+        const rounds = lt.listRounds();
+        const v1 = rounds.find(r => String(r.id).startsWith('ltv1-'));
+        round = v1 ? lt.getRound(v1.id) : (rounds[0] ? lt.getRound(rounds[0].id) : null);
+      }
+      if (!round) return jsonResp(res, { ok: false, error: 'no round found' }, 404);
+
+      const opsHeader = (round.operations || []).map((op, i) => {
+        const head = `${String(i + 1).padStart(2)}. [${op.ok ? 'OK ' : 'ERR'}] ${op.kind}`;
+        const extra = op.ok
+          ? (op.summary ? ` — ${op.summary}` : '')
+          : ` — ${op.errorCode || op.status} · ${String(op.errorMsg || '').slice(0, 120)}`;
+        return head + extra;
+      }).join('\n');
+
+      const teamBReports = (round.teamB || []).map(t =>
+        `### ${t.persona} · ${t.title || ''}\n${t.output || (t.error ? '(error: ' + t.error + ')' : '(no output)')}`
+      ).join('\n\n');
+      const trainerDecision = round.trainer?.output || '(no trainer decision)';
+      const companionProposal = round.companion?.output || '(no companion proposal)';
+
+      const prompt = [
+        'You are drafting a PATCH PLAN for Ken\'s CHERP + Pipe-R stack after a',
+        'Live Test Mode round. The round hit a real CHERP instance. Team B',
+        '(ops + maint) found the issues below. Ken will review this plan',
+        'before touching any file and nothing deploys to main without testing.',
+        '',
+        'Return a valid markdown document with EXACTLY these sections, in order:',
+        '',
+        '# Patch Plan — ' + (round.id || 'round'),
+        '',
+        '## Round summary',
+        '(2-3 sentence recap of what the round found)',
+        '',
+        '## Issues (ranked)',
+        '1. **<short title>** — <one-line description> — severity: **high|mid|low**',
+        '   *Evidence*: <operation id or log line>',
+        '2. ...',
+        '',
+        '## Proposed fixes',
+        '1. **<title>**',
+        '   - **target**: `<relative/path/to/file>`',
+        '   - **change**: <what edit>',
+        '   - **test**: <how to verify before deploy>',
+        '   - **risk**: <what breaks if wrong>',
+        '   - **confidence**: **high|mid|low**',
+        '2. ...',
+        '',
+        '## Deploy gate',
+        '(one-liner: what Ken must see pass before pushing main)',
+        '',
+        'Rules:',
+        '- Use real file paths — the stack is Node.js + vanilla JS, no frameworks.',
+        '  CHERP lives at `workspace/CHERP/`, Pipe-R deck at `pipe-r.html`,',
+        '  server at `server.js`, live test module at `agent_mode/core/livetest.js`.',
+        '- Be specific. No "refactor everything" advice.',
+        '- If an issue is outside Pipe-R / CHERP (e.g. Windows driver), say so and',
+        '  move on.',
+        '- Max 5 issues, max 5 fixes. Shorter is better.',
+        '- No prose before the first heading, no commentary after the last.',
+        '',
+        '=== ROUND METADATA ===',
+        `id: ${round.id}`,
+        `mode: ${round.mode || 'v0'}`,
+        `scenario: ${round.scenarioName || round.scenarioId}`,
+        `team_code: ${round.teamCode}`,
+        `ops: ${(round.operations || []).filter(o => o.ok).length}/${(round.operations || []).length} passed`,
+        '',
+        '=== OPERATION LOG ===',
+        opsHeader,
+        '',
+        '=== TEAM B FINDINGS ===',
+        teamBReports || '(no team B)',
+        '',
+        '=== TRAINER DECISION ===',
+        trainerDecision,
+        '',
+        '=== COMPANION PROPOSAL ===',
+        companionProposal,
+      ].join('\n');
+
+      const { spawnSync } = require('child_process');
+      const run = spawnSync('claude', ['-p'], {
+        input: prompt,
+        encoding: 'utf8',
+        timeout: 180000,
+        maxBuffer: 4 * 1024 * 1024,
+        shell: true,
+      });
+      if (run.error) throw run.error;
+      if (run.status !== 0 && !run.stdout) {
+        throw new Error(`claude exited ${run.status}: ${(run.stderr || '').trim().slice(0, 200)}`);
+      }
+      const markdown = String(run.stdout || '')
+        .replace(/\u001b\[\??[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\r/g, '')
+        .trim();
+
+      // Persist to disk
+      const patchesDir = join(ROOT, 'agent_mode', 'livetest', 'patches');
+      if (!existsSync(patchesDir)) mkdirSync(patchesDir, { recursive: true });
+      const patchFile = join(patchesDir, `${round.id}.md`);
+      writeFileSync(patchFile, markdown, 'utf8');
+
+      log(`Patch plan written: ${patchFile}`);
+      return jsonResp(res, {
+        ok: true,
+        roundId: round.id,
+        file: patchFile.replace(ROOT, '').replace(/\\/g, '/'),
+        markdown,
+      });
+    } catch (e) {
+      return jsonResp(res, { ok: false, error: e.message }, 500);
+    }
+  }
+
+  if (url === '/api/livetest/patches' && req.method === 'GET') {
+    try {
+      const patchesDir = join(ROOT, 'agent_mode', 'livetest', 'patches');
+      if (!existsSync(patchesDir)) return jsonResp(res, { patches: [] });
+      const files = readdirSync(patchesDir)
+        .filter(f => f.endsWith('.md'))
+        .map(f => {
+          const full = join(patchesDir, f);
+          const st = statSync(full);
+          return {
+            file: f,
+            roundId: f.replace(/\.md$/, ''),
+            sizeBytes: st.size,
+            mtime: st.mtime.toISOString(),
+          };
+        })
+        .sort((a, b) => b.mtime.localeCompare(a.mtime));
+      return jsonResp(res, { patches: files });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  if (url.startsWith('/api/livetest/patches/') && req.method === 'GET') {
+    try {
+      const id = decodeURIComponent(url.slice('/api/livetest/patches/'.length));
+      if (!/^[A-Za-z0-9._-]+$/.test(id)) return jsonResp(res, { error: 'bad id' }, 400);
+      const patchFile = join(ROOT, 'agent_mode', 'livetest', 'patches', `${id}.md`);
+      if (!existsSync(patchFile)) return jsonResp(res, { error: 'not found' }, 404);
+      const markdown = readFileSync(patchFile, 'utf8');
+      return jsonResp(res, { roundId: id, markdown });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
   if (url.startsWith('/api/livetest/rounds/') && req.method === 'GET') {
     try {
       const id = decodeURIComponent(url.slice('/api/livetest/rounds/'.length));

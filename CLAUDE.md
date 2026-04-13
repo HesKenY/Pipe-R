@@ -378,7 +378,7 @@ Construction crew management platform deployed to cherp.live via Netlify. Key th
 - **Service worker:** Can cache stale files. Bump cache version or use one-time buster when deploying breaking changes
 - **Hardcoded fallback users** in `js/config.js` allow PIN login when Supabase is unreachable
 
-### CHERP ownership migration (in-flight, 2026-04-13)
+### CHERP ownership migration (LIVE on cherp.live, 2026-04-13)
 
 Shipping the plan in `.claude/plans/cherp-ownership-system.md` — moving CHERP from team_code-scoped to individual ownership + explicit sharing + offline-first. Emergency backup at `C:/Users/Ken/Desktop/cherp emergency.zip` (commit d9aac2d).
 
@@ -398,10 +398,56 @@ Shipping the plan in `.claude/plans/cherp-ownership-system.md` — moving CHERP 
 - All RLS-scoped to owner/recipient/loser. Migration file: `workspace/CHERP/migrations/2026-04-13_ownership_phase2.sql`
 - Verified live via REST: `item_shares` returns `[]`, `user_profiles.employee_id`+`reports_to` columns present
 
-**Phase 3 (next) — `tasks.js` → store.js migration**
-- Reads from local first (IDB), background sync to remote
-- Tasks owned by creator via `owner_id = _s.id` when set, no-ops cleanly if absent
-- Sharing UI prototype on task cards
+**Phase 2b ✅ — crew_jsa + crew_mros owner_id** (applied live 2026-04-13). Follow-up because the app writes to `crew_jsa`/`crew_mros` not `jsa_reports`/`mro_equipment`. File: `migrations/2026-04-13_ownership_phase2b_crew_tables.sql`.
+
+**Phase 3 ✅ — `tasks.js` → store.js** (dev d11fb71 → main 17b5f96)
+- loadTasks/saveTask/toggleTask/deleteTask/cycleTaskProgress/addTaskNote all route through `window.store` with direct-SB() fallback
+- New tasks stamp `owner_id: _s.id`
+- Temp id → server bigint swap via background syncNow after create
+- Supervisor/cross-crew reads stay on SB() (store equality-filter doesn't fit ranges)
+
+**Phase 4 ✅ — `timeclock.js` hot path → store.js** (dev 8891fa9 → main 17b5f96)
+- clockIn/clockOut/loadActiveClockIn/loadTodayEntries through store
+- Offline clock-in works end-to-end (row visible locally the instant the button fires)
+- owner_id stamped on new timecards
+
+**Phase 5 ✅ — safety/work/certifications → store.js** (dev ffd189e → main 17b5f96)
+- `safety.js`: saveDraftJSA + sendJSA (deterministic id upsert via `resolution=merge-duplicates`)
+- `work.js`: loadMROs/submitMRO/updateMROStatus
+- `certifications.js`: submitCert/approveCert/rejectCert
+- owner_id stamped on every new row
+- `store.js` remoteCreate now uses `Prefer: resolution=merge-duplicates,return=representation` so retries + client-id upserts are idempotent
+
+**Phase 6a ✅ — employee_id foundation** (dev 00e3768 → main 17b5f96)
+- `generateEmployeeId(name)` → `XX-#####` format (2 initials + 5 digits)
+- `claimEmployeeId(userId, name)` — PATCH helper with 3-retry on UNIQUE violation
+- Both signup paths stamp `employee_id` at create
+- `launchApp` backfills existing users missing an ID (skips hardcoded su-/adm-* accounts)
+- Home screen header shows the ID strip (tappable)
+- `showEmployeeIdCard()` modal: big read-out + copy-to-clipboard + scan button
+- `scanEmployeeId()` → `lookupAndAddEmployeeId()` flow: validates format, looks up target in `user_profiles`, previews name/role/company
+- **Critical fix**: `_s.id = auth.userId` now set at login. Before phase 6a, `_s.id` was never populated, so every phase 3/4/5 `owner_id: _s.id` stamp was writing `undefined` on live. Tests passed only because the harness set `_s.id` manually. This fix is why the merge was load-bearing.
+
+**Phase 6b ✅ — BarcodeDetector QR scanner** (dev df99af4 → main 17b5f96)
+- `openQRScanner()` full-screen camera overlay, native BarcodeDetector `qr_code` detection per animation frame, environment-facing camera
+- Chrome 88+/Android primary; Firefox/Safari fall back to typed prompt
+- `lookupAndAddEmployeeId()` accepts bare IDs or URL-style payloads (`cherp.live/add/KD-04829`)
+- No external deps — native browser API
+
+**Test harness** (dev e4085de → main 17b5f96)
+- `test/store-smoke-lib.js`: in-memory IndexedDB shim + recording fake fetch (PostgREST emulator)
+- `test/store-smoke.js`: 29 assertions on store.js public API
+- `test/screens-smoke.js`: 32 assertions loading store + tasks + timeclock in a VM sandbox
+- `test/run-all.js`: single entry point
+- Run: `node test/run-all.js` — currently 61/61 green
+- No deps, pure Node built-ins + vm
+
+**Phase 7+ queued** (not yet built)
+- Phase 7: `chat.js` / `messages.js` → employee-id-based 1:1 DMs + shared-item comment threads
+- Phase 8: `home.js` + `mycrew.js` fully on the share graph
+- Phase 9: Full offline (service worker precache + rolling-window IDB)
+- Phase 10: Drop `team_codes` + `crew_members` (optional, HIGH risk)
+- Phase 4.5: Nest backend adapter (parallel-option swap, see `memory/project_nest_backend_adapter.md`)
 
 **Phase 4.5 — future Nest backend adapter**
 - Plan stub added 2026-04-13. Add a `NEST()` backend to `store.js` as a parallel option, selected per-instance. Pilot customers (JSBackyard, REVV) ship on Nest-backed instances from day one. Supabase stays as dev/test default. Full rationale in `memory/project_nest_backend_adapter.md`. Do NOT start this until phase 3 proves the store abstraction.

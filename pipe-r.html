@@ -1921,6 +1921,88 @@
     .chat-input:focus { outline: none; border-color: rgba(248, 237, 157, 0.82); }
     .chat-input:disabled { opacity: 0.5; }
 
+    /* Worklist item 3 — scroll-to-bottom chip.
+       Sits over the chat log, visible only when chatStickToBottom
+       is false AND new content has landed while the user was
+       scrolled up. Tapping it jumps to the newest message. */
+    .chat-log-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-log-wrap > .chat-log { flex: 1 1 auto; }
+    .chat-jump-btn {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      appearance: none;
+      border: 1px solid rgba(248, 237, 157, 0.72);
+      background: rgba(22, 40, 28, 0.94);
+      color: #f8ed9d;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45), 0 0 12px rgba(248, 237, 157, 0.22);
+      z-index: 3;
+    }
+    .chat-jump-btn:hover { background: rgba(40, 60, 46, 0.96); }
+
+    /* Worklist item 1 — session-pinned output tray. Always-visible
+       copy of the latest assistant reply so Ken can grab the raw
+       text without fighting the scroll position. */
+    .chat-tray {
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: linear-gradient(180deg, rgba(24, 46, 32, 0.86), rgba(14, 30, 20, 0.92));
+      border: 1px solid rgba(248, 237, 157, 0.26);
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 120px;
+      min-height: 0;
+      z-index: 1;
+    }
+    .chat-tray-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .chat-tray-label {
+      text-transform: uppercase;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      color: rgba(248, 237, 157, 0.78);
+    }
+    .chat-tray-text {
+      overflow-y: auto;
+      font-size: 0.76rem;
+      line-height: 1.4;
+      color: #e4f0cf;
+      white-space: pre-wrap;
+      word-break: break-word;
+      padding-right: 4px;
+    }
+    .chat-tray-text.empty { color: rgba(228, 240, 207, 0.52); font-style: italic; }
+    body.deck .chat-tray { max-height: 88px; padding: 6px 8px; }
+    body.deck .chat-tray-text { font-size: 0.72rem; }
+
+    /* Worklist item 2 — warm button state indicators */
+    #chat-warm-btn.warming { opacity: 0.8; cursor: wait; }
+    #chat-warm-btn.warm {
+      border-color: rgba(120, 200, 140, 0.82);
+      color: #baf1b3;
+    }
+
     /* Memory indicator dot on cards whose agent has notes or chat turns */
     .mem-dot {
       position: absolute;
@@ -3027,12 +3109,27 @@
                 <div class="chat-subtext" id="chat-subtext">No agent selected</div>
               </div>
               <div class="chat-actions">
+                <button id="chat-warm-btn" class="secondary" type="button" disabled title="Load this model into Ollama memory">Warm</button>
                 <button id="chat-log-btn" class="secondary" type="button" disabled>Log</button>
                 <button id="chat-notes-btn" class="secondary" type="button" disabled>Notes</button>
                 <button id="chat-clear-btn" class="secondary" type="button">Clear</button>
               </div>
             </div>
-            <div class="chat-log" id="chat-log"></div>
+            <div class="chat-log-wrap">
+              <div class="chat-log" id="chat-log"></div>
+              <button id="chat-jump-btn" type="button" class="chat-jump-btn" hidden>New ↓</button>
+            </div>
+            <!-- Worklist item 1: session-pinned output tray.
+                 Always shows the most recent assistant reply in full
+                 with a Copy button. Hidden when there's no selected
+                 agent or no assistant messages yet. -->
+            <div class="chat-tray" id="chat-tray" hidden>
+              <div class="chat-tray-header">
+                <span class="chat-tray-label">Last output</span>
+                <button id="chat-tray-copy" type="button" class="secondary">Copy</button>
+              </div>
+              <div class="chat-tray-text" id="chat-tray-text"></div>
+            </div>
             <!-- Inline notes editor retired — Notes button now opens a full modal overlay. -->
             <div id="chat-notes-editor" hidden></div>
             <textarea id="chat-notes-text" hidden></textarea>
@@ -3414,6 +3511,17 @@
       chatAgentId: null,    // agent the chat panel is currently bound to
       chatPending: false,
       chatLoading: false,
+      // Worklist item 3 — scroll-position pin. When the user has
+      // scrolled up to read earlier turns, renderChat stops auto-
+      // jumping to the bottom on new content. Flipped to true
+      // whenever the scroll position lands within STICK_PX of the
+      // bottom; false when the user scrolls away.
+      chatStickToBottom: true,
+      chatUnreadFlag: false,
+      // Worklist item 2 — model warm state, keyed by agent id.
+      // 'warming' while /api/agent/warm is in flight, 'warm' on
+      // success, 'cold' or missing otherwise.
+      warmState: {},
       notes: {},            // agentId -> notes.md text
       notesEditing: false,
       notesSaving: false,
@@ -3485,6 +3593,14 @@
       chatTrainingList: document.getElementById('chat-training-list'),
       chatTrainingSubtitle: document.getElementById('chat-training-subtitle'),
       chatTrainingCloseBtn: document.getElementById('chat-training-close-btn'),
+      // Worklist item 1 — session-pinned output tray
+      chatTray: document.getElementById('chat-tray'),
+      chatTrayText: document.getElementById('chat-tray-text'),
+      chatTrayCopy: document.getElementById('chat-tray-copy'),
+      // Worklist item 3 — scroll-to-bottom chip
+      chatJumpBtn: document.getElementById('chat-jump-btn'),
+      // Worklist item 2 — warm button
+      chatWarmBtn: document.getElementById('chat-warm-btn'),
       spotifyStrip: document.getElementById('spotify-strip'),
       npCard: document.getElementById('np-card'),
       npTitle: document.getElementById('np-title'),
@@ -4278,6 +4394,9 @@
     }
 
     // === Chat panel (per-agent, persisted to disk via /api/chat) ===
+    // Worklist item 3: how close to the bottom counts as "stuck".
+    const CHAT_STICK_PX = 48;
+
     function renderChat() {
       if (!els.chatPanel) return;
       const dashboard = state.dashboard;
@@ -4286,11 +4405,14 @@
       els.chatHeading.textContent = agent ? `Chat · ${agent.displayName || agent.id}` : 'Chat';
       if (els.chatSubtext) {
         if (agent) {
+          const warmLabel = state.warmState[agentId];
           const parts = [
             agent.base || agent.id,
             `${agent.notesLength || 0}b notes`,
             `${agent.chatTurns || 0} turns`,
           ];
+          if (warmLabel === 'warm')    parts.push('WARM');
+          if (warmLabel === 'warming') parts.push('warming…');
           if (agent.blocked) parts.push('BLOCKED');
           els.chatSubtext.textContent = parts.join(' · ');
         } else {
@@ -4303,6 +4425,15 @@
       els.chatClearBtn.disabled = !enabled || state.chatPending;
       els.chatNotesBtn.disabled = !enabled;
       if (els.chatLogBtn) els.chatLogBtn.disabled = !enabled;
+      // Worklist item 2: warm button enabled when an agent is selected
+      // and not currently warming (prevents double-fire).
+      if (els.chatWarmBtn) {
+        const warming = state.warmState[agentId] === 'warming';
+        els.chatWarmBtn.disabled = !enabled || warming;
+        els.chatWarmBtn.classList.toggle('warming', warming);
+        els.chatWarmBtn.classList.toggle('warm', state.warmState[agentId] === 'warm');
+        els.chatWarmBtn.textContent = warming ? '…' : (state.warmState[agentId] === 'warm' ? 'Warm ✓' : 'Warm');
+      }
       if (!enabled && state.notesEditing) toggleNotesEditor(false);
       if (!enabled && state.trainingViewOpen) closeTrainingView();
       els.chatInput.placeholder = enabled
@@ -4312,14 +4443,17 @@
       const history = (agentId && state.chats[agentId]) || [];
       if (!enabled) {
         els.chatLog.innerHTML = '<div class="chat-empty">Pick an agent from the trainer bench or party row to open a direct line.</div>';
+        updateChatTray(null, agent);
         return;
       }
       if (state.chatLoading && !history.length) {
         els.chatLog.innerHTML = '<div class="chat-empty">Loading history…</div>';
+        updateChatTray(null, agent);
         return;
       }
       if (!history.length) {
         els.chatLog.innerHTML = '<div class="chat-empty">No messages yet. Say something to kick off this agent\'s memory.</div>';
+        updateChatTray(null, agent);
         return;
       }
       const rows = history.map(m => {
@@ -4331,7 +4465,50 @@
         return `<div class="chat-msg ${cls}${pending}"><div class="chat-role">${escapeHtml(role)}</div><div class="chat-body">${escapeHtml(m.content || '')}</div></div>`;
       }).join('');
       els.chatLog.innerHTML = rows;
-      els.chatLog.scrollTop = els.chatLog.scrollHeight;
+
+      // Worklist item 3: only auto-scroll when the user is stuck
+      // to the bottom. Otherwise flip the "new ↓" chip so they
+      // know content landed without stealing their scroll position.
+      if (state.chatStickToBottom) {
+        els.chatLog.scrollTop = els.chatLog.scrollHeight;
+        state.chatUnreadFlag = false;
+      } else {
+        state.chatUnreadFlag = true;
+      }
+      if (els.chatJumpBtn) {
+        els.chatJumpBtn.hidden = !state.chatUnreadFlag;
+      }
+
+      // Worklist item 1: refresh the tray with the latest assistant reply.
+      updateChatTray(history, agent);
+    }
+
+    // Worklist item 1: session-pinned output tray. Finds the most
+    // recent non-pending assistant message and renders it full-
+    // width below the chat log. Stays visible across scrolls so
+    // Ken can always grab the raw text.
+    function updateChatTray(history, agent) {
+      if (!els.chatTray || !els.chatTrayText) return;
+      if (!Array.isArray(history) || !history.length) {
+        els.chatTray.hidden = true;
+        els.chatTrayText.textContent = '';
+        return;
+      }
+      let latest = null;
+      for (let i = history.length - 1; i >= 0; i--) {
+        const m = history[i];
+        if (m && m.role === 'assistant' && !m.pending && m.content) { latest = m; break; }
+      }
+      if (!latest) {
+        els.chatTray.hidden = true;
+        return;
+      }
+      els.chatTray.hidden = false;
+      els.chatTrayText.textContent = latest.content;
+      els.chatTrayText.classList.remove('empty');
+      // Cache on the element so the Copy handler doesn't have to
+      // re-walk history.
+      els.chatTrayText.dataset.raw = latest.content;
     }
 
     async function loadChatHistory(agentId) {
@@ -4400,6 +4577,11 @@
       const id = agent?.id || null;
       if (id !== state.chatAgentId) {
         state.chatAgentId = id;
+        // Worklist item 3: reset scroll-pin state on agent switch
+        // so the new agent's chat starts at the bottom.
+        state.chatStickToBottom = true;
+        state.chatUnreadFlag = false;
+        if (els.chatJumpBtn) els.chatJumpBtn.hidden = true;
         if (id) loadChatHistory(id);
       }
     }
@@ -4516,6 +4698,47 @@
         renderChat();
       } catch (e) {
         alert('Clear failed: ' + e.message);
+      }
+    }
+
+    // Worklist item 2 — warm an agent's base model into Ollama's
+    // resident cache. Fires POST /api/agent/warm which spawns a
+    // minimal ollama run; models that take ~90s cold-start (e.g.
+    // 4l4k4z4m) become instant for the next real task.
+    async function warmAgent(agentId) {
+      if (!agentId) return;
+      if (state.warmState[agentId] === 'warming') return;
+      state.warmState[agentId] = 'warming';
+      renderChat();
+      try {
+        const t0 = Date.now();
+        const res = await fetchJson('/api/agent/warm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId }),
+        });
+        const dur = Date.now() - t0;
+        if (res && res.ok) {
+          state.warmState[agentId] = 'warm';
+          console.log('[warm]', agentId, dur + 'ms', res);
+          // Auto-fade the "warm ✓" label after 30s so the user
+          // knows the state isn't permanent. Ollama evicts models
+          // when under memory pressure; we treat "warm" as a hint.
+          setTimeout(() => {
+            if (state.warmState[agentId] === 'warm') {
+              delete state.warmState[agentId];
+              renderChat();
+            }
+          }, 30000);
+        } else {
+          state.warmState[agentId] = 'cold';
+          alert('Warm failed: ' + (res && res.error || 'unknown'));
+        }
+      } catch (e) {
+        state.warmState[agentId] = 'cold';
+        alert('Warm failed: ' + e.message);
+      } finally {
+        renderChat();
       }
     }
 
@@ -4942,6 +5165,62 @@
     }
     if (els.chatTrainingCloseBtn) {
       els.chatTrainingCloseBtn.addEventListener('click', closeTrainingView);
+    }
+
+    // Worklist item 2 — warm the selected agent's base model
+    if (els.chatWarmBtn) {
+      els.chatWarmBtn.addEventListener('click', () => {
+        const agent = state.dashboard ? getSelectedAgent(state.dashboard) : null;
+        if (agent && agent.id) warmAgent(agent.id);
+      });
+    }
+
+    // Worklist item 3 — scroll-pin tracking. Flip chatStickToBottom
+    // based on proximity to the bottom of chat-log. Called on every
+    // scroll + on jump-to-bottom click.
+    if (els.chatLog) {
+      els.chatLog.addEventListener('scroll', () => {
+        const el = els.chatLog;
+        const gap = el.scrollHeight - (el.scrollTop + el.clientHeight);
+        state.chatStickToBottom = gap <= CHAT_STICK_PX;
+        if (state.chatStickToBottom) {
+          state.chatUnreadFlag = false;
+          if (els.chatJumpBtn) els.chatJumpBtn.hidden = true;
+        }
+      }, { passive: true });
+    }
+    if (els.chatJumpBtn) {
+      els.chatJumpBtn.addEventListener('click', () => {
+        if (!els.chatLog) return;
+        els.chatLog.scrollTop = els.chatLog.scrollHeight;
+        state.chatStickToBottom = true;
+        state.chatUnreadFlag = false;
+        els.chatJumpBtn.hidden = true;
+      });
+    }
+
+    // Worklist item 1 — copy latest output tray text
+    if (els.chatTrayCopy) {
+      els.chatTrayCopy.addEventListener('click', async () => {
+        const text = (els.chatTrayText && els.chatTrayText.dataset.raw) || '';
+        if (!text) return;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          }
+          const btn = els.chatTrayCopy;
+          const prev = btn.textContent;
+          btn.textContent = 'Copied ✓';
+          setTimeout(() => { btn.textContent = prev; }, 1100);
+        } catch (e) { /* swallow */ }
+      });
     }
 
     // === Now playing (Windows SMTC) =====================================

@@ -167,7 +167,9 @@ function handleCommand(cmd) {
       try { return { result: execSync('ollama list', { encoding: 'utf8', timeout: 5000 }).trim() }; }
       catch { return { result: 'Ollama offline', error: true }; }
     case 'git-status':
-      try { const s = execSync('git status --short', { encoding: 'utf8' }); return { result: s.trim() || 'Clean' }; }
+      // Explicit cwd so this never walks C:\Users\Ken\ and hits
+      // the Windows legacy junction "Permission denied" spam.
+      try { const s = execSync('git status --short', { cwd: ROOT, encoding: 'utf8', timeout: 3000 }); return { result: s.trim() || 'Clean' }; }
       catch { return { result: 'Not a git repo', error: true }; }
     case 'git-status-all': {
       let results = [];
@@ -823,6 +825,57 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, { result: 'Healed', agentId });
     } catch (e) {
       return jsonResp(res, { error: e.message }, 400);
+    }
+  }
+
+  // Worklist item 2 — warm an agent's base model into Ollama's
+  // resident cache so the next real task doesn't pay cold-start.
+  // Spawns `ollama run <base>` with a trivial prompt via stdin;
+  // Ollama keeps recently-used models loaded. Intentionally uses
+  // the base model name (not the agent id) so stacked variants
+  // share warm state with their parent. Strips ANSI spinner
+  // sequences from the captured output for sanity.
+  if (url === '/api/agent/warm' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { agentId } = JSON.parse(body || '{}');
+      if (!agentId) return jsonResp(res, { error: 'agentId required' }, 400);
+      const { AgentRegistry } = await import('./agent_mode/core/registry.js');
+      const reg = new AgentRegistry();
+      const agent = (reg.agents || []).find(a => a.id === agentId);
+      if (!agent) return jsonResp(res, { error: 'Agent not found' }, 404);
+      const base = agent.base || agent.id;
+
+      const { spawnSync } = await import('node:child_process');
+      const t0 = Date.now();
+      const result = spawnSync('ollama', ['run', base], {
+        input: 'warm\n',
+        encoding: 'utf8',
+        timeout: 150000,
+      });
+      const durationMs = Date.now() - t0;
+      if (result.error) return jsonResp(res, { error: result.error.message }, 500);
+      if (result.status !== 0) {
+        return jsonResp(res, {
+          error: 'ollama exited ' + result.status,
+          stderr: (result.stderr || '').slice(0, 400),
+        }, 500);
+      }
+      // Strip CSI / OSC terminal spinner bytes before logging.
+      const cleanStdout = String(result.stdout || '')
+        .replace(/\u001b\[\??[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\u001b\][^\u0007]*\u0007/g, '')
+        .trim();
+      log(`Agent warm: ${agentId} (${base}) in ${durationMs}ms`);
+      return jsonResp(res, {
+        ok: true,
+        agentId,
+        base,
+        durationMs,
+        preview: cleanStdout.slice(0, 160),
+      });
+    } catch (e) {
+      return jsonResp(res, { error: e.message }, 500);
     }
   }
 

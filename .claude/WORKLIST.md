@@ -58,6 +58,51 @@ design brief. Owner: Ken + Claude. Edit freely.
 
 ---
 
+## 💭 Overnight note — think about in the morning
+
+**Friend code system for crew membership** (Ken 2026-04-13 bedtime):
+
+Instead of the current `team_code` model (one 6-char code per crew, foreman
+hands it out, everybody on that crew shares it), explore an Xbox Live /
+PSN style **personal friend code** model.
+
+Shape:
+- Every `user_profiles` row gets a unique short code at signup — e.g.
+  `KD-4829`, `JH-7351`. Stable for the life of the account.
+- A foreman creates the crew, gets a crew code like today (`WS5A3Q`).
+- To add someone, instead of sharing `WS5A3Q`, the foreman types the
+  worker's **friend code** into a "Add to crew" field. Worker gets a
+  notification: "J. Heath wants to add you to Test Crew — accept?"
+- Worker taps accept, `crew_members` row gets created, worker's
+  `team_code` points at the crew.
+
+Why it might be worth doing:
+- **Security**: crew codes leak. A friend code is personal and only lets
+  *a specific user* be added — no accidental joins.
+- **Portability**: workers can be on multiple crews over time without
+  re-issuing crew codes. Add + remove is per-user.
+- **Professional feel**: feels like a real SaaS, not a shared WiFi
+  password.
+- **Matches CHERP's existing PIN-login flow**: PIN is already per-user,
+  the friend code becomes the public-facing "network identity".
+
+Open questions to answer tomorrow:
+1. Does it replace `team_code` entirely or coexist (team_code as a
+   fallback onboarding path for apprentices who haven't signed up yet)?
+2. Schema: `user_profiles.friend_code` as a new column (stable,
+   random 2-letter prefix + 4 digits)?
+3. Accept flow: is there a notifications table yet, or do we poll
+   the `crew_members` pending rows in `mycrew.js`?
+4. How does the Android app surface this — QR code scan on the
+   foreman's phone to add a worker who's in front of them?
+5. Superuser-only issuance or self-service generation?
+
+Rough scope: one migration + auth.js signup change + crews.js
+"Add by friend code" button + a notifications / pending table +
+the accept flow. Medium-sized — not one session but not a week.
+
+No code yet. Just think about it tomorrow, decide yes/no, then build.
+
 ## 🟡 Near-term worklist (1-3 sessions each)
 
 ### Agent Mode: LIVE TEST MODE  (high priority, designed below)

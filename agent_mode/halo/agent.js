@@ -35,6 +35,8 @@ import { getMemory, appendLesson, stampEvent } from './memory.js';
 import { extractFromTick } from './events.js';
 import { runPostMortem } from './post_mortem.js';
 import { promptBlock as trainingPromptBlock, detectTrainers } from './training_mode.js';
+import { rebuildIndex, buildContextBlock } from './index.js';
+import { pickTacticalAction, resetTacticalState } from './tactical.js';
 import { jumpstartPromptBlock } from './jumpstart.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -241,6 +243,72 @@ let _aimShotDelay = 140;
 let _aimMaxShots = 5;
 let _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: null };
 
+// Pure reactive tactical loop — zero LLM inference. Runs at
+// 150-200ms cadence using tactical.js state machine rules.
+// Halo eats the GPU so LLM inference is 15s/tick; tactical
+// mode keeps decisions at real frame rate by skipping the LLM
+// entirely and using pure state-machine logic.
+let _tacticalRunning = false;
+let _tacticalTimer = null;
+let _tacticalIntervalMs = 180;
+let _tacticalPlan = 'advance';
+let _tacticalStepIdx = 0;
+let _tacticalStats = { ticks: 0, startedAt: null, lastAction: null, fired: 0 };
+
+async function tacticalTick() {
+  if (!_tacticalRunning) return;
+  try {
+    // Capture current state (light touch — just motion / activity)
+    const state = captureState();
+    if (!state.error) {
+      const pick = pickTacticalAction(state, _tacticalPlan, _tacticalStepIdx);
+      _tacticalStepIdx += 1;
+      const action = pick.action || 'move_fwd';
+      // Fire the action via halo_do.py. No LLM, no subprocess
+      // for state capture beyond halo_tick.py itself.
+      const result = fireAction(action, 400);
+      _tacticalStats.ticks += 1;
+      _tacticalStats.lastAction = action;
+      if (result && result.ok) _tacticalStats.fired += 1;
+    }
+  } catch (e) { /* swallow */ }
+  if (_tacticalRunning) _tacticalTimer = setTimeout(tacticalTick, _tacticalIntervalMs);
+}
+
+export function startTacticalLoop(opts = {}) {
+  if (_tacticalRunning) return { ok: false, reason: 'tactical loop already running' };
+  _tacticalIntervalMs = Math.max(80, Math.min(2000, opts.intervalMs || 180));
+  _tacticalPlan = opts.plan || 'advance';
+  _tacticalRunning = true;
+  _tacticalStepIdx = 0;
+  _tacticalStats = { ticks: 0, startedAt: new Date().toISOString(), lastAction: null, fired: 0 };
+  resetTacticalState();
+  tacticalTick();
+  return { ok: true, intervalMs: _tacticalIntervalMs, plan: _tacticalPlan };
+}
+
+export function stopTacticalLoop() {
+  if (!_tacticalRunning) return { ok: false, reason: 'not running' };
+  _tacticalRunning = false;
+  if (_tacticalTimer) { clearTimeout(_tacticalTimer); _tacticalTimer = null; }
+  return { ok: true, stats: _tacticalStats };
+}
+
+export function setTacticalPlan(plan) {
+  _tacticalPlan = plan || 'advance';
+  _tacticalStepIdx = 0;
+  return { ok: true, plan: _tacticalPlan };
+}
+
+export function tacticalStatus() {
+  return {
+    running: _tacticalRunning,
+    intervalMs: _tacticalIntervalMs,
+    plan: _tacticalPlan,
+    stats: _tacticalStats,
+  };
+}
+
 // Persistent aim daemon for 30fps — skips spawnSync overhead by
 // keeping a Python process alive and piping JSON commands.
 let _aimDaemonProc = null;
@@ -252,7 +320,11 @@ let _aimDaemonInFlight = false;
 function startAimDaemon() {
   if (_aimDaemonProc && !_aimDaemonProc.killed) return true;
   try {
-    _aimDaemonProc = spawn(_pythonBin, [AIM_DAEMON_PY], {
+    // -u flag forces Python stdout to be unbuffered so the
+    // "daemon ready" line reaches Node immediately. Without
+    // this, Windows block-buffers stdout when it isn't a TTY
+    // and the daemon appears to never respond.
+    _aimDaemonProc = spawn(_pythonBin, ['-u', AIM_DAEMON_PY], {
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     });
@@ -423,15 +495,18 @@ function aimStatsSnapshot() {
   };
 }
 
-/* ── DRIVE-mode prompt: slim for speed. ~800 bytes max so
-   llama3.1:8b can respond in 500-1500ms instead of 15-30s.
-   Notes + guide + full memory bypassed for drive — that
-   context was saturating the prompt and tanking latency.
-   Observe mode still gets the full context. ── */
+/* ── DRIVE-mode prompt: indexed + slim. Uses the inverted
+   keyword index to retrieve the top 6 most relevant memory
+   bullets for the current state, instead of dumping the
+   entire halo-memory.md + halo2-guide.md (30KB total). Keeps
+   the prompt ~1-2KB so llama3.1:8b inference stays under 2s. ── */
 function buildDrivePrompt(state, history) {
   const last3 = history.slice(-3).map(h => h.action || '?').join(' → ');
   const activity = state.activity || 'unknown';
   const shortState = `motion=${state.motion || 0} activity=${activity} shield="${(state.shield||'').slice(0,8)}" ammo="${(state.ammo||'').slice(0,8)}"`;
+
+  // Retrieve only relevant context via the index.
+  const contextBlock = buildContextBlock(state, history, 6);
 
   return (
     'halo mcc. pick ONE action word. no prose.\n' +
@@ -444,6 +519,7 @@ function buildDrivePrompt(state, history) {
     '- never repeat the same action 3 times in a row\n' +
     `state: ${shortState}\n` +
     `last 3: ${last3 || '(none)'}\n` +
+    contextBlock +
     'action:'
   );
 }

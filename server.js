@@ -1194,6 +1194,69 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, r);
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Voltron — six-agent action voting squad
+  if (url === '/api/halo/voltron/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startVoltron } = await import('./agent_mode/halo/halo_squad.js');
+      const r = startVoltron(opts);
+      log('Halo voltron start: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/voltron/stop' && req.method === 'POST') {
+    try {
+      const { stopVoltron } = await import('./agent_mode/halo/halo_squad.js');
+      return jsonResp(res, stopVoltron());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/voltron/status' && req.method === 'GET') {
+    try {
+      const { voltronStatus } = await import('./agent_mode/halo/halo_squad.js');
+      return jsonResp(res, voltronStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/voltron/vote' && req.method === 'POST') {
+    try {
+      const { voltronVote } = await import('./agent_mode/halo/halo_squad.js');
+      const r = await voltronVote();
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Tactical loop — pure reactive state machine, zero LLM
+  // inference. Runs at 150-200ms cadence. The right path for
+  // playing while Halo hogs the GPU.
+  if (url === '/api/halo/tactical/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startTacticalLoop } = await import('./agent_mode/halo/agent.js');
+      const r = startTacticalLoop(opts);
+      log('Tactical loop start: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/tactical/stop' && req.method === 'POST') {
+    try {
+      const { stopTacticalLoop } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, stopTacticalLoop());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/tactical/plan' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const { plan } = JSON.parse(body || '{}');
+      const { setTacticalPlan } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, setTacticalPlan(plan));
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/tactical/status' && req.method === 'GET') {
+    try {
+      const { tacticalStatus } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, tacticalStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
   // ── Training mode — safety-net flag the drive prompt
   // reads to tell the agent whether external cheats are on.
   // Ken enables the actual cheats via WeMod / Cheat Engine /

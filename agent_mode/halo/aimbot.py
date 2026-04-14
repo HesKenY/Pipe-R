@@ -197,13 +197,15 @@ def find_target(palette_name="red", exclude_hud=True, head_bias=True):
     bbox_w = bx1 - bx0
     bbox_h = by1 - by0
 
-    # Head-bias aim point: top quarter of the bbox, horizontally
-    # centered. Real blobs of enemy outline tend to follow the
-    # silhouette — the head sits in the top ~25% of the bounding
-    # rectangle. Falls back to centroid if head_bias off.
+    # HEADSHOT bias — aim at the TOP 8% of the bbox, horizontally
+    # centered. Halo enemy silhouettes put the head at the very top
+    # of the bounding rectangle. 8% lands squarely on the head of
+    # an elite/grunt/jackal outline instead of the torso. Falls
+    # back to centroid if head_bias off. Ken explicitly asked for
+    # headshots 2026-04-13 so we bias hard.
     if head_bias:
         aim_cx = (bx0 + bx1) / 2
-        aim_cy = by0 + (bbox_h * 0.22)
+        aim_cy = by0 + (bbox_h * 0.08)
     else:
         aim_cx, aim_cy = best["centroid"]
 

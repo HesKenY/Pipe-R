@@ -1,0 +1,141 @@
+modes:
+  0:
+    name: "Read Only"
+    description: "Inspect, plan, and propose. Zero writes."
+    color: "#4ade80"
+    allow:
+      read_file: true
+      list_tree: true
+      search_repo: true
+      git_status: true
+      git_diff: true
+      read_brain: true
+      write_brain: false
+      write_file: false
+      apply_patch: false
+      run_command: false
+      run_tests: false
+      install_packages: false
+      desktop_control: false
+      screenshot: false
+    restricted_paths: []
+    allowed_commands: []
+
+  1:
+    name: "Workspace Write"
+    description: "Edit files in approved folders. Safe commands only."
+    color: "#facc15"
+    allow:
+      read_file: true
+      list_tree: true
+      search_repo: true
+      git_status: true
+      git_diff: true
+      read_brain: true
+      write_brain: true
+      write_file: true
+      apply_patch: true
+      run_command: true
+      run_tests: true
+      install_packages: false
+      desktop_control: false
+      screenshot: false
+    restricted_paths:
+      - "workspace/"
+      - "brain/"
+      - "logs/"
+    blocked_paths:
+      - "C:/Windows"
+      - "C:/System32"
+      - "C:/Program Files"
+      - "~/.ssh"
+      - "~/.aws"
+    allowed_commands:
+      - "pytest"
+      - "python -m pytest"
+      - "grep"
+      - "rg"
+      - "git status"
+      - "git diff"
+      - "git log"
+      - "git add"
+      - "git commit"
+      - "git branch"
+      - "dir"
+      - "ls"
+      - "echo"
+      - "type"
+      - "cat"
+      - "black"
+      - "flake8"
+      - "mypy"
+      - "npm test"
+      - "npm run lint"
+
+  2:
+    name: "Elevated Dev"
+    description: "Package installs, Docker, browser devtools. Allowlisted paths only."
+    color: "#fb923c"
+    allow:
+      read_file: true
+      list_tree: true
+      search_repo: true
+      git_status: true
+      git_diff: true
+      read_brain: true
+      write_brain: true
+      write_file: true
+      apply_patch: true
+      run_command: true
+      run_tests: true
+      install_packages: true
+      desktop_control: false
+      screenshot: true
+    restricted_paths:
+      - "workspace/"
+      - "brain/"
+      - "logs/"
+    blocked_paths:
+      - "C:/Windows"
+      - "C:/System32"
+      - "~/.ssh"
+      - "~/.aws"
+    allowed_commands:
+      - "*"  # All commands allowed, but blocked_paths still enforced
+
+  3:
+    name: "Operator Mode"
+    description: "Full desktop automation. Requires confirmation. Kill switch active."
+    color: "#f87171"
+    require_confirmation: true
+    log_all_actions: true
+    take_snapshots: true
+    allow:
+      read_file: true
+      list_tree: true
+      search_repo: true
+      git_status: true
+      git_diff: true
+      read_brain: true
+      write_brain: true
+      write_file: true
+      apply_patch: true
+      run_command: true
+      run_tests: true
+      install_packages: true
+      desktop_control: true
+      screenshot: true
+    restricted_paths: []
+    blocked_paths:
+      - "C:/Windows/System32"
+      - "~/.ssh"
+    allowed_commands:
+      - "*"
+
+safety:
+  dry_run_default: true
+  max_file_size_mb: 50
+  max_command_timeout_sec: 120
+  action_log_path: "logs/actions.jsonl"
+  kill_switch_file: "config/.kill_switch"
+  snapshot_path: "logs/snapshots/"

@@ -24,3 +24,10 @@ Desktop/
 agent_mode/sheets/token.json
 agent_mode/sheets/config.json
 agent_mode/sheets/credentials.json
+
+# BRAIN generated database / exports
+brain/BRAIN.db
+brain/*.db
+brain/*.sqlite
+brain/*.sqlite3
+brain/exports/

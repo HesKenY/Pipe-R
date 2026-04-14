@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OfflineAgent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0a0c0f;
+    --bg2:       #0f1217;
+    --bg3:       #141820;
+    --border:    #1e2530;
+    --border2:   #2a3342;
+    --amber:     #f59e0b;
+    --amber-dim: #92600a;
+    --green:     #22c55e;
+    --green-dim: #166534;
+    --red:       #ef4444;
+    --red-dim:   #7f1d1d;
+    --blue:      #3b82f6;
+    --blue-dim:  #1e3a5f;
+    --purple:    #a855f7;
+    --text:      #c9d1d9;
+    --text-dim:  #6e7f94;
+    --text-muted:#3d4f63;
+    --mode0:     #22c55e;
+    --mode1:     #facc15;
+    --mode2:     #fb923c;
+    --mode3:     #f87171;
+    --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+    --font-ui:   'Rajdhani', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── TITLE BAR ─────────────────────────────────────── */
+  #titlebar {
+    display: flex;
+    align-items: center;
+    height: 38px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 14px;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .tb-logo {
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--amber);
+    text-transform: uppercase;
+  }
+
+  .tb-logo span { color: var(--text-dim); font-weight: 400; }
+
+  .tb-sep { width: 1px; height: 20px; background: var(--border2); }
+
+  .tb-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--font-ui);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.offline { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .dot.busy    { background: var(--amber); box-shadow: 0 0 6px var(--amber);
+                 animation: pulse 1s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+
+  .tb-spacer { flex: 1; }
+
+  .tb-info {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── CONTROL BAR ───────────────────────────────────── */
+  #controls {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 0 14px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .ctrl-label {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+
+  /* Mode buttons */
+  .mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .mode-btn .mode-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mode-btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+
+  .mode-btn.active-mode {
+    border-color: var(--current-mode-color, var(--amber));
+    color: var(--current-mode-color, var(--amber));
+    background: color-mix(in srgb, var(--current-mode-color, var(--amber)) 10%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--current-mode-color, var(--amber)) 30%, transparent);
+  }
+
+  .ctrl-sep { width: 1px; height: 28px; background: var(--border2); margin: 0 4px; }
+
+  /* Action buttons */
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-stop {
+    border-color: var(--red-dim);
+    color: var(--red);
+  }
+  .btn-stop:hover {
+    background: rgba(239,68,68,0.1);
+    border-color: var(--red);
+  }
+
+  .btn-kill {
+    border-color: var(--red-dim);
+    color: var(--text-dim);
+  }
+  .btn-kill.armed {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(239,68,68,0.12);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .btn-run {
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+  .btn-run:hover { background: rgba(34,197,94,0.1); border-color: var(--green); }
+
+  .btn-clear { margin-left: auto; }
+
+  /* Mode indicator badge */
+  #mode-badge {
+    margin-left: 8px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    transition: all 0.2s;
+  }
+
+  /* ── MAIN LAYOUT ───────────────────────────────────── */
+  #workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR (Brain/Tasks) ──────────────────────────── */
+  #sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .sidebar-section {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .sidebar-header:hover { color: var(--text-dim); }
+  .sidebar-header .chevron { font-size: 9px; transition: transform 0.2s; }
+  .sidebar-header.open .chevron { transform: rotate(90deg); }
+
+  .sidebar-body { padding: 4px 0; }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    cursor: pointer;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar-item:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.03);
+    border-left-color: var(--amber-dim);
+  }
+  .sidebar-item .item-icon { font-size: 10px; color: var(--text-muted); }
+
+  #status-panel {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-key { color: var(--text-muted); font-family: var(--font-ui); letter-spacing: 0.5px; }
+  .status-val { color: var(--amber); font-weight: 500; }
+
+  /* ── CHAT PANEL ────────────────────────────────────── */
+  #chat-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    min-width: 0;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .panel-header .ph-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
+  #chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeSlide 0.2s ease;
+  }
+
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .msg-header .mh-name { }
+  .msg-header .mh-time { font-weight: 400; }
+
+  .msg-user .msg-header .mh-name  { color: var(--blue); }
+  .msg-agent .msg-header .mh-name { color: var(--amber); }
+  .msg-sys .msg-header .mh-name   { color: var(--purple); }
+  .msg-err .msg-header .mh-name   { color: var(--red); }
+  .msg-ok .msg-header .mh-name    { color: var(--green); }
+
+  .msg-body {
+    padding: 10px 12px;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    background: var(--bg3);
+    line-height: 1.6;
+    color: var(--text);
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    user-select: text;
+  }
+
+  .msg-user  .msg-body { border-left-color: var(--blue);   background: rgba(59,130,246,0.06); }
+  .msg-agent .msg-body { border-left-color: var(--amber);  background: rgba(245,158,11,0.05); }
+  .msg-sys   .msg-body { border-left-color: var(--purple); background: rgba(168,85,247,0.05); color: var(--text-dim); font-size: 11px; }
+  .msg-err   .msg-body { border-left-color: var(--red);    background: rgba(239,68,68,0.06);  color: var(--red); }
+  .msg-ok    .msg-body { border-left-color: var(--green);  background: rgba(34,197,94,0.05);  color: var(--green); }
+
+  /* Thinking indicator */
+  .thinking-msg .msg-body {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+
+  .think-dots span {
+    animation: blink 1.2s infinite;
+    display: inline-block;
+  }
+  .think-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .think-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink {
+    0%,80%,100% { opacity: 0.2; }
+    40%         { opacity: 1; }
+  }
+
+  /* Chat input */
+  #chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+
+  #chat-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding: 8px 12px;
+    border-radius: 3px;
+    outline: none;
+    resize: none;
+    min-height: 38px;
+    max-height: 120px;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+    user-select: text;
+  }
+
+  #chat-input:focus { border-color: var(--amber-dim); }
+  #chat-input::placeholder { color: var(--text-muted); }
+
+  #send-btn {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    align-self: flex-end;
+  }
+  #send-btn:hover { background: rgba(245,158,11,0.1); border-color: var(--amber); }
+  #send-btn:active { transform: scale(0.96); }
+
+  /* ── TERMINAL PANEL ────────────────────────────────── */
+  #terminal-panel {
+    width: 42%;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  #terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    background: var(--bg);
+    user-select: text;
+  }
+
+  .term-line {
+    display: block;
+    animation: fadeIn 0.15s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+
+  .term-prompt  { color: var(--green);   }
+  .term-tool    { color: var(--amber);   }
+  .term-result  { color: var(--text-dim); margin-left: 14px; }
+  .term-error   { color: var(--red);     }
+  .term-success { color: var(--green);   }
+  .term-denied  { color: var(--red);     opacity: 0.7; }
+  .term-info    { color: var(--blue);    }
+  .term-divider { color: var(--text-muted); }
+  .term-muted   { color: var(--text-muted); font-size: 10.5px; }
+  .term-kill    { color: var(--red); font-weight: bold; letter-spacing: 2px; }
+
+  /* ── SCROLLBAR ──────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* ── TOAST ───────────────────────────────────────────── */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 10px 18px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 320px;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── BRAIN VIEWER MODAL ─────────────────────────────── */
+  #brain-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  #brain-modal.open { display: flex; }
+  #brain-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    width: 640px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  }
+  #brain-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  #brain-close {
+    cursor: pointer; color: var(--text-muted); font-size: 18px;
+    background: none; border: none; color: var(--text-dim); transition: color 0.15s;
+  }
+  #brain-close:hover { color: var(--red); }
+  #brain-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    user-select: text;
+  }
+</style>
+</head>
+<body>
+
+<!-- Title Bar -->
+<div id="titlebar">
+  <div class="tb-logo">Offline<span>Agent</span></div>
+  <div class="tb-sep"></div>
+  <div class="tb-stat">
+    <div class="dot" id="ollama-dot"></div>
+    <span id="ollama-status">Ollama</span>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-stat">
+    <div class="dot" id="agent-dot"></div>
+    <span id="agent-status">Idle</span>
+  </div>
+  <div class="tb-spacer"></div>
+  <div id="mode-badge">Mode 0 — Read Only</div>
+  <div class="tb-spacer"></div>
+  <div class="tb-info" id="clock"></div>
+</div>
+
+<!-- Control Bar -->
+<div id="controls">
+  <span class="ctrl-label">Mode</span>
+  <button class="mode-btn active-mode" data-mode="0" style="--current-mode-color:#22c55e">
+    <span class="mode-dot" style="background:#22c55e"></span>0 · Read Only
+  </button>
+  <button class="mode-btn" data-mode="1" style="--current-mode-color:#facc15">
+    <span class="mode-dot" style="background:#facc15"></span>1 · Workspace
+  </button>
+  <button class="mode-btn" data-mode="2" style="--current-mode-color:#fb923c">
+    <span class="mode-dot" style="background:#fb923c"></span>2 · Dev
+  </button>
+  <button class="mode-btn" data-mode="3" style="--current-mode-color:#f87171">
+    <span class="mode-dot" style="background:#f87171"></span>3 · Operator
+  </button>
+
+  <div class="ctrl-sep"></div>
+
+  <button class="btn btn-stop" id="btn-stop" title="Stop current task">
+    ■ Stop
+  </button>
+  <button class="btn btn-kill" id="btn-kill" title="Toggle kill switch">
+    ☠ Kill Switch
+  </button>
+
+  <div class="ctrl-sep"></div>
+
+  <button class="btn" id="btn-brain" title="View brain index">
+    ◈ Brain
+  </button>
+  <button class="btn" id="btn-tasks" title="View open tasks">
+    ☰ Tasks
+  </button>
+  <button class="btn" id="btn-models" title="Check Ollama models">
+    ⬡ Models
+  </button>
+
+  <div class="ctrl-sep"></div>
+
+  <button class="btn btn-clear" id="btn-clear-chat" title="Clear chat">
+    ⌫ Clear Chat
+  </button>
+  <button class="btn" id="btn-clear-term" title="Clear terminal">
+    ⌫ Clear Term
+  </button>
+</div>
+
+<!-- Main Workspace -->
+<div id="workspace">
+
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-header open" id="sh-brain">
+        <span>Brain Index</span><span class="chevron">▶</span>
+      </div>
+      <div class="sidebar-body" id="sb-brain">
+        <div class="sidebar-item" data-brain="identity.md">
+          <span class="item-icon">◉</span>identity.md
+        </div>
+        <div class="sidebar-item" data-brain="project_rules.md">
+          <span class="item-icon">◉</span>project_rules.md
+        </div>
+        <div class="sidebar-item" data-brain="stack.md">
+          <span class="item-icon">◉</span>stack.md
+        </div>
+        <div class="sidebar-item" data-brain="known_patterns.md">
+          <span class="item-icon">◉</span>known_patterns.md
+        </div>
+        <div class="sidebar-item" data-brain="repo_map.md">
+          <span class="item-icon">◉</span>repo_map.md
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-header" id="sh-tools">
+        <span>Available Tools</span><span class="chevron">▶</span>
+      </div>
+      <div class="sidebar-body" id="sb-tools" style="display:none">
+        <div id="tool-list"></div>
+      </div>
+    </div>
+
+    <div id="status-panel">
+      <div class="status-row">
+        <span class="status-key">Session</span>
+        <span class="status-val" id="st-date">—</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Turns</span>
+        <span class="status-val" id="st-turns">0</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Steps</span>
+        <span class="status-val" id="st-steps">0</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Actions</span>
+        <span class="status-val" id="st-actions">0</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Open Tasks</span>
+        <span class="status-val" id="st-tasks">0</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Tools</span>
+        <span class="status-val" id="st-tools">0</span>
+      </div>
+      <div class="status-row">
+        <span class="status-key">Kill Switch</span>
+        <span class="status-val" id="st-kill">OFF</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Panel -->
+  <div id="chat-panel">
+    <div class="panel-header">
+      <span class="ph-dot" style="background:var(--amber)"></span>
+      Agent Chat
+    </div>
+    <div id="chat-messages">
+      <div class="msg msg-sys">
+        <div class="msg-header"><span class="mh-name">System</span><span class="mh-time" id="boot-time"></span></div>
+        <div class="msg-body">OfflineAgent v1.0 initialized.
+Connecting to Ollama on localhost:11434...
+Start in Mode 0 (Read Only). Escalate modes as needed.
+Type a task or ask a question to begin.</div>
+      </div>
+    </div>
+    <div id="chat-input-area">
+      <textarea id="chat-input" placeholder="Enter a task or ask a question..." rows="1"></textarea>
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <!-- Terminal Panel -->
+  <div id="terminal-panel">
+    <div class="panel-header">
+      <span class="ph-dot" style="background:var(--green)"></span>
+      Terminal Output
+    </div>
+    <div id="terminal-output">
+      <span class="term-line term-muted">── OfflineAgent Terminal ──────────────────────────</span>
+      <span class="term-line term-info">Waiting for agent activity...</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Brain Viewer Modal -->
+<div id="brain-modal">
+  <div id="brain-box">
+    <div id="brain-header">
+      <span id="brain-title">Brain Index</span>
+      <button id="brain-close">✕</button>
+    </div>
+    <div id="brain-content">Loading...</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ─── State ────────────────────────────────────────────
+let ws = null;
+let agentBusy = false;
+let killActive = false;
+let currentMode = 0;
+let thinkingMsgEl = null;
+let reconnectTimer = null;
+
+const MODE_COLORS = {0:'#22c55e', 1:'#facc15', 2:'#fb923c', 3:'#f87171'};
+const MODE_NAMES  = {0:'Mode 0 — Read Only', 1:'Mode 1 — Workspace', 2:'Mode 2 — Dev', 3:'Mode 3 — Operator'};
+
+// ─── DOM refs ─────────────────────────────────────────
+const chatMessages   = document.getElementById('chat-messages');
+const termOutput     = document.getElementById('terminal-output');
+const chatInput      = document.getElementById('chat-input');
+const sendBtn        = document.getElementById('send-btn');
+const ollamaDot      = document.getElementById('ollama-dot');
+const ollamaStatus   = document.getElementById('ollama-status');
+const agentDot       = document.getElementById('agent-dot');
+const agentStatus    = document.getElementById('agent-status');
+const modeBadge      = document.getElementById('mode-badge');
+const btnKill        = document.getElementById('btn-kill');
+
+// ─── Clock ────────────────────────────────────────────
+document.getElementById('boot-time').textContent = new Date().toLocaleTimeString();
+setInterval(() => {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+}, 1000);
+
+// ─── WebSocket ───────────────────────────────────────
+function connect() {
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${protocol}://${location.host}/ws`);
+
+  ws.onopen = () => {
+    termLine('Connected to OfflineAgent server', 'term-success');
+    clearTimeout(reconnectTimer);
+  };
+
+  ws.onmessage = (ev) => {
+    try {
+      const msg = JSON.parse(ev.data);
+      handleEvent(msg);
+    } catch(e) {
+      termLine(`Parse error: ${e}`, 'term-error');
+    }
+  };
+
+  ws.onclose = () => {
+    termLine('WebSocket disconnected. Reconnecting in 3s...', 'term-error');
+    setOllamaStatus(false);
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => {
+    termLine('WebSocket error', 'term-error');
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(obj));
+  } else {
+    toast('Not connected to server', 'error');
+  }
+}
+
+// ─── Event Handler ────────────────────────────────────
+function handleEvent(msg) {
+  const { type, data } = msg;
+
+  if (type === 'init' || type === 'status') {
+    applyStatus(data);
+    return;
+  }
+
+  if (type === 'task_start') {
+    setAgentBusy(true);
+    termLine(`── Task: ${data.task}`, 'term-info');
+    removeThinking();
+    return;
+  }
+
+  if (type === 'thinking') {
+    showThinking(data.step);
+    return;
+  }
+
+  if (type === 'agent_message') {
+    removeThinking();
+    addChatMsg('agent', data.content);
+    termLine(`Agent responded (${data.content.length} chars)`, 'term-muted');
+    return;
+  }
+
+  if (type === 'tool_call') {
+    removeThinking();
+    const pStr = JSON.stringify(data.params || {});
+    termLine(`▶ ${data.tool}(${pStr.length > 80 ? pStr.slice(0,80)+'…' : pStr})`, 'term-tool');
+    return;
+  }
+
+  if (type === 'tool_result') {
+    const icon = data.success ? '✓' : '✗';
+    const cls  = data.success ? 'term-success' : 'term-error';
+    if (data.success && data.result) {
+      const lines = String(data.result).split('\n').slice(0, 20);
+      lines.forEach(l => termLine(`  ${l}`, 'term-result'));
+    }
+    if (data.error) {
+      termLine(`${icon} ${data.tool}: ${data.error}`, 'term-denied');
+    } else {
+      termLine(`${icon} ${data.tool} OK`, cls);
+    }
+    return;
+  }
+
+  if (type === 'task_complete') {
+    removeThinking();
+    setAgentBusy(false);
+    addChatMsg('ok', `✓ Task complete\n\n${data.summary}`);
+    termLine(`── Task complete ──────────────────────────────`, 'term-divider');
+    return;
+  }
+
+  if (type === 'clarify') {
+    removeThinking();
+    setAgentBusy(false);
+    addChatMsg('agent', `Need clarification:\n${data.question}`);
+    return;
+  }
+
+  if (type === 'error') {
+    removeThinking();
+    setAgentBusy(false);
+    addChatMsg('err', `Error: ${data.msg}`);
+    termLine(`ERROR: ${data.msg}`, 'term-error');
+    return;
+  }
+
+  if (type === 'loop_end') {
+    removeThinking();
+    setAgentBusy(false);
+    termLine(`Loop ended. ${data.steps} step(s) taken.`, 'term-muted');
+    return;
+  }
+
+  if (type === 'agent_stopped') {
+    removeThinking();
+    setAgentBusy(false);
+    termLine('Agent stopped by operator.', 'term-error');
+    return;
+  }
+
+  if (type === 'mode_change') {
+    applyModeChange(data);
+    return;
+  }
+
+  if (type === 'kill_switch') {
+    killActive = data.active;
+    updateKillBtn();
+    if (data.active) {
+      termLine('☠ KILL SWITCH ARMED', 'term-kill');
+      addChatMsg('err', '☠ Kill switch armed. Agent halted.');
+    } else {
+      termLine('Kill switch disarmed.', 'term-success');
+    }
+    return;
+  }
+
+  if (type === 'brain') {
+    // Show brain content in modal
+    const combined = Object.entries(data)
+      .map(([k,v]) => `## ${k}\n\n${v}`)
+      .join('\n\n' + '─'.repeat(60) + '\n\n');
+    showBrainModal('Brain Index', combined);
+    return;
+  }
+
+  // fallthrough
+  termLine(`[${type}] ${JSON.stringify(data).slice(0, 200)}`, 'term-muted');
+}
+
+// ─── Status Apply ─────────────────────────────────────
+function applyStatus(data) {
+  setOllamaStatus(data.ollama);
+  killActive = data.kill_switch;
+  updateKillBtn();
+
+  if (data.mode) applyModeChange(data.mode);
+
+  const s = data.session || {};
+  setText('st-date',    s.session_date    || '—');
+  setText('st-turns',   s.conversation_turns ?? 0);
+  setText('st-steps',   s.step_count      ?? 0);
+  setText('st-actions', s.actions_taken   ?? 0);
+  setText('st-tasks',   s.open_tasks      ?? 0);
+  setText('st-tools',   data.tools_available ?? 0);
+  setText('st-kill',    data.kill_switch ? 'ARMED ☠' : 'OFF');
+  document.getElementById('st-kill').style.color = data.kill_switch ? 'var(--red)' : 'var(--green)';
+}
+
+function applyModeChange(data) {
+  currentMode = data.mode;
+  const color = data.color || MODE_COLORS[data.mode];
+  const name  = MODE_NAMES[data.mode];
+  modeBadge.textContent = name;
+  modeBadge.style.color = color;
+  modeBadge.style.borderColor = color;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const m = parseInt(b.dataset.mode);
+    b.classList.toggle('active-mode', m === currentMode);
+    if (m === currentMode) {
+      b.style.setProperty('--current-mode-color', color);
+    }
+  });
+  termLine(`Mode → ${name}`, 'term-info');
+}
+
+function setOllamaStatus(online) {
+  ollamaDot.className = 'dot ' + (online ? 'online' : 'offline');
+  ollamaStatus.textContent = online ? 'Ollama Online' : 'Ollama Offline';
+}
+
+function setAgentBusy(busy) {
+  agentBusy = busy;
+  agentDot.className = 'dot ' + (busy ? 'busy' : 'online');
+  agentStatus.textContent = busy ? 'Running' : 'Idle';
+  sendBtn.disabled = busy;
+  sendBtn.textContent = busy ? '…' : 'Send';
+}
+
+function updateKillBtn() {
+  btnKill.classList.toggle('armed', killActive);
+  btnKill.textContent = killActive ? '☠ KILL SWITCH ON' : '☠ Kill Switch';
+  setText('st-kill', killActive ? 'ARMED ☠' : 'OFF');
+  document.getElementById('st-kill').style.color = killActive ? 'var(--red)' : 'var(--green)';
+}
+
+// ─── Chat ─────────────────────────────────────────────
+function addChatMsg(type, content) {
+  const typeMap = {
+    user: 'msg-user', agent: 'msg-agent', sys: 'msg-sys',
+    err: 'msg-err', ok: 'msg-ok'
+  };
+  const nameMap = {
+    user: 'You', agent: 'Agent', sys: 'System', err: 'Error', ok: 'Agent'
+  };
+  const el = document.createElement('div');
+  el.className = `msg ${typeMap[type] || 'msg-sys'}`;
+  el.innerHTML = `
+    <div class="msg-header">
+      <span class="mh-name">${nameMap[type] || type}</span>
+      <span class="mh-time">${new Date().toLocaleTimeString()}</span>
+    </div>
+    <div class="msg-body">${escHtml(content)}</div>
+  `;
+  chatMessages.appendChild(el);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return el;
+}
+
+function showThinking(step) {
+  if (thinkingMsgEl) return;
+  thinkingMsgEl = document.createElement('div');
+  thinkingMsgEl.className = 'msg msg-agent thinking-msg';
+  thinkingMsgEl.innerHTML = `
+    <div class="msg-header">
+      <span class="mh-name">Agent</span>
+      <span class="mh-time">${new Date().toLocaleTimeString()}</span>
+    </div>
+    <div class="msg-body">
+      <span>Thinking (step ${step})</span>
+      <span class="think-dots"><span>●</span><span>●</span><span>●</span></span>
+    </div>
+  `;
+  chatMessages.appendChild(thinkingMsgEl);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeThinking() {
+  if (thinkingMsgEl) {
+    thinkingMsgEl.remove();
+    thinkingMsgEl = null;
+  }
+}
+
+// ─── Terminal ─────────────────────────────────────────
+function termLine(text, cls = '') {
+  const el = document.createElement('span');
+  el.className = `term-line ${cls}`;
+  el.textContent = text;
+  termOutput.appendChild(el);
+  termOutput.scrollTop = termOutput.scrollHeight;
+}
+
+// ─── Controls ─────────────────────────────────────────
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = parseInt(btn.dataset.mode);
+    if (mode === 3) {
+      if (!confirm('Enable Mode 3 (Operator)? This allows full desktop automation.\nEnsure kill switch is ready.')) return;
+    }
+    send({ action: 'set_mode', mode });
+    toast(`Mode ${mode} requested`, 'info');
+  });
+});
+
+// Stop
+document.getElementById('btn-stop').addEventListener('click', () => {
+  send({ action: 'stop' });
+  toast('Stop signal sent', 'info');
+});
+
+// Kill switch
+btnKill.addEventListener('click', () => {
+  if (!killActive) {
+    if (!confirm('ARM kill switch? This will halt the agent immediately.')) return;
+    send({ action: 'arm_kill' });
+  } else {
+    send({ action: 'disarm_kill' });
+    toast('Kill switch disarmed', 'ok');
+  }
+});
+
+// Brain viewer
+document.getElementById('btn-brain').addEventListener('click', () => {
+  send({ action: 'get_brain' });
+  toast('Loading brain index...', 'info');
+});
+
+// Tasks
+document.getElementById('btn-tasks').addEventListener('click', () => {
+  fetch('/api/tasks')
+    .then(r => r.json())
+    .then(data => {
+      const content = `Open Tasks (${data.open.length}):\n\n` +
+        (data.open.length ? data.open.join('\n') : '(none)');
+      showBrainModal('Open Tasks', content);
+    });
+});
+
+// Models
+document.getElementById('btn-models').addEventListener('click', () => {
+  fetch('/api/models')
+    .then(r => r.json())
+    .then(data => {
+      const content = data.error
+        ? `Error: ${data.error}`
+        : `Ollama Models (${data.models.length}):\n\n` + data.models.join('\n');
+      showBrainModal('Ollama Models', content);
+    });
+});
+
+// Clear buttons
+document.getElementById('btn-clear-chat').addEventListener('click', () => {
+  chatMessages.innerHTML = '';
+  addChatMsg('sys', 'Chat cleared.');
+});
+document.getElementById('btn-clear-term').addEventListener('click', () => {
+  termOutput.innerHTML = '';
+  termLine('Terminal cleared.', 'term-muted');
+});
+
+// Sidebar brain items
+document.querySelectorAll('[data-brain]').forEach(el => {
+  el.addEventListener('click', () => {
+    const file = el.dataset.brain;
+    fetch(`/api/brain/${file}`)
+      .then(r => r.json())
+      .then(data => showBrainModal(file, data.content));
+  });
+});
+
+// Sidebar collapse
+['sh-brain', 'sh-tools'].forEach(id => {
+  const header = document.getElementById(id);
+  header.addEventListener('click', () => {
+    const body = header.nextElementSibling;
+    const open = header.classList.toggle('open');
+    body.style.display = open ? 'block' : 'none';
+  });
+});
+
+// Tools sidebar
+document.getElementById('sh-tools').addEventListener('click', function() {
+  if (this.classList.contains('open')) {
+    fetch('/api/tools').then(r=>r.json()).then(data => {
+      const list = document.getElementById('tool-list');
+      list.innerHTML = data.available.map(t =>
+        `<div class="sidebar-item"><span class="item-icon">◈</span>${t}</div>`
+      ).join('');
+    });
+  }
+});
+
+// Chat send
+function sendChat() {
+  const text = chatInput.value.trim();
+  if (!text || agentBusy) return;
+  addChatMsg('user', text);
+  termLine(`── New task ───────────────────────────────────────`, 'term-divider');
+  send({ action: 'chat', text });
+  chatInput.value = '';
+  chatInput.style.height = '38px';
+}
+
+sendBtn.addEventListener('click', sendChat);
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat();
+  }
+  // Auto-resize
+  setTimeout(() => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+  }, 0);
+});
+
+// ─── Brain Modal ──────────────────────────────────────
+function showBrainModal(title, content) {
+  document.getElementById('brain-title').textContent = title;
+  document.getElementById('brain-content').textContent = content;
+  document.getElementById('brain-modal').classList.add('open');
+}
+document.getElementById('brain-close').addEventListener('click', () => {
+  document.getElementById('brain-modal').classList.remove('open');
+});
+document.getElementById('brain-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+// ─── Toast ────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.borderColor = type === 'error' ? 'var(--red)' :
+                          type === 'ok'    ? 'var(--green)' : 'var(--border2)';
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─── Helpers ──────────────────────────────────────────
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// Poll status every 10s
+setInterval(() => { send({ action: 'get_status' }); }, 10000);
+
+// Boot
+connect();
+</script>
+</body>
+</html>

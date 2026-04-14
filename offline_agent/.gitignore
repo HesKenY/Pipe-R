@@ -1,0 +1,11 @@
+logs/
+__pycache__/
+*.pyc
+*.pyo
+brain/import.lock
+brain/import_log.jsonl
+brain/training/
+brain/corpus/
+config/.kill_switch
+.venv/
+venv/

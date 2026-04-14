@@ -1,0 +1,143 @@
+tools:
+  filesystem:
+    read_file:
+      description: "Read contents of a file"
+      params: [path]
+      min_mode: 0
+
+    write_file:
+      description: "Write content to a file (creates or overwrites)"
+      params: [path, content]
+      min_mode: 1
+
+    apply_patch:
+      description: "Apply a unified diff patch to a file"
+      params: [path, diff]
+      min_mode: 1
+
+    list_tree:
+      description: "List directory tree structure"
+      params: [path, depth]
+      min_mode: 0
+
+    delete_file:
+      description: "Delete a file (requires confirmation)"
+      params: [path]
+      min_mode: 2
+      requires_confirm: true
+
+  search:
+    search_repo:
+      description: "Search codebase with ripgrep"
+      params: [query, path, file_pattern]
+      min_mode: 0
+
+    find_files:
+      description: "Find files by name/pattern"
+      params: [pattern, path]
+      min_mode: 0
+
+  git:
+    git_status:
+      description: "Show working tree status"
+      params: [repo_path]
+      min_mode: 0
+
+    git_diff:
+      description: "Show changes between commits/working tree"
+      params: [repo_path, target]
+      min_mode: 0
+
+    git_log:
+      description: "Show commit log"
+      params: [repo_path, limit]
+      min_mode: 0
+
+    git_add:
+      description: "Stage files for commit"
+      params: [repo_path, files]
+      min_mode: 1
+
+    git_commit:
+      description: "Create a commit with message"
+      params: [repo_path, message]
+      min_mode: 1
+
+    git_branch:
+      description: "List or create branches"
+      params: [repo_path, name, create]
+      min_mode: 1
+
+  shell:
+    run_command:
+      description: "Execute a shell command"
+      params: [cmd, cwd, timeout]
+      min_mode: 1
+
+    run_tests:
+      description: "Run test suite"
+      params: [target, cwd]
+      min_mode: 1
+
+    run_formatter:
+      description: "Run black/prettier/etc"
+      params: [path, formatter]
+      min_mode: 1
+
+    install_package:
+      description: "Install a package via pip or npm"
+      params: [package, manager]
+      min_mode: 2
+      requires_confirm: true
+
+  desktop:
+    capture_screen:
+      description: "Take a screenshot"
+      params: [region]
+      min_mode: 2
+
+    move_mouse:
+      description: "Move mouse cursor to coordinates"
+      params: [x, y]
+      min_mode: 3
+
+    click:
+      description: "Click mouse button"
+      params: [button, x, y]
+      min_mode: 3
+
+    type_text:
+      description: "Type text via keyboard"
+      params: [text, delay_ms]
+      min_mode: 3
+
+    get_active_window:
+      description: "Get title of active window"
+      params: []
+      min_mode: 2
+
+    hotkey:
+      description: "Send keyboard shortcut"
+      params: [keys]
+      min_mode: 3
+
+  brain:
+    read_brain:
+      description: "Read a brain index file"
+      params: [filename]
+      min_mode: 0
+
+    write_brain:
+      description: "Update a brain index file"
+      params: [filename, content]
+      min_mode: 1
+
+    search_memory:
+      description: "Search session memory for relevant context"
+      params: [query, limit]
+      min_mode: 0
+
+    write_session_log:
+      description: "Append to current session log"
+      params: [entry]
+      min_mode: 1

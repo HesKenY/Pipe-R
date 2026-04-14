@@ -1,0 +1,62 @@
+# Session log — 2026-04-14
+
+Agent: Ken AI (offline skeleton)
+Mode: 0 (Read Only) — default at boot
+Operator: Ken
+
+## What happened this session
+
+### bootstrap
+- Pulled `offline_agent/` from `C:/Users/Ken/Downloads/offline_agent/`
+  into `C:/Users/Ken/Desktop/Codex/offline_agent/`
+- Original layout was `brain/master_index/{identity,known_patterns,project_rules,stack}.md`
+- Ken requested the brain be rebuilt to the `brain_index/` +
+  `sessions/` + `tasks/` layout
+
+### brain rebuild
+- Created `brain_index/` with 6 files:
+  - `identity.md` — Ken AI voice rules, operator context,
+    core principles (ported from old identity.md)
+  - `tech_stack.md` — python/fastapi/ollama stack + port
+    map + local Ollama roster (ported from stack.md)
+  - `rules.md` — project rules with CHERP schema gotchas
+    and halo-trainer protocol (ported from project_rules.md)
+  - `known_fixes.md` — 14 known patterns with fixes, including
+    Windows CMD spam, ANSI spinner leak, ctypes HMODULE
+    overflow, CHERP crew_tasks id, etc. (ported from
+    known_patterns.md + expanded)
+  - `project_map.md` — NEW. Every Ken project across 4
+    tiers: live products, tooling, Halo rig, future
+  - `repo_map.md` — NEW. Git remotes, clone paths, branches,
+    parallel-agent coordination notes
+- Deleted `master_index/`
+- Created `sessions/YYYY-MM-DD/session_log.md` scaffold (this file)
+- Created `tasks/open/` and `tasks/done/`
+- Updated `main.py` port to 7778 to avoid clashing with Pipe-R's 7777
+- Updated `config/projects.yaml` with Ken's real 5 projects
+- Updated agent name in main.py from "OfflineAgent v1.0"
+  to "Ken AI offline v0.1.0-skeleton"
+
+### what's still needed
+- Rewire `agent_core/memory_retriever.py` to read
+  `brain_index/` instead of `master_index/` — including
+  sessions/ and tasks/ indexing tables in SQLite
+- Add a `brain_build.py` that imports Claude's session logs,
+  Pipe-R's training-log.jsonl, halo-trainer's corpus/ into
+  the brain index tables
+- First smoke test: start the server, verify GET /api/status
+  returns "Ken AI offline v0.1.0-skeleton" and brain files
+  load cleanly
+- Commit + push to origin
+
+## Mode escalation requests
+None yet.
+
+## Tasks moved
+- `bootstrap` — marked done (this session)
+- `brain_rebuild` — marked in-flight (see tasks/open/)
+
+## Notes for next session
+Read this session log first + the current task list in
+`tasks/open/`. The brain rebuild is half done — retriever
+code still points at the old location.

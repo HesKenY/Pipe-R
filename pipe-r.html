@@ -1361,6 +1361,133 @@
     body.deck[data-deck-tab="pc"] .steam-panel,
     body.deck[data-deck-tab="pc"] .shell-panel { display: none; }
     .pc-panel .panel-header { flex-shrink: 0; }
+
+    /* === BRAIN tab ==================================================== */
+    .brain-panel { display: none; }
+    body.deck[data-deck-tab="brain"] .brain-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+    body.deck[data-deck-tab="brain"] .grid,
+    body.deck[data-deck-tab="brain"] .metrics-panel,
+    body.deck[data-deck-tab="brain"] .steam-panel,
+    body.deck[data-deck-tab="brain"] .shell-panel,
+    body.deck[data-deck-tab="brain"] .pc-panel { display: none; }
+    .brain-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+      gap: 12px;
+      min-height: 0;
+    }
+    .brain-stack {
+      display: grid;
+      gap: 12px;
+      min-height: 0;
+    }
+    .brain-card {
+      border: 1px solid rgba(67, 116, 87, 0.24);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(243, 242, 220, 0.96), rgba(222, 230, 198, 0.96));
+      padding: 14px;
+      min-height: 0;
+    }
+    .brain-card h3 {
+      margin: 0 0 8px;
+      font-size: 0.94rem;
+      color: #264538;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .brain-kicker {
+      margin-bottom: 8px;
+      font-size: 0.74rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .brain-search-bar,
+    .brain-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .brain-input,
+    .brain-select,
+    .brain-textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(67, 116, 87, 0.28);
+      background: rgba(247, 248, 232, 0.96);
+      color: #234236;
+      padding: 12px 14px;
+      font: inherit;
+    }
+    .brain-input,
+    .brain-select {
+      min-height: 46px;
+    }
+    .brain-search-bar .brain-input {
+      flex: 1 1 280px;
+    }
+    .brain-search-bar .brain-select {
+      flex: 0 0 180px;
+    }
+    .brain-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+    .brain-results,
+    .brain-context,
+    .brain-blueprint {
+      min-height: 180px;
+      max-height: 360px;
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(67, 116, 87, 0.20);
+      background: rgba(248, 249, 236, 0.92);
+      padding: 12px;
+      color: #20392f;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .brain-result-card {
+      border-radius: 12px;
+      border: 1px solid rgba(67, 116, 87, 0.18);
+      background: rgba(255, 255, 255, 0.58);
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+    .brain-result-card:last-child {
+      margin-bottom: 0;
+    }
+    .brain-result-meta {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .brain-result-title {
+      color: #234236;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .brain-result-path {
+      color: #547062;
+      font-size: 0.8rem;
+      margin-top: 6px;
+      word-break: break-word;
+    }
+    @media (max-width: 1120px) {
+      .brain-layout {
+        grid-template-columns: 1fr;
+      }
+    }
     .pc-body {
       flex: 1 1 auto;
       display: grid;
@@ -3300,6 +3427,7 @@
         <button id="tab-metrics-btn" class="deck-tab-btn" type="button">Metrics</button>
         <button id="tab-steam-btn" class="deck-tab-btn" type="button">Steam</button>
         <button id="tab-shell-btn" class="deck-tab-btn" type="button">Shell</button>
+        <button id="tab-brain-btn" class="deck-tab-btn" type="button">Brain</button>
         <button id="refresh-btn">Refresh Now</button>
         <button id="run-queue-btn" class="secondary">Run Queue</button>
         <button id="auto-review-btn" class="secondary">Auto Review</button>
@@ -3367,9 +3495,11 @@
                 <div class="panel-kicker">Direct Line</div>
                 <h2 class="panel-title" id="chat-heading">Chat</h2>
                 <div class="chat-subtext" id="chat-subtext">No agent selected</div>
+                <div class="chat-subtext" id="chat-brain-status">BRAIN assist idle</div>
               </div>
               <div class="chat-actions">
                 <button id="chat-warm-btn" class="secondary" type="button" disabled title="Load this model into Ollama memory">Warm</button>
+                <button id="chat-brain-btn" class="secondary" type="button" disabled title="Toggle automatic BRAIN context for Ken AI chat">Brain: ON</button>
                 <button id="chat-log-btn" class="secondary" type="button" disabled>Log</button>
                 <button id="chat-notes-btn" class="secondary" type="button" disabled>Notes</button>
                 <button id="chat-clear-btn" class="secondary" type="button">Clear</button>
@@ -3446,6 +3576,90 @@
       </div>
 
       <!-- METRICS TAB — full-width view, hidden unless data-deck-tab="metrics" -->
+      <section class="panel brain-panel" id="brain-panel-section">
+        <div class="panel-header">
+          <div>
+            <div class="panel-kicker">BRAIN Controller</div>
+            <h2 class="panel-title">Search Compendium + Model Designer</h2>
+          </div>
+          <div class="status-cluster">
+            <span class="badge" id="brain-status-built">Not built</span>
+            <span class="badge" id="brain-status-records">0 records</span>
+            <span class="badge" id="brain-status-repos">0 repos</span>
+          </div>
+        </div>
+        <div class="brain-layout">
+          <div class="brain-stack">
+            <div class="brain-card">
+              <div class="brain-kicker">Search</div>
+              <h3>Compendium Search</h3>
+              <div class="brain-search-bar">
+                <input id="brain-query-input" class="brain-input" type="text" placeholder="Search logs, memory, dreams, plans, branches..." />
+                <select id="brain-repo-select" class="brain-select">
+                  <option value="">All repositories</option>
+                  <option value="codex">codex</option>
+                  <option value="claude_import">claude_import</option>
+                </select>
+              </div>
+              <div class="brain-actions" style="margin-top:10px">
+                <button id="brain-search-btn" type="button">Search</button>
+                <button id="brain-context-btn" type="button" class="secondary">Build Context</button>
+                <button id="brain-rebuild-btn" type="button" class="secondary">Rebuild BRAIN</button>
+              </div>
+            </div>
+
+            <div class="brain-card">
+              <div class="brain-kicker">Results</div>
+              <h3>Indexed References</h3>
+              <div id="brain-results" class="brain-results">BRAIN search results will appear here.</div>
+            </div>
+
+            <div class="brain-card">
+              <div class="brain-kicker">Context Pack</div>
+              <h3>Operator Context</h3>
+              <div id="brain-context" class="brain-context">Build a context pack to hand Ken AI Chat or the squad a focused working set.</div>
+            </div>
+          </div>
+
+          <div class="brain-stack">
+            <div class="brain-card">
+              <div class="brain-kicker">Model Designer</div>
+              <h3>Ken AI Offline Developer</h3>
+              <input id="brain-model-name" class="brain-input" type="text" value="Ken AI Offline Developer" />
+              <textarea id="brain-model-mission" class="brain-textarea" style="margin-top:10px">Build the proprietary local-first developer model powered by BRAIN Controller, Ken AI Chat, and the offline agent squad.</textarea>
+              <textarea id="brain-model-capabilities" class="brain-textarea" style="margin-top:10px">local-first execution
+full workstation file visibility
+vision context
+tool execution
+shell execution
+git awareness
+memory logging
+dream synthesis
+branch-aware planning
+agent squad coordination</textarea>
+              <textarea id="brain-model-permissions" class="brain-textarea" style="margin-top:10px">full-trust local mode
+approved project file read/write
+tool invocation
+screen and vision scaffolding
+logged operator audit trail
+brain-backed memory and design persistence</textarea>
+              <div class="brain-actions" style="margin-top:10px">
+                <button id="brain-blueprint-btn" type="button">Generate Blueprint</button>
+                <button id="brain-save-design-btn" type="button" class="secondary">Save Blueprint</button>
+                <button id="brain-export-dataset-btn" type="button" class="secondary">Export Dataset</button>
+                <button id="brain-copy-blueprint-btn" type="button" class="secondary">Copy Blueprint</button>
+              </div>
+            </div>
+
+            <div class="brain-card">
+              <div class="brain-kicker">Blueprint</div>
+              <h3>Design Output</h3>
+              <div id="brain-blueprint" class="brain-blueprint">Generate a model blueprint to save the first BRAIN-backed design for the new deck iteration.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel metrics-panel" id="metrics-panel-section">
         <div class="panel-header">
           <div>
@@ -3589,7 +3803,7 @@
             <h2 class="panel-title">PowerShell</h2>
           </div>
           <div class="metrics-head-meta">
-            <span class="badge" id="shell-cwd">C:\Users\Ken\Desktop\Claude</span>
+            <span class="badge" id="shell-cwd">C:\Users\Ken\Desktop\Codex</span>
             <button id="shell-clear-btn" class="secondary" type="button">Clear</button>
           </div>
         </div>
@@ -3799,6 +4013,7 @@
     const THEME_LS_KEY = 'pipe-r.theme.v2';
     const REFRESH_LS_KEY = 'pipe-r.refresh-sec';
     const AUDIO_LS_KEY = 'pipe-r.audio-source';
+    const CHAT_BRAIN_AUTO_LS_KEY = 'pipe-r.chat-brain-auto.v1';
     let _dashTimer = null;
     const state = {
       dashboard: null,
@@ -3814,6 +4029,8 @@
       chatAgentId: null,    // agent the chat panel is currently bound to
       chatPending: false,
       chatLoading: false,
+      chatBrainAuto: localStorage.getItem(CHAT_BRAIN_AUTO_LS_KEY) !== 'off',
+      chatBrainContext: {},
       // Worklist item 3 — scroll-position pin. When the user has
       // scrolled up to read earlier turns, renderChat stops auto-
       // jumping to the bottom on new content. Flipped to true
@@ -3832,6 +4049,14 @@
       trainingViewAgent: null,
       metrics: null,
       metricsPolling: false,
+      brain: {
+        status: null,
+        results: [],
+        context: null,
+        blueprint: null,
+        savedFile: null,
+        datasetExport: null,
+      },
     };
     const themeFallback = {
       trainerLabel: 'Ken AI',
@@ -3887,6 +4112,7 @@
       chatSendBtn: document.getElementById('chat-send-btn'),
       chatClearBtn: document.getElementById('chat-clear-btn'),
       chatSubtext: document.getElementById('chat-subtext'),
+      chatBrainStatus: document.getElementById('chat-brain-status'),
       chatNotesBtn: document.getElementById('chat-notes-btn'),
       chatNotesEditor: document.getElementById('chat-notes-editor'),
       chatNotesText: document.getElementById('chat-notes-text'),
@@ -3905,6 +4131,7 @@
       chatJumpBtn: document.getElementById('chat-jump-btn'),
       // Worklist item 2 — warm button
       chatWarmBtn: document.getElementById('chat-warm-btn'),
+      chatBrainBtn: document.getElementById('chat-brain-btn'),
       spotifyStrip: document.getElementById('spotify-strip'),
       npCard: document.getElementById('np-card'),
       npTitle: document.getElementById('np-title'),
@@ -3938,6 +4165,27 @@
       tabSteamBtn: document.getElementById('tab-steam-btn'),
       tabShellBtn: document.getElementById('tab-shell-btn'),
       tabPcBtn: document.getElementById('tab-pc-btn'),
+      tabBrainBtn: document.getElementById('tab-brain-btn'),
+      brainPanel: document.getElementById('brain-panel-section'),
+      brainStatusBuilt: document.getElementById('brain-status-built'),
+      brainStatusRecords: document.getElementById('brain-status-records'),
+      brainStatusRepos: document.getElementById('brain-status-repos'),
+      brainQueryInput: document.getElementById('brain-query-input'),
+      brainRepoSelect: document.getElementById('brain-repo-select'),
+      brainSearchBtn: document.getElementById('brain-search-btn'),
+      brainContextBtn: document.getElementById('brain-context-btn'),
+      brainRebuildBtn: document.getElementById('brain-rebuild-btn'),
+      brainResults: document.getElementById('brain-results'),
+      brainContext: document.getElementById('brain-context'),
+      brainModelName: document.getElementById('brain-model-name'),
+      brainModelMission: document.getElementById('brain-model-mission'),
+      brainModelCapabilities: document.getElementById('brain-model-capabilities'),
+      brainModelPermissions: document.getElementById('brain-model-permissions'),
+      brainBlueprintBtn: document.getElementById('brain-blueprint-btn'),
+      brainSaveDesignBtn: document.getElementById('brain-save-design-btn'),
+      brainExportDatasetBtn: document.getElementById('brain-export-dataset-btn'),
+      brainCopyBlueprintBtn: document.getElementById('brain-copy-blueprint-btn'),
+      brainBlueprint: document.getElementById('brain-blueprint'),
       pcPanel: document.getElementById('pc-panel-section'),
       pcActiveGrid: document.getElementById('pc-active-grid'),
       pcBenchGrid: document.getElementById('pc-bench-grid'),
@@ -4805,6 +5053,7 @@
       const dashboard = state.dashboard;
       const agent = dashboard ? getSelectedAgent(dashboard) : null;
       const agentId = agent?.id || null;
+      const brainState = agentId ? state.chatBrainContext[agentId] : null;
       els.chatHeading.textContent = agent ? `Chat · ${agent.displayName || agent.id}` : 'Chat';
       if (els.chatSubtext) {
         if (agent) {
@@ -4816,10 +5065,23 @@
           ];
           if (warmLabel === 'warm')    parts.push('WARM');
           if (warmLabel === 'warming') parts.push('warming…');
+          parts.push(state.chatBrainAuto ? 'BRAIN AUTO' : 'BRAIN OFF');
           if (agent.blocked) parts.push('BLOCKED');
           els.chatSubtext.textContent = parts.join(' · ');
         } else {
           els.chatSubtext.textContent = 'No agent selected';
+        }
+      }
+      if (els.chatBrainStatus) {
+        if (agent && brainState && brainState.query) {
+          const repoLabel = brainState.repoFilter || brainState.repo || 'all repos';
+          els.chatBrainStatus.textContent = `BRAIN ${repoLabel} Â· ${brainState.count || 0} refs Â· ${brainState.query}`;
+        } else if (agent) {
+          els.chatBrainStatus.textContent = state.chatBrainAuto
+            ? 'BRAIN assist ready â€” next prompt pulls indexed context'
+            : 'BRAIN assist paused';
+        } else {
+          els.chatBrainStatus.textContent = 'BRAIN assist idle';
         }
       }
       const enabled = !!agentId;
@@ -4836,6 +5098,10 @@
         els.chatWarmBtn.classList.toggle('warming', warming);
         els.chatWarmBtn.classList.toggle('warm', state.warmState[agentId] === 'warm');
         els.chatWarmBtn.textContent = warming ? '…' : (state.warmState[agentId] === 'warm' ? 'Warm ✓' : 'Warm');
+      }
+      if (els.chatBrainBtn) {
+        els.chatBrainBtn.disabled = !enabled;
+        els.chatBrainBtn.textContent = state.chatBrainAuto ? 'Brain: ON' : 'Brain: OFF';
       }
       if (!enabled && state.notesEditing) toggleNotesEditor(false);
       if (!enabled && state.trainingViewOpen) closeTrainingView();
@@ -5001,11 +5267,19 @@
       try {
         const data = await fetchJson('/api/chat', {
           method: 'POST',
-          body: JSON.stringify({ agentId, message: text }),
+          body: JSON.stringify({
+            agentId,
+            message: text,
+            brainAuto: state.chatBrainAuto,
+            brainQuery: text,
+            brainRepo: els.brainRepoSelect?.value || 'codex',
+            brainLimit: 6,
+          }),
         });
         const arr = state.chats[agentId];
         const pendingIdx = arr.findIndex(m => m.pending);
         if (pendingIdx >= 0) arr.splice(pendingIdx, 1);
+        state.chatBrainContext[agentId] = data.brainContext || null;
         arr.push({ role: 'assistant', content: data.reply || '(empty reply)', ts: new Date().toISOString() });
       } catch (e) {
         const arr = state.chats[agentId];
@@ -5016,6 +5290,12 @@
         state.chatPending = false;
         renderChat();
       }
+    }
+
+    function toggleChatBrainAuto() {
+      state.chatBrainAuto = !state.chatBrainAuto;
+      localStorage.setItem(CHAT_BRAIN_AUTO_LS_KEY, state.chatBrainAuto ? 'on' : 'off');
+      renderChat();
     }
 
     async function openTrainingView() {
@@ -5637,6 +5917,9 @@
     // Worklist item 3 — scroll-pin tracking. Flip chatStickToBottom
     // based on proximity to the bottom of chat-log. Called on every
     // scroll + on jump-to-bottom click.
+    if (els.chatBrainBtn) {
+      els.chatBrainBtn.addEventListener('click', toggleChatBrainAuto);
+    }
     if (els.chatLog) {
       els.chatLog.addEventListener('scroll', () => {
         const el = els.chatLog;
@@ -6024,7 +6307,7 @@
 
     function setDeckTab(tab) {
       if (!document.body.classList.contains('deck')) return;
-      const valid = ['main', 'board', 'metrics', 'steam', 'shell', 'pc'];
+      const valid = ['main', 'board', 'metrics', 'steam', 'shell', 'pc', 'brain'];
       const next = valid.includes(tab) ? tab : 'main';
       document.body.dataset.deckTab = next;
       els.tabMainBtn?.classList.toggle('active', next === 'main');
@@ -6033,11 +6316,16 @@
       els.tabSteamBtn?.classList.toggle('active', next === 'steam');
       els.tabShellBtn?.classList.toggle('active', next === 'shell');
       els.tabPcBtn?.classList.toggle('active', next === 'pc');
+      els.tabBrainBtn?.classList.toggle('active', next === 'brain');
       if (next === 'metrics') {
         loadMetrics();
         startMetricsPolling();
       } else {
         stopMetricsPolling();
+      }
+      if (next === 'brain') {
+        loadBrainStatus();
+        renderBrainPanel();
       }
       if (next === 'steam') {
         loadSteamLibrary();
@@ -6055,6 +6343,32 @@
     els.tabSteamBtn?.addEventListener('click', () => setDeckTab('steam'));
     els.tabShellBtn?.addEventListener('click', () => setDeckTab('shell'));
     els.tabPcBtn?.addEventListener('click', () => setDeckTab('pc'));
+    els.tabBrainBtn?.addEventListener('click', () => setDeckTab('brain'));
+    els.brainSearchBtn?.addEventListener('click', () => runBrainSearch(false));
+    els.brainContextBtn?.addEventListener('click', () => runBrainSearch(true));
+    els.brainRebuildBtn?.addEventListener('click', async () => {
+      try {
+        const summary = await fetchJson('/api/brain/rebuild', { method: 'POST', body: '{}' });
+        state.brain.status = summary;
+        await loadBrainStatus();
+        setBanner(`BRAIN rebuilt with ${summary.records || 0} records.`, 'ok');
+      } catch (e) {
+        setBanner('BRAIN rebuild failed: ' + e.message, 'danger');
+      }
+    });
+    els.brainBlueprintBtn?.addEventListener('click', () => {
+      buildBrainBlueprint();
+      setBanner('Blueprint generated from current model intent.', 'ok');
+    });
+    els.brainSaveDesignBtn?.addEventListener('click', () => saveBrainBlueprint());
+    els.brainExportDatasetBtn?.addEventListener('click', () => exportBrainDataset());
+    els.brainCopyBlueprintBtn?.addEventListener('click', () => copyBrainBlueprint());
+    els.brainQueryInput?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        runBrainSearch(false);
+      }
+    });
     els.pcRefreshBtn?.addEventListener('click', () => renderPcRoster());
     els.pcInspectorClose?.addEventListener('click', () => {
       if (els.pcInspector) els.pcInspector.hidden = true;
@@ -6537,6 +6851,182 @@
       }
     }
 
+    function renderBrainStatus() {
+      const status = state.brain.status;
+      if (!status) {
+        els.brainStatusBuilt.textContent = 'Not built';
+        els.brainStatusRecords.textContent = '0 records';
+        els.brainStatusRepos.textContent = '0 repos';
+        return;
+      }
+      const repoCount = Object.keys(status.repositories || {}).length;
+      els.brainStatusBuilt.textContent = status.lastBuiltAt
+        ? `Built ${new Date(status.lastBuiltAt).toLocaleString()}`
+        : 'Built';
+      els.brainStatusRecords.textContent = `${status.records || 0} records`;
+      els.brainStatusRepos.textContent = `${repoCount} repos`;
+    }
+
+    function renderBrainResults() {
+      const results = state.brain.results || [];
+      if (!results.length) {
+        els.brainResults.textContent = 'BRAIN search results will appear here.';
+        return;
+      }
+      els.brainResults.innerHTML = results.map(result => `
+        <article class="brain-result-card">
+          <div class="brain-result-meta">${escapeHtml(result.repo_label || result.repo || 'repo')} | ${escapeHtml(result.kind || 'record')} | ${escapeHtml(result.intent || 'reference')}</div>
+          <div class="brain-result-title">${escapeHtml(result.title || 'Untitled')}</div>
+          <div>${escapeHtml(result.preview || '')}</div>
+          <div class="brain-result-path">${escapeHtml(result.path || '')}</div>
+        </article>
+      `).join('');
+    }
+
+    function renderBrainContext() {
+      if (!state.brain.context) {
+        els.brainContext.textContent = 'Build a context pack to hand Ken AI Chat or the squad a focused working set.';
+        return;
+      }
+      els.brainContext.textContent = JSON.stringify(state.brain.context, null, 2);
+    }
+
+    function renderBrainBlueprint() {
+      if (!state.brain.blueprint) {
+        els.brainBlueprint.textContent = 'Generate a model blueprint to save the first BRAIN-backed design for the new deck iteration.';
+        return;
+      }
+      const output = { ...state.brain.blueprint };
+      if (state.brain.savedFile) output.savedFile = state.brain.savedFile;
+      if (state.brain.datasetExport) output.datasetExport = state.brain.datasetExport;
+      els.brainBlueprint.textContent = JSON.stringify(output, null, 2);
+    }
+
+    function renderBrainPanel() {
+      renderBrainStatus();
+      renderBrainResults();
+      renderBrainContext();
+      renderBrainBlueprint();
+    }
+
+    async function loadBrainStatus() {
+      try {
+        state.brain.status = await fetchJson('/api/brain/status');
+        renderBrainPanel();
+      } catch (e) {
+        setBanner('BRAIN status failed: ' + e.message, 'danger');
+      }
+    }
+
+    async function runBrainSearch(buildContext = false) {
+      const query = els.brainQueryInput?.value.trim();
+      if (!query) {
+        setBanner('Enter a BRAIN query first.', 'warn');
+        return;
+      }
+      const payload = {
+        query,
+        repo: els.brainRepoSelect?.value || undefined,
+        limit: buildContext ? 8 : 10,
+        target: 'local',
+      };
+      try {
+        if (buildContext) {
+          const data = await fetchJson('/api/brain/context', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          state.brain.context = data;
+          state.brain.results = data.results || [];
+          setBanner(`BRAIN context built for "${query}".`, 'ok');
+        } else {
+          const data = await fetchJson('/api/brain/search', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          state.brain.results = data.results || [];
+          setBanner(`BRAIN search returned ${(data.results || []).length} matches.`, 'ok');
+        }
+        renderBrainPanel();
+      } catch (e) {
+        setBanner('BRAIN query failed: ' + e.message, 'danger');
+      }
+    }
+
+    function buildBrainBlueprint() {
+      const blueprint = {
+        name: els.brainModelName?.value.trim() || 'Ken AI Offline Developer',
+        mission: els.brainModelMission?.value.trim() || '',
+        capabilities: (els.brainModelCapabilities?.value || '').split('\n').map(line => line.trim()).filter(Boolean),
+        permissions: (els.brainModelPermissions?.value || '').split('\n').map(line => line.trim()).filter(Boolean),
+        controller: 'BRAIN Controller',
+        operatorSurface: 'Ken AI Chat',
+        contextQuery: els.brainQueryInput?.value.trim() || '',
+        contextRepo: els.brainRepoSelect?.value || null,
+        contextResults: state.brain.context?.results || state.brain.results || [],
+      };
+      state.brain.blueprint = blueprint;
+      state.brain.savedFile = null;
+      state.brain.datasetExport = null;
+      renderBrainBlueprint();
+      return blueprint;
+    }
+
+    async function saveBrainBlueprint() {
+      const blueprint = buildBrainBlueprint();
+      try {
+        const data = await fetchJson('/api/brain/model-design', {
+          method: 'POST',
+          body: JSON.stringify(blueprint),
+        });
+        state.brain.savedFile = data.file;
+        renderBrainBlueprint();
+        setBanner(`Blueprint saved to ${data.file}.`, 'ok');
+      } catch (e) {
+        setBanner('Blueprint save failed: ' + e.message, 'danger');
+      }
+    }
+
+    async function copyBrainBlueprint() {
+      const blueprint = state.brain.blueprint || buildBrainBlueprint();
+      try {
+        await navigator.clipboard.writeText(JSON.stringify(blueprint, null, 2));
+        setBanner('Blueprint copied to clipboard.', 'ok');
+      } catch (e) {
+        setBanner('Clipboard copy failed: ' + e.message, 'danger');
+      }
+    }
+
+    async function exportBrainDataset() {
+      const blueprint = state.brain.blueprint || buildBrainBlueprint();
+      try {
+        const data = await fetchJson('/api/brain/export-dataset', {
+          method: 'POST',
+          body: JSON.stringify({
+            name: blueprint.name,
+            mission: blueprint.mission,
+            capabilities: blueprint.capabilities,
+            permissions: blueprint.permissions,
+            query: blueprint.contextQuery || blueprint.name,
+            repo: els.brainRepoSelect?.value || 'codex',
+            limit: 400,
+          }),
+        });
+        state.brain.datasetExport = {
+          datasetFile: data.export?.datasetFileRelative || data.export?.datasetFile,
+          manifestFile: data.export?.manifestFileRelative || data.export?.manifestFile,
+          specFile: data.specFile,
+          itemCount: data.export?.itemCount || 0,
+          repositories: data.export?.repositories || {},
+        };
+        renderBrainBlueprint();
+        setBanner(`Dataset exported with ${data.export?.itemCount || 0} items.`, 'ok');
+      } catch (e) {
+        setBanner('Dataset export failed: ' + e.message, 'danger');
+      }
+    }
+
+    renderBrainPanel();
     loadAll();
     _dashTimer = window.setInterval(() => loadAll(true), (state.refreshSec || 5) * 1000);
 

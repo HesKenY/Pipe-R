@@ -1,0 +1,57 @@
+projects:
+  default:
+    name: "Default Workspace"
+    path: "workspace/"
+    language: "python"
+    test_command: "pytest"
+    format_command: "black ."
+    lint_command: "flake8 ."
+
+  pipe_r:
+    name: "Pipe-R command center"
+    path: "C:/Users/Ken/Desktop/Codex"
+    language: "javascript"
+    test_command: "node --check server.js"
+    format_command: ""
+    lint_command: ""
+    git_remote: "origin"
+    notes: "node.js button-driven command center. hub.js + server.js on :7777. no npm install needed."
+
+  claude_clone:
+    name: "Claude parallel clone"
+    path: "C:/Users/Ken/Desktop/Claude"
+    language: "javascript"
+    test_command: "node --check server.js"
+    format_command: ""
+    lint_command: ""
+    git_remote: "origin"
+    notes: "claude's working copy of the same repo. read-only from offline_agent to avoid stomping claude's in-flight work."
+
+  halo_trainer:
+    name: "Halo trainer classroom"
+    path: "C:/Users/Ken/Desktop/Codex/halo-trainer"
+    language: "javascript"
+    test_command: "node src/enroll.js"
+    format_command: ""
+    lint_command: ""
+    notes: "scored drill environment for the ken-ai + squad. runs ollama directly. 13+ drills, 4 curricula, rubric grader."
+
+  cherp:
+    name: "CHERP — construction crew platform"
+    path: "C:/Users/Ken/Desktop/Codex/workspace/CHERP"
+    language: "javascript"
+    test_command: "node test/run-all.js"
+    format_command: ""
+    lint_command: ""
+    git_remote: "origin"
+    notes: "LIVE on cherp.live. supabase backend (nptmzihtujgkmqougkzd). offline-first via window.store. touch carefully."
+
+agent:
+  name: "Ken AI (offline)"
+  version: "0.1.0-skeleton"
+  persona: "Ken's personal offline coding assistant. Disciplined. Methodical. Lowercase voice. No analogies. Reads before writing."
+  loop_delay_ms: 500
+  max_task_steps: 50
+  auto_summarize: true
+  auto_commit: false
+  notify_on_complete: true

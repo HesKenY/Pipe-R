@@ -455,3 +455,106 @@ When Nest builds a new CHERP instance, it should also:
 - Set up OAuth credentials for Sheets sync
 - Store sheet URLs in instance's team_codes
 - Register team codes in the Hub routing table
+
+## 2026-04-13 (night) - Halo training stack live in Codex
+
+- Patched `agent_mode/halo/agent.js` so the main Halo decision path uses async `ollama run` instead of `spawnSync`, which keeps the game loop from hard-freezing the whole deck while Ken AI thinks.
+- Extended `agent_mode/halo/training_mode.js` with persistent `target_practice` and `one_hit_kill` flags so cheat-assisted reps are labeled in config and prompt context instead of being mixed with survival-mode learning.
+- Restarted the Codex `server.js` process and re-armed the Halo training stack in the Codex copy only:
+  - `POST /api/halo/training-mode/on` with goal `one-hit-kill headshot target practice while Ken steers and Ken AI learns dev reflexes`
+  - `POST /api/halo/keylog/start`
+  - `POST /api/halo/analyzer/start`
+  - `POST /api/halo/vision/start`
+  - `POST /api/halo/aim/start` with engage mode, `burstSize=1`, `maxShots=1`
+  - `POST /api/halo/start` in `drive` mode with `ken-ai:latest`
+  - `POST /api/halo/trainer/start`
+- Verified active learning files on disk after startup:
+  - `agent_mode/memories/ken-ai-latest/halo-keylog.jsonl` advanced to `2277019` bytes at `2026-04-13 20:15`
+  - `agent_mode/memories/ken-ai-latest/halo-log.jsonl` advanced to `158118` bytes at `2026-04-13 20:13`
+  - `agent_mode/config/halo_training.json` now persists `target_practice: true` and `one_hit_kill: true`
+- Residual issue: HTTP status endpoints can still become sluggish while the Halo loops are hot because the aimbot and vision helpers still use sync Python calls. Functional startup is working, but the runtime is not fully non-blocking yet.
+
+## 2026-04-13 (late night) - Desktop Halo overlay + control app
+
+- Added `agent_mode/halo/ken_ai_halo_control.py`, a desktop Tk control app that can start/stop the Halo training stack and opens a topmost overlay showing Ken AI state.
+- Added desktop launchers:
+  - `C:\Users\Ken\Desktop\Ken AI Halo Control.bat`
+  - `C:\Users\Ken\Desktop\KEN AI HALO ON.bat`
+  - `C:\Users\Ken\Desktop\KEN AI HALO OFF.bat`
+- Updated `agent_mode/halo/agent.js` to persist the live vision cache to `agent_mode/memories/ken-ai-latest/halo-vision-cache.json` so the overlay can display what Ken AI's vision loop last saw without relying on a responsive HTTP status endpoint.
+- Re-armed the Halo stack after the UI work. Current confirmed server-side start line: `Halo agent started` at `2026-04-14T01:35:10.554Z`.
+
+## 2026-04-13 (pause checkpoint) - Halo jumpstart from Ken keylogs
+
+- Added `agent_mode/halo/jumpstart.js` to build `agent_mode/memories/ken-ai-latest/halo-jumpstart.json` from recent Halo keylogs, pattern events, and Halo action logs.
+- The jumpstart snapshot now captures dominant keys, dominant combat patterns, dominant agent actions, recent key sequence, and short style notes used to bias Ken AI toward Ken's real movement/combat cadence.
+- Wired `jumpstartPromptBlock()` into:
+  - `agent_mode/halo/agent.js` drive prompt
+  - `agent_mode/halo/agent.js` observe prompt
+  - `agent_mode/halo/trainer.js` coaching prompt
+- Updated `agent_mode/halo/keylog_analyzer.js` so it refreshes the jumpstart snapshot in the background while keylog analysis runs.
+- Updated `agent_mode/halo/ken_ai_halo_control.py` overlay to surface jumpstart/style data alongside live keys, HUD state, and vision summary.
+- Built a fresh jumpstart snapshot from live data. Current profile: dominant keys `d`, `w`, `a`, `mouse:left`; dominant patterns `strafe_shoot`, `grenade_throw`, `noob_combo`; dominant agent actions `move_fwd`, `move_back`, `noop`, `look_left`.
+- Current server log confirms the latest Halo drive-loop start on the new jumpstart-aware server at `2026-04-14T01:41:29.964Z`.
+- Paused here on user request before further runtime verification.
+
+## 2026-04-13 (late night) - BRAIN-first deck iteration
+
+- Mirrored `C:\Users\Ken\Desktop\Claude` into `C:\Users\Ken\Desktop\Codex\input\Claude-import` as an ingest-only source for the new BRAIN repository. Excluded obvious dependency and cache folders during import so the mirror is useful to index without dragging temp noise into the corpus.
+- Rebuilt `brain/build_brain.py` as a multi-root ingester with explicit repository labels, repo-aware paths, and branch capture across both `codex` and `claude_import`.
+- Added `brain/repositories.json`, `brain/BRAIN_CHARTER.md`, `brain/MODEL_DESIGNER_SPEC.md`, and `brain/designs/README.md` so BRAIN now has an explicit charter, approved ingest roots, and a place to persist model blueprints.
+- Built the first clean BRAIN database at `brain/BRAIN.db`:
+  - `107` sources
+  - `3508` indexed records
+  - `6` branch snapshots
+  - repository split: `codex=1933`, `claude_import=1575`
+- Extended `server.js` with:
+  - `GET /api/brain/status`
+  - `POST /api/brain/rebuild`
+  - `POST /api/brain/search`
+  - `POST /api/brain/context`
+  - `POST /api/brain/model-design`
+- Extended `pipe-r.html` with the first BRAIN tab scaffold:
+  - BRAIN status badges
+  - compendium search
+  - context-pack builder
+  - model designer form
+  - blueprint persistence into `brain/designs/`
+- Verified live server responses after restart:
+  - `/api/brain/status` returns the rebuilt index summary
+  - `/api/brain/search` returns indexed memory/chat/log results
+  - `/api/brain/model-design` saves timestamped JSON blueprints
+- Saved the first BRAIN-backed model design at `brain/designs/2026-04-14T04-04-31-975Z-ken-ai-offline-developer.json`.
+- Working project intent is now aligned to two core deck-native systems:
+  - `BRAIN Controller`
+  - `Ken AI Chat`
+
+## 2026-04-14 (morning) - Ken AI Chat + BRAIN dataset path
+
+- Extended `server.js` so `/api/chat` can request BRAIN context before each turn. New payload fields:
+  - `brainAuto`
+  - `brainQuery`
+  - `brainRepo`
+  - `brainIntent`
+  - `brainLimit`
+- BRAIN-backed chat context is now injected into the runtime system prompt under a dedicated BRAIN section, and chat training entries now log the BRAIN query/count metadata alongside the normal turn data.
+- Added a response rule block to the chat prompt so BRAIN-assisted turns answer directly instead of falling into the generic "internal server error" apology pattern seen in earlier chat memory.
+- Extended `pipe-r.html` chat controls with:
+  - `Brain: ON/OFF` toggle for automatic BRAIN retrieval in Ken AI Chat
+  - live BRAIN status line under the chat header showing repo/query/reference count
+- Added `brain/export_dataset.py` to export BRAIN slices into JSONL + manifest artifacts under `brain/exports/`.
+- Added `/api/brain/export-dataset` in `server.js`. It now:
+  - calls `brain/export_dataset.py`
+  - emits a dataset manifest
+  - writes a matching training spec into `brain/training_specs/`
+- Extended the BRAIN tab model-designer actions with `Export Dataset`, so blueprint work can immediately produce:
+  - dataset export
+  - manifest
+  - training spec
+- Verified live endpoints after restart:
+  - `/api/chat` returns `brainContext` metadata on a BRAIN-assisted turn
+  - `/api/brain/export-dataset` successfully produced:
+    - `brain/exports/2026-04-14T08-45-15Z-ken-ai-offline-developer.jsonl`
+    - `brain/exports/2026-04-14T08-45-15Z-ken-ai-offline-developer.manifest.json`
+    - `brain/training_specs/2026-04-14T08-45-15-457Z-ken-ai-offline-developer.json`
+- Updated the Shell tab label in `pipe-r.html` from `Claude` to `Codex` so the UI matches the actual active workspace.

@@ -1,0 +1,55 @@
+# brain_build.py reads this to decide what to import.
+#
+# source — path relative to offline_agent/ project root (or absolute)
+# dest   — path relative to brain/
+# kind   — "copy" (full) | "tail" (last N lines) | "head" (first N bytes)
+# tail_lines / head_bytes — optional, used with kind
+
+imports:
+  # Claude's main project brief — Ken's full project context
+  - source: "../CLAUDE.md"
+    dest: "brain_index/claude_project_brief.md"
+    kind: copy
+
+  # Agents coordination protocol
+  - source: "../AGENTS.md"
+    dest: "brain_index/agents_coordination.md"
+    kind: copy
+
+  # Ken AI voice profile (from pipe-r's per-agent memory)
+  - source: "../agent_mode/memories/ken-ai-latest/notes.md"
+    dest: "brain_index/ken_voice_profile.md"
+    kind: copy
+
+  # Ken AI halo memory — tactics, wins, deaths, coach bullets
+  - source: "../agent_mode/memories/ken-ai-latest/halo-memory.md"
+    dest: "sessions/2026-04-14/halo-memory-snapshot.md"
+    kind: copy
+
+  # Recent training log tail — for the corpus
+  - source: "../agent_mode/training/training-log.jsonl"
+    dest: "training/training-log-recent.jsonl"
+    kind: tail
+    tail_lines: 500
+
+  # halo-trainer curated corpus by curriculum
+  - source: "../halo-trainer/corpus/integration.jsonl"
+    dest: "corpus/halo-trainer-integration.jsonl"
+    kind: copy
+  - source: "../halo-trainer/corpus/implementation.jsonl"
+    dest: "corpus/halo-trainer-implementation.jsonl"
+    kind: copy
+  - source: "../halo-trainer/corpus/reverse-engineering.jsonl"
+    dest: "corpus/halo-trainer-reverse-engineering.jsonl"
+    kind: copy
+  - source: "../halo-trainer/corpus/recon.jsonl"
+    dest: "corpus/halo-trainer-recon.jsonl"
+    kind: copy
+  - source: "../halo-trainer/corpus/observability.jsonl"
+    dest: "corpus/halo-trainer-observability.jsonl"
+    kind: copy
+
+  # CHERP schema (read-only reference)
+  - source: "../workspace/CHERP/cherp-schema.sql"
+    dest: "brain_index/cherp_schema.sql"
+    kind: copy

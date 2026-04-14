@@ -1,0 +1,59 @@
+ollama:
+  base_url: "http://localhost:11434"
+  timeout: 120
+
+models:
+  default: "qwen2.5-coder:14b"
+  
+  profiles:
+    planner:
+      model: "qwen2.5-coder:14b"
+      num_ctx: 65536
+      temperature: 0.2
+      top_p: 0.9
+      description: "Task planning and tool selection"
+
+    coder:
+      model: "qwen2.5-coder:14b"
+      num_ctx: 65536
+      temperature: 0.1
+      top_p: 0.95
+      description: "Code generation and patching"
+
+    reviewer:
+      model: "qwen2.5-coder:14b"
+      num_ctx: 32768
+      temperature: 0.0
+      description: "Code review and diff analysis"
+
+    vision:
+      model: "llava:13b"
+      num_ctx: 8192
+      temperature: 0.1
+      description: "Screenshot and image understanding"
+
+    fast:
+      model: "qwen2.5-coder:7b"
+      num_ctx: 32768
+      temperature: 0.2
+      description: "Quick tasks, grep, summaries"
+
+  # Fallback priority order if primary model not available
+  fallback_chain:
+    - "qwen2.5-coder:14b"
+    - "qwen2.5-coder:7b"
+    - "codellama:13b"
+    - "llama3.2:latest"
+
+tool_calling:
+  enabled: true
+  structured_output: true
+  max_tool_calls_per_turn: 10
+  retry_on_parse_error: true
+  max_retries: 3
+
+context:
+  max_brain_chunks: 5
+  max_session_history_turns: 20
+  max_repo_scan_tokens: 4000
+  summarize_after_turns: 15

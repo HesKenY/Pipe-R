@@ -47,6 +47,7 @@ const TICK_PY         = join(__dirname, 'halo_tick.py');
 const DO_PY           = join(__dirname, 'halo_do.py');
 const AIM_PY          = join(__dirname, 'aimbot.py');
 const KEYLOG_PY       = join(__dirname, 'halo_keylog.py');
+const VISION_PY       = join(__dirname, 'halo_vision.py');
 
 // Cache notes.md + guide contents on first read. Both are large
 // files that bloat the prompt; we read them once per process and
@@ -236,6 +237,15 @@ let _aimShotDelay = 140;
 let _aimMaxShots = 5;
 let _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: null };
 
+// Vision cache — populated by the auto-vision loop using
+// halo_vision.py (llama3.2-vision). Runs on a 20s cadence.
+// The drive + observe prompts include whatever's in the cache.
+let _visionCache = null; // { description, situation, enemies_visible, weapon_hint, at, elapsedMs }
+let _visionTimer = null;
+let _visionRunning = false;
+let _visionIntervalMs = 20000;
+let _visionModel = 'llama3.2-vision';
+
 function ensureLogDir() {
   const dir = join(MEMORIES_DIR, KEN_AI_SLUG);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -266,13 +276,36 @@ function captureState() {
   }
 }
 
-/* ── Format the current HUD state as compact JSON. ── */
+/* ── Format the current HUD state as compact JSON. Includes
+   the motion / brightness / activity fields from halo_tick.py
+   v2 so the model has a reliable "something is happening"
+   signal even when OCR is garbage. ── */
 function stateStr(state) {
   return JSON.stringify({
-    ammo: state.ammo, shield: state.shield,
-    radar: state.radar, center: state.center,
-    screen: `${state.w}x${state.h}`,
+    ammo:     state.ammo,
+    shield:   state.shield,
+    radar:    state.radar,
+    center:   state.center,
+    motion:   state.motion,   // 0..1, pixel-delta vs last frame
+    activity: state.activity, // combat | transition | idle | death_screen | exploring
+    bright:   state.bright,   // mean screen brightness 0..1
+    screen:   `${state.w}x${state.h}`,
   });
+}
+
+/* ── Aim-loop stats snapshot for prompt injection. Tells
+   the driver / observer how the aim assist has been doing
+   recently — shots fired, hit rate, last confidence. ── */
+function aimStatsSnapshot() {
+  if (!_aimRunning) return null;
+  return {
+    running: true,
+    engage: _aimEngage,
+    scans: _aimStats.scans,
+    hits: _aimStats.hits,
+    shots: _aimStats.shots,
+    lastConfidence: _aimStats.lastConfidence,
+  };
 }
 
 /* ── DRIVE-mode prompt: the agent is in control, must pick
@@ -281,6 +314,7 @@ function buildDrivePrompt(state, history) {
   const notes = readKenNotes();
   const guide = readHaloGuide();
   const memo  = getMemory();
+  const aim   = aimStatsSnapshot();
   const historyBlock = history.slice(-3).map((h, i) =>
     `turn ${i + 1}: you did ${h.action} — after: ammo=${h.stateAfter?.ammo || '?'} shield=${h.stateAfter?.shield || '?'}`
   ).join('\n');
@@ -290,11 +324,29 @@ function buildDrivePrompt(state, history) {
     ? '\n\nHUD OCR is empty this tick. PICK A MOVEMENT ACTION (move_fwd, strafe_left, strafe_right, look_left, or look_right). DO NOT pick noop.'
     : '\n\nPick the most useful action for what you can see. noop is only correct if you are in a menu or cutscene.';
 
+  const aimBlock = aim
+    ? `\n\naim assist stats (autonomous aimbot is handling firing/tracking):\n  running: ${aim.running}\n  engage_mode: ${aim.engage}\n  scans: ${aim.scans}, hits: ${aim.hits}, shots_fired: ${aim.shots}\n  last_target_confidence: ${aim.lastConfidence}\n  — if shots > 0 the aimbot just engaged a target. focus your action on MOVEMENT (reposition, take cover, advance) rather than firing; the aimbot is already shooting.\n`
+    : '';
+
+  // Vision cache block — populated by the slow vision loop via
+  // llama3.2-vision. This is REAL scene understanding: the model
+  // actually saw the screen and described it. Trust this over
+  // the noisy OCR when they disagree.
+  const visionBlock = _visionCache
+    ? `\n\nvision snapshot (what your teammate vision model saw ${Math.round((Date.now() - new Date(_visionCache.at).getTime()) / 1000)}s ago):\n  situation: ${_visionCache.situation}\n  enemies: ${_visionCache.enemies}\n  weapon_you_hold: ${_visionCache.weapon_hint}\n  vision_suggestion: ${_visionCache.suggestion}\n  — trust this over raw OCR. if vision says combat+enemies, fire/ads/grenade. if it says exploration, move.\n`
+    : '';
+
   return (
     (notes ? notes + '\n\n---\n\n' : '') +
     (guide ? '# HALO 2 REFERENCE\n\n' + guide + '\n\n---\n\n' : '') +
     (memo  ? memo  + '\n\n---\n\n' : '') +
-    'you are playing halo mcc right now, live. the HUD OCR below is your only eyes (tesseract cropped on a 5120x1440 ultrawide — it is noisy and will often be empty). trust the history, your deaths_log lessons, and the reference guide more than the raw OCR.\n\n' +
+    'you are playing halo mcc right now, live. the HUD OCR below is your only eyes (tesseract cropped on a 5120x1440 ultrawide — it is noisy and will often be empty). the motion + activity fields are more reliable than raw OCR text — use them to condition your action.\n\n' +
+    'motion interpretation:\n' +
+    '  activity="combat"       → high pixel delta, enemies or explosions on screen. prioritize fire/ads/strafe.\n' +
+    '  activity="transition"   → moderate movement, probably walking through a doorway. move_fwd safe.\n' +
+    '  activity="idle"         → nothing changing. look_left/look_right to scan.\n' +
+    '  activity="death_screen" → screen faded, probably dying. pick noop or pause.\n' +
+    '  activity="exploring"    → default movement state.\n\n' +
     'respond with EXACTLY one action word from this list — nothing else, no prose, no punctuation:\n' +
     '  move_fwd move_back strafe_left strafe_right jump crouch sprint\n' +
     '  reload interact grenade melee weapon_slot_1 switch_grenade\n' +
@@ -302,6 +354,8 @@ function buildDrivePrompt(state, history) {
     '  dual_wield flashlight scoreboard noop pause\n\n' +
     (historyBlock ? 'recent history (last 3 turns):\n' + historyBlock + '\n\n' : '') +
     'current hud state:\n' + stateStr(state) +
+    visionBlock +
+    aimBlock +
     antiNoopHint + '\n\n' +
     'your one-word action:'
   );
@@ -770,6 +824,72 @@ export function aimScanOnce(opts = {}) {
     palette: opts.palette || _aimPalette,
     minConfidence: opts.minConfidence ?? _aimMinConfidence,
   });
+}
+
+/* ── Vision cache loop — runs halo_vision.py on a slow cadence
+   (default 20s) and caches the result for drive/observe prompts.
+   Vision inference is ~15-40s per call on a 7.8GB model so this
+   can NEVER run per-tick; it's a periodic "what does the screen
+   look like" snapshot that's valid until the next cycle. ── */
+function runVisionOnce() {
+  const res = spawnSync(_pythonBin, [VISION_PY, '--model', _visionModel], {
+    encoding: 'utf8',
+    timeout: 60000,
+    maxBuffer: 2 * 1024 * 1024,
+  });
+  if (res.status !== 0) {
+    return { ok: false, error: 'vision exit ' + res.status, stderr: (res.stderr || '').slice(0, 200) };
+  }
+  try {
+    const line = (res.stdout || '').split('\n').find(l => l.trim().startsWith('{'));
+    return line ? JSON.parse(line) : { ok: false, error: 'no json' };
+  } catch (e) {
+    return { ok: false, error: 'parse: ' + e.message };
+  }
+}
+
+export function startVisionLoop(opts = {}) {
+  if (_visionRunning) return { ok: false, reason: 'vision loop already running' };
+  _visionIntervalMs = Math.max(8000, Math.min(120000, opts.intervalMs || 20000));
+  _visionModel = opts.model || 'llama3.2-vision';
+  _visionRunning = true;
+  const tick = () => {
+    if (!_visionRunning) return;
+    try {
+      const r = runVisionOnce();
+      if (r && r.ok) {
+        _visionCache = {
+          description:     r.description,
+          situation:       r.situation,
+          enemies_visible: r.enemies_visible,
+          enemies:         r.enemies,
+          weapon_hint:     r.weapon_hint,
+          suggestion:      r.suggestion,
+          at:              r.at,
+          elapsedMs:       r.elapsedMs,
+        };
+      }
+    } catch (e) { /* swallow */ }
+    if (_visionRunning) _visionTimer = setTimeout(tick, _visionIntervalMs);
+  };
+  tick();
+  return { ok: true, intervalMs: _visionIntervalMs, model: _visionModel };
+}
+
+export function stopVisionLoop() {
+  if (!_visionRunning) return { ok: false, reason: 'not running' };
+  _visionRunning = false;
+  if (_visionTimer) { clearTimeout(_visionTimer); _visionTimer = null; }
+  return { ok: true };
+}
+
+export function visionStatus() {
+  return {
+    running: _visionRunning,
+    intervalMs: _visionIntervalMs,
+    model: _visionModel,
+    cache: _visionCache,
+  };
 }
 
 export function readRecentWatchLog(limit = 50) {

@@ -1127,6 +1127,31 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, analyzerStatus());
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Vision loop — periodic real-screen understanding via
+  // llama3.2-vision. Slow cadence (20s default), caches result
+  // for injection into every drive/observe prompt.
+  if (url === '/api/halo/vision/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startVisionLoop } = await import('./agent_mode/halo/agent.js');
+      const r = startVisionLoop(opts);
+      log('Vision loop start: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/vision/stop' && req.method === 'POST') {
+    try {
+      const { stopVisionLoop } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, stopVisionLoop());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/vision/status' && req.method === 'GET') {
+    try {
+      const { visionStatus } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, visionStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
 
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped

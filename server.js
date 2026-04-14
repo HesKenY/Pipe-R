@@ -1257,6 +1257,35 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, tacticalStatus());
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Auto-tuner — adjusts aimbot params based on hit rate
+  if (url === '/api/halo/tuner/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startAutoTuner } = await import('./agent_mode/halo/auto_tuner.js');
+      return jsonResp(res, startAutoTuner(opts));
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/tuner/stop' && req.method === 'POST') {
+    try {
+      const { stopAutoTuner } = await import('./agent_mode/halo/auto_tuner.js');
+      return jsonResp(res, stopAutoTuner());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/tuner/status' && req.method === 'GET') {
+    try {
+      const { tunerStatus } = await import('./agent_mode/halo/auto_tuner.js');
+      return jsonResp(res, tunerStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Research — dispatch squad to research in-process invincibility
+  if (url === '/api/halo/research/invincibility' && req.method === 'POST') {
+    try {
+      const { researchInvincibility } = await import('./agent_mode/halo/halo_research.js');
+      const r = await researchInvincibility();
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
   // ── Training mode — safety-net flag the drive prompt
   // reads to tell the agent whether external cheats are on.
   // Ken enables the actual cheats via WeMod / Cheat Engine /

@@ -28,12 +28,14 @@
    ══════════════════════════════════════════════════════ */
 
 import { spawn, spawnSync } from 'node:child_process';
-import { readFileSync, existsSync, mkdirSync, appendFileSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, appendFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getMemory, appendLesson, stampEvent } from './memory.js';
 import { extractFromTick } from './events.js';
 import { runPostMortem } from './post_mortem.js';
+import { promptBlock as trainingPromptBlock, detectTrainers } from './training_mode.js';
+import { jumpstartPromptBlock } from './jumpstart.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MEMORIES_DIR = join(__dirname, '..', 'memories');
@@ -41,6 +43,7 @@ const KEN_AI_SLUG = 'ken-ai-latest';
 const HALO_LOG        = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-log.jsonl');
 const HALO_WATCH_LOG  = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-watch-log.jsonl');
 const HALO_KEYLOG     = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-keylog.jsonl');
+const HALO_VISION_CACHE = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-vision-cache.json');
 const NOTES_PATH      = join(MEMORIES_DIR, KEN_AI_SLUG, 'notes.md');
 const GUIDE_PATH      = join(__dirname, 'halo2-guide.md');
 const TICK_PY         = join(__dirname, 'halo_tick.py');
@@ -48,6 +51,7 @@ const DO_PY           = join(__dirname, 'halo_do.py');
 const AIM_PY          = join(__dirname, 'aimbot.py');
 const KEYLOG_PY       = join(__dirname, 'halo_keylog.py');
 const VISION_PY       = join(__dirname, 'halo_vision.py');
+const AIM_DAEMON_PY   = join(__dirname, 'halo_aim_daemon.py');
 
 // Cache notes.md + guide contents on first read. Both are large
 // files that bloat the prompt; we read them once per process and
@@ -237,6 +241,110 @@ let _aimShotDelay = 140;
 let _aimMaxShots = 5;
 let _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: null };
 
+// Persistent aim daemon for 30fps — skips spawnSync overhead by
+// keeping a Python process alive and piping JSON commands.
+let _aimDaemonProc = null;
+let _aimDaemonReady = false;
+let _aimDaemonBuffer = '';
+let _aimDaemonWaiter = null;    // { resolve, reject, timeout }
+let _aimDaemonInFlight = false;
+
+function startAimDaemon() {
+  if (_aimDaemonProc && !_aimDaemonProc.killed) return true;
+  try {
+    _aimDaemonProc = spawn(_pythonBin, [AIM_DAEMON_PY], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+  } catch (e) {
+    _aimDaemonProc = null;
+    return false;
+  }
+  _aimDaemonReady = false;
+  _aimDaemonBuffer = '';
+  _aimDaemonInFlight = false;
+
+  _aimDaemonProc.stdout.on('data', (chunk) => {
+    _aimDaemonBuffer += chunk.toString('utf8');
+    // Drain any complete JSON lines
+    let idx;
+    while ((idx = _aimDaemonBuffer.indexOf('\n')) !== -1) {
+      const line = _aimDaemonBuffer.slice(0, idx).trim();
+      _aimDaemonBuffer = _aimDaemonBuffer.slice(idx + 1);
+      if (!line) continue;
+      let obj;
+      try { obj = JSON.parse(line); }
+      catch (e) { continue; }
+      if (obj.daemon === 'ready') { _aimDaemonReady = true; continue; }
+      if (_aimDaemonWaiter) {
+        const w = _aimDaemonWaiter;
+        _aimDaemonWaiter = null;
+        _aimDaemonInFlight = false;
+        clearTimeout(w.timeout);
+        w.resolve(obj);
+      }
+    }
+  });
+
+  _aimDaemonProc.stderr.on('data', () => { /* swallow */ });
+  _aimDaemonProc.on('exit', () => {
+    _aimDaemonProc = null;
+    _aimDaemonReady = false;
+    if (_aimDaemonWaiter) {
+      const w = _aimDaemonWaiter;
+      _aimDaemonWaiter = null;
+      _aimDaemonInFlight = false;
+      clearTimeout(w.timeout);
+      w.reject(new Error('daemon exited'));
+    }
+  });
+  return true;
+}
+
+function stopAimDaemon() {
+  if (!_aimDaemonProc) return;
+  try {
+    _aimDaemonProc.stdin.write(JSON.stringify({ op: 'quit' }) + '\n');
+    setTimeout(() => {
+      try { if (_aimDaemonProc && !_aimDaemonProc.killed) _aimDaemonProc.kill('SIGKILL'); }
+      catch (e) {}
+    }, 500);
+  } catch (e) {
+    try { _aimDaemonProc.kill('SIGKILL'); } catch (_) {}
+  }
+  _aimDaemonProc = null;
+  _aimDaemonReady = false;
+}
+
+function daemonCommand(cmd, timeoutMs = 3000) {
+  return new Promise((resolve, reject) => {
+    if (!_aimDaemonProc || !_aimDaemonReady) {
+      return reject(new Error('daemon not ready'));
+    }
+    if (_aimDaemonInFlight) {
+      // Drop the request silently — keeps the loop non-blocking.
+      return resolve({ skipped: true });
+    }
+    _aimDaemonInFlight = true;
+    const timeout = setTimeout(() => {
+      if (_aimDaemonWaiter) {
+        _aimDaemonWaiter = null;
+        _aimDaemonInFlight = false;
+        reject(new Error('daemon timeout'));
+      }
+    }, timeoutMs);
+    _aimDaemonWaiter = { resolve, reject, timeout };
+    try {
+      _aimDaemonProc.stdin.write(JSON.stringify(cmd) + '\n');
+    } catch (e) {
+      clearTimeout(timeout);
+      _aimDaemonWaiter = null;
+      _aimDaemonInFlight = false;
+      reject(e);
+    }
+  });
+}
+
 // Vision cache — populated by the auto-vision loop using
 // halo_vision.py (llama3.2-vision). Runs on a 20s cadence.
 // The drive + observe prompts include whatever's in the cache.
@@ -249,6 +357,13 @@ let _visionModel = 'llama3.2-vision';
 function ensureLogDir() {
   const dir = join(MEMORIES_DIR, KEN_AI_SLUG);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+}
+
+function writeJsonSnapshot(path, value) {
+  ensureLogDir();
+  try {
+    writeFileSync(path, JSON.stringify(value, null, 2), 'utf8');
+  } catch (e) { /* best-effort */ }
 }
 
 function stripAnsi(s) {
@@ -308,56 +423,28 @@ function aimStatsSnapshot() {
   };
 }
 
-/* ── DRIVE-mode prompt: the agent is in control, must pick
-   exactly one action token from the vocabulary. ── */
+/* ── DRIVE-mode prompt: slim for speed. ~800 bytes max so
+   llama3.1:8b can respond in 500-1500ms instead of 15-30s.
+   Notes + guide + full memory bypassed for drive — that
+   context was saturating the prompt and tanking latency.
+   Observe mode still gets the full context. ── */
 function buildDrivePrompt(state, history) {
-  const notes = readKenNotes();
-  const guide = readHaloGuide();
-  const memo  = getMemory();
-  const aim   = aimStatsSnapshot();
-  const historyBlock = history.slice(-3).map((h, i) =>
-    `turn ${i + 1}: you did ${h.action} — after: ammo=${h.stateAfter?.ammo || '?'} shield=${h.stateAfter?.shield || '?'}`
-  ).join('\n');
-
-  const stateIsEmpty = !state.ammo && !state.shield && !state.radar && !state.center;
-  const antiNoopHint = stateIsEmpty
-    ? '\n\nHUD OCR is empty this tick. PICK A MOVEMENT ACTION (move_fwd, strafe_left, strafe_right, look_left, or look_right). DO NOT pick noop.'
-    : '\n\nPick the most useful action for what you can see. noop is only correct if you are in a menu or cutscene.';
-
-  const aimBlock = aim
-    ? `\n\naim assist stats (autonomous aimbot is handling firing/tracking):\n  running: ${aim.running}\n  engage_mode: ${aim.engage}\n  scans: ${aim.scans}, hits: ${aim.hits}, shots_fired: ${aim.shots}\n  last_target_confidence: ${aim.lastConfidence}\n  — if shots > 0 the aimbot just engaged a target. focus your action on MOVEMENT (reposition, take cover, advance) rather than firing; the aimbot is already shooting.\n`
-    : '';
-
-  // Vision cache block — populated by the slow vision loop via
-  // llama3.2-vision. This is REAL scene understanding: the model
-  // actually saw the screen and described it. Trust this over
-  // the noisy OCR when they disagree.
-  const visionBlock = _visionCache
-    ? `\n\nvision snapshot (what your teammate vision model saw ${Math.round((Date.now() - new Date(_visionCache.at).getTime()) / 1000)}s ago):\n  situation: ${_visionCache.situation}\n  enemies: ${_visionCache.enemies}\n  weapon_you_hold: ${_visionCache.weapon_hint}\n  vision_suggestion: ${_visionCache.suggestion}\n  — trust this over raw OCR. if vision says combat+enemies, fire/ads/grenade. if it says exploration, move.\n`
-    : '';
+  const last3 = history.slice(-3).map(h => h.action || '?').join(' → ');
+  const activity = state.activity || 'unknown';
+  const shortState = `motion=${state.motion || 0} activity=${activity} shield="${(state.shield||'').slice(0,8)}" ammo="${(state.ammo||'').slice(0,8)}"`;
 
   return (
-    (notes ? notes + '\n\n---\n\n' : '') +
-    (guide ? '# HALO 2 REFERENCE\n\n' + guide + '\n\n---\n\n' : '') +
-    (memo  ? memo  + '\n\n---\n\n' : '') +
-    'you are playing halo mcc right now, live. the HUD OCR below is your only eyes (tesseract cropped on a 5120x1440 ultrawide — it is noisy and will often be empty). the motion + activity fields are more reliable than raw OCR text — use them to condition your action.\n\n' +
-    'motion interpretation:\n' +
-    '  activity="combat"       → high pixel delta, enemies or explosions on screen. prioritize fire/ads/strafe.\n' +
-    '  activity="transition"   → moderate movement, probably walking through a doorway. move_fwd safe.\n' +
-    '  activity="idle"         → nothing changing. look_left/look_right to scan.\n' +
-    '  activity="death_screen" → screen faded, probably dying. pick noop or pause.\n' +
-    '  activity="exploring"    → default movement state.\n\n' +
-    'respond with EXACTLY one action word from this list — nothing else, no prose, no punctuation:\n' +
-    '  move_fwd move_back strafe_left strafe_right jump crouch sprint\n' +
-    '  reload interact grenade melee weapon_slot_1 switch_grenade\n' +
-    '  fire ads look_left look_right look_up look_down\n' +
-    '  dual_wield flashlight scoreboard noop pause\n\n' +
-    (historyBlock ? 'recent history (last 3 turns):\n' + historyBlock + '\n\n' : '') +
-    'current hud state:\n' + stateStr(state) +
-    visionBlock +
-    aimBlock +
-    antiNoopHint + '\n\n' +
-    'your one-word action:'
+    'halo mcc. pick ONE action word. no prose.\n' +
+    'vocab: move_fwd move_back strafe_left strafe_right jump crouch sprint reload interact grenade melee fire ads look_left look_right look_up look_down noop\n' +
+    'rules:\n' +
+    '- activity=combat → fire or ads or strafe\n' +
+    '- activity=idle → look_left or look_right\n' +
+    '- activity=exploring → move_fwd\n' +
+    '- never noop unless in a menu\n' +
+    '- never repeat the same action 3 times in a row\n' +
+    `state: ${shortState}\n` +
+    `last 3: ${last3 || '(none)'}\n` +
+    'action:'
   );
 }
 
@@ -402,6 +489,8 @@ function buildObservePrompt(state, history) {
     (keysBlock ? "ken's recent keypresses (oldest first):\n" + keysBlock + '\n\n' : '') +
     (historyBlock ? 'recent observations (last 3 turns):\n' + historyBlock + '\n\n' : '') +
     'current hud state:\n' + stateStr(state) + '\n\n' +
+    jumpstartPromptBlock() +
+    trainingPromptBlock() +
     'your ACTION|NOTE line:'
   );
 }
@@ -410,19 +499,53 @@ function buildObservePrompt(state, history) {
    to a known action or falls back to noop so the loop never
    crashes on bad output. Works for both drive and observe mode
    — observe replies look like "ACTION|note" which we split. ── */
-function askAgent(prompt) {
+async function askAgent(prompt) {
   const t0 = Date.now();
-  const res = spawnSync('ollama', ['run', _model], {
-    input: prompt,
-    encoding: 'utf8',
-    timeout: 60000,
-    maxBuffer: 4 * 1024 * 1024,
+  const result = await new Promise(resolve => {
+    const child = spawn('ollama', ['run', _model], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const settle = (value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(value);
+    };
+
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch {}
+      settle({ ok: false, error: 'ollama timeout' });
+    }, 60000);
+
+    child.stdout.on('data', chunk => { stdout += String(chunk || ''); });
+    child.stderr.on('data', chunk => { stderr += String(chunk || ''); });
+    child.on('error', err => settle({ ok: false, error: err.message || 'spawn failed' }));
+    child.on('close', code => {
+      if (code !== 0) {
+        settle({
+          ok: false,
+          error: stripAnsi(stderr || '').trim() || ('ollama exit ' + code),
+        });
+        return;
+      }
+      settle({ ok: true, raw: stripAnsi(stdout || '').trim() });
+    });
+
+    try { child.stdin.end(prompt); }
+    catch (err) { settle({ ok: false, error: err.message || 'stdin failed' }); }
   });
+
   const elapsed = Date.now() - t0;
-  if (res.status !== 0) {
-    return { action: 'noop', note: '', raw: '', elapsed, error: 'ollama exit ' + res.status };
+  if (!result.ok) {
+    return { action: 'noop', note: '', raw: '', elapsed, error: result.error };
   }
-  const raw = stripAnsi(res.stdout || '').trim();
+
+  const raw = result.raw || '';
 
   // Observe-mode format: ACTION|note. Split on the pipe.
   let actionPart = raw;
@@ -529,7 +652,7 @@ export async function tickOnce(forceMode) {
   const prompt = mode === 'observe'
     ? buildObservePrompt(state, _history)
     : buildDrivePrompt(state, _history);
-  const decision = askAgent(prompt);
+  const decision = await askAgent(prompt);
 
   let firing = { ok: true, detail: null };
   let followThroughsFired = 0;
@@ -745,9 +868,11 @@ export function readRecentLog(limit = 50) {
    to run while Ken is playing so the mouse snaps to visible
    enemies on its own. Starts + stops via its own endpoints
    without touching the observe/drive loop. ── */
+let _aimUseDaemon = false;
+
 export function startAimLoop(opts = {}) {
   if (_aimRunning) return { ok: false, reason: 'aim loop already running' };
-  _aimIntervalMs = Math.max(120, Math.min(2000, opts.intervalMs || 250));
+  _aimIntervalMs = Math.max(16, Math.min(2000, opts.intervalMs || 250));
   _aimPalette = opts.palette || _aimPalette;
   _aimMinConfidence = opts.minConfidence ?? _aimMinConfidence;
   _aimFire = !!opts.fire;
@@ -755,9 +880,48 @@ export function startAimLoop(opts = {}) {
   _aimBurstSize = opts.burstSize || 3;
   _aimShotDelay = opts.shotDelay || 140;
   _aimMaxShots = opts.maxShots || 5;
+  _aimUseDaemon = opts.daemon !== false; // default ON — 30fps path
   _aimRunning = true;
-  _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: new Date().toISOString() };
-  const tick = () => {
+  _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: new Date().toISOString(), backend: 'spawnSync' };
+
+  if (_aimUseDaemon) {
+    startAimDaemon();
+    _aimStats.backend = 'daemon';
+  }
+
+  const tickDaemon = async () => {
+    if (!_aimRunning) return;
+    try {
+      if (!_aimDaemonReady) {
+        // Daemon still booting — short retry
+        _aimTimer = setTimeout(tickDaemon, 200);
+        return;
+      }
+      const op = _aimEngage ? 'engage' : (_aimFire ? 'fire' : 'snap');
+      const r = await daemonCommand({
+        op,
+        palette: _aimPalette,
+        minConfidence: _aimMinConfidence,
+        burstSize: _aimBurstSize,
+        shotDelay: _aimShotDelay,
+        maxShots: _aimMaxShots,
+      }, 3500);
+      _aimStats.scans += 1;
+      if (r && r.found) {
+        _aimStats.hits += 1;
+        _aimStats.lastConfidence = r.confidence || 0;
+        if (typeof r.shots_fired === 'number') _aimStats.shots += r.shots_fired;
+      }
+      _aimStats.lastCycleMs = r && r.cycleMs;
+    } catch (e) {
+      // Daemon crashed / timed out — restart it
+      stopAimDaemon();
+      if (_aimRunning) startAimDaemon();
+    }
+    if (_aimRunning) _aimTimer = setTimeout(tickDaemon, _aimIntervalMs);
+  };
+
+  const tickSpawn = () => {
     if (!_aimRunning) return;
     try {
       const r = runAimbot({
@@ -777,9 +941,12 @@ export function startAimLoop(opts = {}) {
         if (typeof r.shots_fired === 'number') _aimStats.shots += r.shots_fired;
       }
     } catch (e) { /* swallow so loop never dies */ }
-    if (_aimRunning) _aimTimer = setTimeout(tick, _aimIntervalMs);
+    if (_aimRunning) _aimTimer = setTimeout(tickSpawn, _aimIntervalMs);
   };
-  tick();
+
+  if (_aimUseDaemon) tickDaemon();
+  else tickSpawn();
+
   return {
     ok: true,
     intervalMs: _aimIntervalMs,
@@ -790,6 +957,7 @@ export function startAimLoop(opts = {}) {
     burstSize: _aimBurstSize,
     shotDelay: _aimShotDelay,
     maxShots: _aimMaxShots,
+    daemon: _aimUseDaemon,
   };
 }
 
@@ -797,6 +965,7 @@ export function stopAimLoop() {
   if (!_aimRunning) return { ok: false, reason: 'aim loop not running' };
   _aimRunning = false;
   if (_aimTimer) { clearTimeout(_aimTimer); _aimTimer = null; }
+  if (_aimUseDaemon) stopAimDaemon();
   return { ok: true, stats: _aimStats };
 }
 
@@ -868,6 +1037,7 @@ export function startVisionLoop(opts = {}) {
           at:              r.at,
           elapsedMs:       r.elapsedMs,
         };
+        writeJsonSnapshot(HALO_VISION_CACHE, _visionCache);
       }
     } catch (e) { /* swallow */ }
     if (_visionRunning) _visionTimer = setTimeout(tick, _visionIntervalMs);

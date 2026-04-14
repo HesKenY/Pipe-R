@@ -34,6 +34,7 @@ import { existsSync, readFileSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { appendLesson } from './memory.js';
+import { refreshJumpstartSnapshot } from './jumpstart.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const KEYLOG_PATH = join(__dirname, '..', 'memories', 'ken-ai-latest', 'halo-keylog.jsonl');
@@ -209,7 +210,10 @@ export function startKeylogAnalyzer(opts = {}) {
   _lastProcessedAt = Date.now() - 5000; // start 5s ago so first pass sees recent events
   const tick = () => {
     if (!_running) return;
-    try { detect(readTail(80)); }
+    try {
+      detect(readTail(80));
+      refreshJumpstartSnapshot({ minimumIntervalMs: 20000 });
+    }
     catch (e) { /* swallow */ }
     if (_running) _timer = setTimeout(tick, _intervalMs);
   };

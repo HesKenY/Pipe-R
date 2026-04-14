@@ -1194,6 +1194,37 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, r);
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Training mode — safety-net flag the drive prompt
+  // reads to tell the agent whether external cheats are on.
+  // Ken enables the actual cheats via WeMod / Cheat Engine /
+  // a mod. This flag just tells the agent to play bold or
+  // conservative based on whether the safety net is up.
+  if (url === '/api/halo/training-mode/on' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { setSafetyNet, detectTrainers } = await import('./agent_mode/halo/training_mode.js');
+      detectTrainers(); // refresh trainer detection
+      const state = setSafetyNet(true, opts);
+      log('Training mode ON: ' + JSON.stringify(state));
+      return jsonResp(res, state);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/training-mode/off' && req.method === 'POST') {
+    try {
+      const { setSafetyNet } = await import('./agent_mode/halo/training_mode.js');
+      const state = setSafetyNet(false, { graduated: true });
+      log('Training mode OFF — graduated');
+      return jsonResp(res, state);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/training-mode/status' && req.method === 'GET') {
+    try {
+      const { getState, detectTrainers } = await import('./agent_mode/halo/training_mode.js');
+      detectTrainers();
+      return jsonResp(res, getState());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
 
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped

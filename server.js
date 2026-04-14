@@ -1027,6 +1027,83 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, r);
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Aimbot (independent of observe/drive loop) ─────────────
+  if (url === '/api/halo/aim/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startAimLoop } = await import('./agent_mode/halo/agent.js');
+      const r = startAimLoop(opts);
+      log('Aimbot started: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/aim/stop' && req.method === 'POST') {
+    try {
+      const { stopAimLoop } = await import('./agent_mode/halo/agent.js');
+      const r = stopAimLoop();
+      log('Aimbot stopped: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/aim/status' && req.method === 'GET') {
+    try {
+      const { aimStatus } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, aimStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/aim' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { aimScanOnce } = await import('./agent_mode/halo/agent.js');
+      const r = aimScanOnce(opts);
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Keylog (captures Ken's actual presses for imitation) ────
+  if (url === '/api/halo/keylog/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startKeylog } = await import('./agent_mode/halo/agent.js');
+      const r = startKeylog(opts);
+      log('Halo keylog start: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/keylog/stop' && req.method === 'POST') {
+    try {
+      const { stopKeylog } = await import('./agent_mode/halo/agent.js');
+      const r = stopKeylog();
+      log('Halo keylog stop: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/keylog/status' && req.method === 'GET') {
+    try {
+      const { keylogStatus } = await import('./agent_mode/halo/agent.js');
+      return jsonResp(res, keylogStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/game-info' && req.method === 'GET') {
+    try {
+      const { discoverMCC } = await import('./agent_mode/halo/game_files.js');
+      return jsonResp(res, discoverMCC());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/memory' && req.method === 'GET') {
+    try {
+      const { getMemory } = await import('./agent_mode/halo/memory.js');
+      return jsonResp(res, { memory: getMemory() });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/events' && req.method === 'GET') {
+    try {
+      const { readRecentEvents } = await import('./agent_mode/halo/events.js');
+      return jsonResp(res, { events: readRecentEvents(60) });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
 
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped

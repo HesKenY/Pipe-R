@@ -31,16 +31,22 @@ import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, existsSync, mkdirSync, appendFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getMemory, appendLesson, stampEvent } from './memory.js';
+import { extractFromTick } from './events.js';
+import { runPostMortem } from './post_mortem.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MEMORIES_DIR = join(__dirname, '..', 'memories');
 const KEN_AI_SLUG = 'ken-ai-latest';
 const HALO_LOG        = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-log.jsonl');
 const HALO_WATCH_LOG  = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-watch-log.jsonl');
+const HALO_KEYLOG     = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-keylog.jsonl');
 const NOTES_PATH      = join(MEMORIES_DIR, KEN_AI_SLUG, 'notes.md');
 const GUIDE_PATH      = join(__dirname, 'halo2-guide.md');
 const TICK_PY         = join(__dirname, 'halo_tick.py');
 const DO_PY           = join(__dirname, 'halo_do.py');
+const AIM_PY          = join(__dirname, 'aimbot.py');
+const KEYLOG_PY       = join(__dirname, 'halo_keylog.py');
 
 // Cache notes.md + guide contents on first read. Both are large
 // files that bloat the prompt; we read them once per process and
@@ -60,6 +66,75 @@ function readHaloGuide() {
   return _guideCache;
 }
 
+/* Read the last N keylog events Ken has produced. Used in
+   observe-mode prompts so the agent sees what Ken actually
+   pressed, not just what was on screen. Uncached — the
+   keylog daemon writes line-buffered, every read is fresh. */
+function readRecentKeypresses(limit = 25) {
+  if (!existsSync(HALO_KEYLOG)) return [];
+  try {
+    const raw = readFileSync(HALO_KEYLOG, 'utf8');
+    const lines = raw.split('\n').filter(Boolean);
+    const out = [];
+    for (let i = lines.length - 1; i >= 0 && out.length < limit; i--) {
+      try {
+        const row = JSON.parse(lines[i]);
+        // Skip system lines and key-ups (down events are enough
+        // to reconstruct intent — ups double the noise).
+        if (row.kind === 'system') continue;
+        if (row.dir === 'up') continue;
+        out.push(row);
+      } catch (e) { /* skip */ }
+    }
+    return out.reverse();
+  } catch (e) { return []; }
+}
+
+/* ── Keylog daemon management. Spawn halo_keylog.py as a
+   long-lived child process. The process streams events to
+   halo-keylog.jsonl and exits on SIGTERM. ── */
+let _keylogProc = null;
+export function startKeylog(opts = {}) {
+  if (_keylogProc && !_keylogProc.killed) {
+    return { ok: false, reason: 'already running', pid: _keylogProc.pid };
+  }
+  const args = [KEYLOG_PY];
+  if (opts.stopAfter) args.push('--stop-after', String(opts.stopAfter));
+  if (opts.skipMouse) args.push('--skip-mouse');
+  try {
+    _keylogProc = spawn(_pythonBin, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+  } catch (e) {
+    return { ok: false, reason: 'spawn failed: ' + e.message };
+  }
+  _keylogProc.on('exit', (code) => { _keylogProc = null; });
+  return { ok: true, pid: _keylogProc.pid };
+}
+export function stopKeylog() {
+  if (!_keylogProc || _keylogProc.killed) {
+    return { ok: false, reason: 'not running' };
+  }
+  try {
+    _keylogProc.kill('SIGTERM');
+    // Windows: SIGTERM doesn't always deliver, fall back to
+    // SIGKILL after a short grace period.
+    setTimeout(() => { try { if (_keylogProc && !_keylogProc.killed) _keylogProc.kill('SIGKILL'); } catch (e) {} }, 500);
+  } catch (e) {
+    return { ok: false, reason: 'kill failed: ' + e.message };
+  }
+  const pid = _keylogProc.pid;
+  _keylogProc = null;
+  return { ok: true, pid };
+}
+export function keylogStatus() {
+  return {
+    running: !!(_keylogProc && !_keylogProc.killed),
+    pid: _keylogProc?.pid || null,
+  };
+}
+
 const VALID_ACTIONS = new Set([
   'move_fwd', 'move_back', 'strafe_left', 'strafe_right',
   'jump', 'crouch', 'sprint', 'reload', 'interact', 'grenade',
@@ -75,16 +150,87 @@ let _mode = 'observe'; // 'observe' | 'drive'
 let _history = [];
 let _pythonBin = process.env.PYTHON || 'python';
 let _model = 'ken-ai:latest';
-let _tickMs = 4000;
+let _tickMs = 4000; // base tick — used for observe mode + as a fallback
+let _lifelike = true; // drive mode uses per-action timing when true
 let _stats = { ticks: 0, startedAt: null, lastAction: null, lastState: null, lastTickMs: null, mode: 'observe', observeTicks: 0, handoffAt: null };
 let _dreamEveryTicks = 20;
 let _ticksSinceDream = 0;
+
+// Per-action timing table. `nextDelayMs` is the time to wait
+// BEFORE the next decision after this action fires — short for
+// combat so bursts feel responsive, long for reload/noop which
+// would feel mechanical if spammed. `holdMs` is how long the
+// primary key is held (for hold-type actions only — taps are
+// instant). All values get ±25% jitter in pickDelay/pickHold.
+const ACTION_TIMING = {
+  fire:          { nextDelayMs: 260,  holdMs: 80,  followThroughs: 2 },
+  ads:           { nextDelayMs: 500,  holdMs: 380, followThroughs: 0 },
+  reload:        { nextDelayMs: 1500, holdMs: 40,  followThroughs: 0 },
+  grenade:       { nextDelayMs: 1100, holdMs: 40,  followThroughs: 0 },
+  melee:         { nextDelayMs: 450,  holdMs: 40,  followThroughs: 0 },
+  interact:      { nextDelayMs: 600,  holdMs: 40,  followThroughs: 0 },
+  move_fwd:      { nextDelayMs: 800,  holdMs: 720, followThroughs: 0 },
+  move_back:     { nextDelayMs: 800,  holdMs: 620, followThroughs: 0 },
+  strafe_left:   { nextDelayMs: 550,  holdMs: 480, followThroughs: 0 },
+  strafe_right:  { nextDelayMs: 550,  holdMs: 480, followThroughs: 0 },
+  jump:          { nextDelayMs: 420,  holdMs: 40,  followThroughs: 0 },
+  crouch:        { nextDelayMs: 700,  holdMs: 520, followThroughs: 0 },
+  sprint:        { nextDelayMs: 900,  holdMs: 800, followThroughs: 0 },
+  look_left:     { nextDelayMs: 420,  holdMs: 40,  followThroughs: 1 },
+  look_right:    { nextDelayMs: 420,  holdMs: 40,  followThroughs: 1 },
+  look_up:       { nextDelayMs: 380,  holdMs: 40,  followThroughs: 0 },
+  look_down:     { nextDelayMs: 380,  holdMs: 40,  followThroughs: 0 },
+  weapon_slot_1: { nextDelayMs: 700,  holdMs: 40,  followThroughs: 0 },
+  switch_grenade:{ nextDelayMs: 550,  holdMs: 40,  followThroughs: 0 },
+  dual_wield:    { nextDelayMs: 700,  holdMs: 40,  followThroughs: 0 },
+  flashlight:    { nextDelayMs: 350,  holdMs: 40,  followThroughs: 0 },
+  scoreboard:    { nextDelayMs: 650,  holdMs: 40,  followThroughs: 0 },
+  noop:          { nextDelayMs: 1800, holdMs: 0,   followThroughs: 0 },
+  pause:         { nextDelayMs: 2500, holdMs: 40,  followThroughs: 0 },
+};
+
+function jitter(base, ratio = 0.25) {
+  const delta = base * ratio;
+  return Math.max(50, Math.floor(base + (Math.random() * 2 - 1) * delta));
+}
+
+function pickNextDelay(action) {
+  if (!_lifelike || _mode === 'observe') return _tickMs;
+  const t = ACTION_TIMING[action] || ACTION_TIMING.noop;
+  return jitter(t.nextDelayMs);
+}
+
+function pickHoldMs(action) {
+  const t = ACTION_TIMING[action] || { holdMs: 150 };
+  return jitter(t.holdMs, 0.2);
+}
+
+function pickFollowThroughs(action) {
+  const t = ACTION_TIMING[action] || { followThroughs: 0 };
+  return t.followThroughs;
+}
 // Auto-handoff thresholds: after N observations the agent is
 // allowed to flip itself from observe → drive, but only if the
 // last K observations show it has real intent (not noop spam).
 let _handoffMinObserveTicks = 25;
 let _handoffWindow = 10;
 let _handoffNonNoopRate = 0.5;
+// Aim assist — when true, every fire/ads action runs aimbot.py
+// first to snap the mouse onto the nearest enemy-signature blob
+// before firing. Default on in drive mode; no-op in observe.
+let _aimAssist = true;
+let _aimPalette = 'all';
+let _aimMinConfidence = 0.03;
+
+// Separate aim loop — runs INDEPENDENT of the observe/drive
+// game loop so Ken can turn on aimbot assist while he's playing
+// himself, no agent required. Tight 250ms cycle. Every cycle
+// runs aimbot.py --snap; fire only on explicit opts.
+let _aimTimer = null;
+let _aimRunning = false;
+let _aimIntervalMs = 250;
+let _aimFire = false;  // if true, the continuous loop also fires LMB on target
+let _aimStats = { scans: 0, hits: 0, lastConfidence: 0, startedAt: null };
 
 function ensureLogDir() {
   const dir = join(MEMORIES_DIR, KEN_AI_SLUG);
@@ -130,6 +276,7 @@ function stateStr(state) {
 function buildDrivePrompt(state, history) {
   const notes = readKenNotes();
   const guide = readHaloGuide();
+  const memo  = getMemory();
   const historyBlock = history.slice(-3).map((h, i) =>
     `turn ${i + 1}: you did ${h.action} — after: ammo=${h.stateAfter?.ammo || '?'} shield=${h.stateAfter?.shield || '?'}`
   ).join('\n');
@@ -142,7 +289,8 @@ function buildDrivePrompt(state, history) {
   return (
     (notes ? notes + '\n\n---\n\n' : '') +
     (guide ? '# HALO 2 REFERENCE\n\n' + guide + '\n\n---\n\n' : '') +
-    'you are playing halo mcc right now, live. the HUD OCR below is your only eyes (tesseract cropped on a 5120x1440 ultrawide — it is noisy and will often be empty). trust the history and the reference guide more than the raw OCR.\n\n' +
+    (memo  ? memo  + '\n\n---\n\n' : '') +
+    'you are playing halo mcc right now, live. the HUD OCR below is your only eyes (tesseract cropped on a 5120x1440 ultrawide — it is noisy and will often be empty). trust the history, your deaths_log lessons, and the reference guide more than the raw OCR.\n\n' +
     'respond with EXACTLY one action word from this list — nothing else, no prose, no punctuation:\n' +
     '  move_fwd move_back strafe_left strafe_right jump crouch sprint\n' +
     '  reload interact grenade melee weapon_slot_1 switch_grenade\n' +
@@ -162,22 +310,38 @@ function buildDrivePrompt(state, history) {
 function buildObservePrompt(state, history) {
   const notes = readKenNotes();
   const guide = readHaloGuide();
+  const memo  = getMemory();
+  const keys  = readRecentKeypresses(20);
+
   const historyBlock = history.slice(-3).map((h, i) =>
     `turn ${i + 1}: state=${JSON.stringify({ammo:h.stateBefore?.ammo,shield:h.stateBefore?.shield})} → you_would_have: ${h.action}`
   ).join('\n');
 
+  // Condense ken's raw key events into a human-readable
+  // trace the model can imitate. Only 'down' events are kept
+  // because 'up' doubles the length without adding intent.
+  const keysBlock = keys.length
+    ? keys.map(k => {
+        if (k.kind === 'key')   return `  ${k.at?.slice(11, 19)} key:${k.key}`;
+        if (k.kind === 'mouse') return `  ${k.at?.slice(11, 19)} mouse:${k.button}`;
+        return `  ${k.at?.slice(11, 19)} ${k.kind}`;
+      }).join('\n')
+    : '';
+
   return (
     (notes ? notes + '\n\n---\n\n' : '') +
     (guide ? '# HALO 2 REFERENCE\n\n' + guide + '\n\n---\n\n' : '') +
+    (memo  ? memo  + '\n\n---\n\n' : '') +
     'OBSERVE MODE — ken is playing halo mcc right now, you are watching over his shoulder. you do NOT control the game. your job is to study his play so you can take over later.\n\n' +
-    'given the HUD OCR state below, respond with a SINGLE LINE in this exact format:\n' +
+    'given the HUD OCR state AND the recent list of actual keys ken pressed, respond with a SINGLE LINE in this format:\n' +
     '  ACTION|NOTE\n\n' +
-    'where ACTION is the ONE action word from the vocabulary that YOU would fire if you were driving right now (same 20-word list as drive mode: move_fwd, strafe_left, fire, ads, reload, grenade, melee, look_left, etc.), and NOTE is a 5-12 word observation about what ken seems to be doing + what the situation is.\n\n' +
+    'where ACTION is the ONE action word from the vocabulary you would fire if YOU were driving right now, and NOTE is a 5-12 word observation describing what ken seems to be doing based on his keys + the screen.\n\n' +
     'examples:\n' +
-    '  look_right|shield bar visible, ken advancing down corridor\n' +
-    '  fire|center has weapon model, target in frame\n' +
-    '  move_fwd|empty hud, probably transition between rooms\n' +
-    '  grenade|red blip center, enemy group visible\n\n' +
+    '  fire|ken burst-firing right mouse (ads) then left — enemy in frame\n' +
+    '  move_fwd|ken holding w, walking through empty corridor\n' +
+    '  grenade|ken hit f then strafed — probably threw at cover\n' +
+    '  reload|ken pressed r, low ammo\n\n' +
+    (keysBlock ? "ken's recent keypresses (oldest first):\n" + keysBlock + '\n\n' : '') +
     (historyBlock ? 'recent observations (last 3 turns):\n' + historyBlock + '\n\n' : '') +
     'current hud state:\n' + stateStr(state) + '\n\n' +
     'your ACTION|NOTE line:'
@@ -233,6 +397,31 @@ function fireAction(action, durationMs = 150) {
   }
 }
 
+/* ── Aim assist — spawn aimbot.py to scan for enemy-signature
+   pixels in the center of the screen, snap mouse to the biggest
+   blob, optionally fire. Returns the aimbot's JSON report.
+   Non-fatal on any error — callers just proceed without assist. ── */
+function runAimbot(opts = {}) {
+  const args = [AIM_PY, '--palette', opts.palette || _aimPalette,
+                '--min-confidence', String(opts.minConfidence ?? _aimMinConfidence)];
+  if (opts.snap !== false) args.push('--snap');
+  if (opts.fire) args.push('--fire');
+  const res = spawnSync(_pythonBin, args, {
+    encoding: 'utf8',
+    timeout: 4000,
+    maxBuffer: 2 * 1024 * 1024,
+  });
+  if (res.status !== 0) {
+    return { found: false, error: 'aimbot exit ' + res.status, stderr: (res.stderr || '').slice(0, 200) };
+  }
+  try {
+    const line = (res.stdout || '').split('\n').find(l => l.trim().startsWith('{'));
+    return line ? JSON.parse(line) : { found: false, error: 'no json' };
+  } catch (e) {
+    return { found: false, error: 'parse: ' + e.message };
+  }
+}
+
 /* ── Log one full tick to halo-log.jsonl.
    Shape: { at, state, prompt_len, action, action_detail, elapsedMs } ── */
 function logTick(entry) {
@@ -267,8 +456,23 @@ export async function tickOnce(forceMode) {
   const decision = askAgent(prompt);
 
   let firing = { ok: true, detail: null };
+  let followThroughsFired = 0;
   if (mode === 'drive') {
-    firing = fireAction(decision.action, 160);
+    // Lifelike timing: derive hold duration from the action and
+    // fire optional follow-through presses for combat/look actions
+    // so bursts feel responsive instead of metronomic.
+    const holdMs = pickHoldMs(decision.action);
+    firing = fireAction(decision.action, holdMs);
+    const ftCount = pickFollowThroughs(decision.action);
+    for (let i = 0; i < ftCount; i++) {
+      // Short async pause between follow-throughs — bursts fire
+      // at ~180ms intervals, looks at ~200ms. async so the event
+      // loop (aimbot, metrics poll, etc) stays responsive.
+      const gap = jitter(decision.action === 'fire' ? 180 : 200, 0.3);
+      await new Promise(r => setTimeout(r, gap));
+      fireAction(decision.action, pickHoldMs(decision.action));
+      followThroughsFired++;
+    }
   }
 
   // Second state snapshot after the action (drive) or after the
@@ -288,6 +492,7 @@ export async function tickOnce(forceMode) {
     note: decision.note || null,
     actionDetail: firing.detail || null,
     fired: mode === 'drive',
+    followThroughs: followThroughsFired,
     inferenceMs: decision.elapsed,
     totalMs: Date.now() - t0,
     error: decision.error || firing.parseError || null,
@@ -305,6 +510,22 @@ export async function tickOnce(forceMode) {
   _stats.lastState = state;
   _stats.lastTickMs = entry.totalMs;
   _stats.mode = mode;
+
+  // Drive-mode side-effects: extract events from the state
+  // delta, stamp counters, trigger post-mortem on death.
+  if (mode === 'drive') {
+    try {
+      const evt = extractFromTick(entry);
+      if (evt && evt.kind === 'died') {
+        stampEvent('death');
+        runPostMortem(_model, evt);
+      } else if (evt && evt.kind === 'shield_regen') {
+        stampEvent('win');
+        appendLesson('wins_log', `survived low shield after ${entry.action}`);
+      }
+    } catch (e) { /* best-effort */ }
+    stampEvent('dispatch');
+  }
 
   if (mode === 'observe') {
     logWatch(entry);
@@ -378,12 +599,20 @@ export function startLoop(opts = {}) {
   _ticksSinceDream = 0;
   const fire = async () => {
     if (!_running) return;
-    try { await tickOnce(); }
+    let nextDelay = _tickMs;
+    try {
+      const entry = await tickOnce();
+      // Lifelike tick scheduling — drive mode picks the next
+      // delay from ACTION_TIMING[action] with jitter. Observe
+      // mode stays on the base _tickMs to give OCR a stable
+      // cadence for dream/learning reflection.
+      nextDelay = pickNextDelay(entry && entry.action);
+    }
     catch (e) { logTick({ at: new Date().toISOString(), error: 'loop: ' + e.message }); }
-    if (_running) _loopTimer = setTimeout(fire, _tickMs);
+    if (_running) _loopTimer = setTimeout(fire, nextDelay);
   };
   fire();
-  return { ok: true, tickMs: _tickMs, model: _model, mode: _mode };
+  return { ok: true, tickMs: _tickMs, model: _model, mode: _mode, lifelike: _lifelike };
 }
 
 export function stopLoop() {
@@ -433,6 +662,75 @@ export function readRecentLog(limit = 50) {
     }
     return out;
   } catch (e) { return []; }
+}
+
+/* ── Continuous aimbot loop — independent of the game tick
+   loop. Scans every _aimIntervalMs, snaps mouse on hit. Meant
+   to run while Ken is playing so the mouse snaps to visible
+   enemies on its own. Starts + stops via its own endpoints
+   without touching the observe/drive loop. ── */
+export function startAimLoop(opts = {}) {
+  if (_aimRunning) return { ok: false, reason: 'aim loop already running' };
+  _aimIntervalMs = Math.max(120, Math.min(2000, opts.intervalMs || 250));
+  _aimPalette = opts.palette || _aimPalette;
+  _aimMinConfidence = opts.minConfidence ?? _aimMinConfidence;
+  _aimFire = !!opts.fire;
+  _aimRunning = true;
+  _aimStats = { scans: 0, hits: 0, lastConfidence: 0, startedAt: new Date().toISOString() };
+  const tick = () => {
+    if (!_aimRunning) return;
+    try {
+      const r = runAimbot({
+        snap: true,
+        fire: _aimFire,
+        palette: _aimPalette,
+        minConfidence: _aimMinConfidence,
+      });
+      _aimStats.scans += 1;
+      if (r && r.found) {
+        _aimStats.hits += 1;
+        _aimStats.lastConfidence = r.confidence || 0;
+      }
+    } catch (e) { /* swallow so loop never dies */ }
+    if (_aimRunning) _aimTimer = setTimeout(tick, _aimIntervalMs);
+  };
+  tick();
+  return {
+    ok: true,
+    intervalMs: _aimIntervalMs,
+    palette: _aimPalette,
+    minConfidence: _aimMinConfidence,
+    fire: _aimFire,
+  };
+}
+
+export function stopAimLoop() {
+  if (!_aimRunning) return { ok: false, reason: 'aim loop not running' };
+  _aimRunning = false;
+  if (_aimTimer) { clearTimeout(_aimTimer); _aimTimer = null; }
+  return { ok: true, stats: _aimStats };
+}
+
+export function aimStatus() {
+  return {
+    running: _aimRunning,
+    intervalMs: _aimIntervalMs,
+    palette: _aimPalette,
+    minConfidence: _aimMinConfidence,
+    fire: _aimFire,
+    stats: _aimStats,
+  };
+}
+
+/* ── One-shot aimbot scan without snapping — for debugging
+   what the aimbot currently sees. ── */
+export function aimScanOnce(opts = {}) {
+  return runAimbot({
+    snap: opts.snap === true,
+    fire: opts.fire === true,
+    palette: opts.palette || _aimPalette,
+    minConfidence: opts.minConfidence ?? _aimMinConfidence,
+  });
 }
 
 export function readRecentWatchLog(limit = 50) {

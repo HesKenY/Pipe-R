@@ -129,19 +129,19 @@ MOUSE_MAP = {
 
 
 def _do_key_hold(key, duration_s):
-    """Press + hold + release a key for the given duration.
-    Prefers the keyboard module (background-capable), falls
-    through pydirectinput then pyautogui."""
-    if HAS_KB:
-        _kb.press(key)
-        time.sleep(duration_s if duration_s > 0 else 0.12)
-        _kb.release(key)
-        return "kb:hold"
+    """Press + hold + release. pydirectinput is known-good for
+    DirectInput games (Halo MCC); it goes first when available.
+    keyboard module second, pyautogui last."""
     if HAS_PDI:
         pdi.keyDown(_pdi_key(key))
         time.sleep(duration_s if duration_s > 0 else 0.12)
         pdi.keyUp(_pdi_key(key))
         return "pdi:hold"
+    if HAS_KB:
+        _kb.press(key)
+        time.sleep(duration_s if duration_s > 0 else 0.12)
+        _kb.release(key)
+        return "kb:hold"
     if HAS_PAG:
         pyautogui.keyDown(_pdi_key(key))
         time.sleep(duration_s if duration_s > 0 else 0.12)
@@ -150,28 +150,28 @@ def _do_key_hold(key, duration_s):
     return "none:hold"
 
 def _do_key_tap(key):
-    if HAS_KB:
-        _kb.send(key)
-        return "kb:tap"
     if HAS_PDI:
         pdi.press(_pdi_key(key))
         return "pdi:tap"
+    if HAS_KB:
+        _kb.send(key)
+        return "kb:tap"
     if HAS_PAG:
         pyautogui.press(_pdi_key(key))
         return "pag:tap"
     return "none:tap"
 
 def _do_mouse_click(button, duration_s):
-    if HAS_MS:
-        _ms.press(button)
-        time.sleep(duration_s if duration_s > 0 else 0.08)
-        _ms.release(button)
-        return "ms:click"
     if HAS_PDI:
         pdi.mouseDown(button=button)
         time.sleep(duration_s if duration_s > 0 else 0.08)
         pdi.mouseUp(button=button)
         return "pdi:click"
+    if HAS_MS:
+        _ms.press(button)
+        time.sleep(duration_s if duration_s > 0 else 0.08)
+        _ms.release(button)
+        return "ms:click"
     if HAS_PAG:
         pyautogui.mouseDown(button=button)
         time.sleep(duration_s if duration_s > 0 else 0.08)
@@ -180,19 +180,28 @@ def _do_mouse_click(button, duration_s):
     return "none:click"
 
 def _do_mouse_rel(dx, dy):
-    # `mouse` module's move() with absolute=False fires WH_MOUSE_LL
-    # events which games read regardless of focus — same background
-    # property as the keyboard hook.
-    if HAS_MS:
-        try:
-            _ms.move(dx, dy, absolute=False, duration=0)
-            return "ms:rel"
-        except Exception:
-            pass
+    """Relative mouse for camera look. Halo MCC reads raw mouse
+    deltas. The lowest-level path is ctypes mouse_event with
+    MOUSEEVENTF_MOVE (flag 0x0001) — SendInput's underlying
+    primitive. That goes first. Then pydirectinput.moveRel,
+    then the mouse module's relative move, then pyautogui."""
+    try:
+        import ctypes
+        MOUSEEVENTF_MOVE = 0x0001
+        ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE, int(dx), int(dy), 0, 0)
+        return "ctypes:rel"
+    except Exception:
+        pass
     if HAS_PDI:
         try:
             pdi.moveRel(dx, dy, relative=True)
             return "pdi:rel"
+        except Exception:
+            pass
+    if HAS_MS:
+        try:
+            _ms.move(dx, dy, absolute=False, duration=0)
+            return "ms:rel"
         except Exception:
             pass
     if HAS_PAG:

@@ -1152,6 +1152,48 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, visionStatus());
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Dedicated enemy detection (tight vision prompt)
+  if (url === '/api/halo/enemy' && req.method === 'POST') {
+    try {
+      const { spawnSync } = await import('node:child_process');
+      const { join } = await import('node:path');
+      const path = join(ROOT, 'agent_mode', 'halo', 'halo_enemy_detect.py');
+      const r = spawnSync('python', [path], { encoding: 'utf8', timeout: 45000, maxBuffer: 2 * 1024 * 1024 });
+      if (r.status !== 0) return jsonResp(res, { error: 'exit ' + r.status, stderr: (r.stderr || '').slice(0, 300) }, 500);
+      const line = (r.stdout || '').split('\n').find(l => l.trim().startsWith('{'));
+      return jsonResp(res, line ? JSON.parse(line) : { error: 'no json' });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Trainer assist — ken-ai coaching pass over its own logs
+  if (url === '/api/halo/trainer/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startTrainer } = await import('./agent_mode/halo/trainer.js');
+      const r = startTrainer(opts);
+      log('Halo trainer start: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/trainer/stop' && req.method === 'POST') {
+    try {
+      const { stopTrainer } = await import('./agent_mode/halo/trainer.js');
+      return jsonResp(res, stopTrainer());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/trainer/status' && req.method === 'GET') {
+    try {
+      const { trainerStatus } = await import('./agent_mode/halo/trainer.js');
+      return jsonResp(res, trainerStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/trainer/run' && req.method === 'POST') {
+    try {
+      const { runTrainerOnce } = await import('./agent_mode/halo/trainer.js');
+      const r = await runTrainerOnce();
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
 
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped

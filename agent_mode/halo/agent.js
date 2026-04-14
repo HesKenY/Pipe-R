@@ -450,6 +450,7 @@ function captureState() {
     encoding: 'utf8',
     timeout: 12000,
     maxBuffer: 8 * 1024 * 1024,
+    windowsHide: true,
   });
   if (res.status !== 0) {
     return { error: 'halo_tick.py exit ' + res.status, stderr: (res.stderr || '').slice(0, 400) };
@@ -644,6 +645,7 @@ function fireAction(action, durationMs = 150) {
   const res = spawnSync(_pythonBin, [DO_PY, action, String(durationMs)], {
     encoding: 'utf8',
     timeout: 4000,
+    windowsHide: true,
   });
   if (res.status !== 0) return { ok: false, stderr: (res.stderr || '').slice(0, 300) };
   try {
@@ -685,6 +687,7 @@ function runAimbot(opts = {}) {
     encoding: 'utf8',
     timeout,
     maxBuffer: 2 * 1024 * 1024,
+    windowsHide: true,
   });
   if (res.status !== 0) {
     return { found: false, error: 'aimbot exit ' + res.status, stderr: (res.stderr || '').slice(0, 200) };
@@ -1081,6 +1084,7 @@ function runVisionOnce() {
     encoding: 'utf8',
     timeout: 60000,
     maxBuffer: 2 * 1024 * 1024,
+    windowsHide: true,
   });
   if (res.status !== 0) {
     return { ok: false, error: 'vision exit ' + res.status, stderr: (res.stderr || '').slice(0, 200) };

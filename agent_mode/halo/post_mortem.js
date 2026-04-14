@@ -93,6 +93,7 @@ export function runPostMortem(model, deathEvent) {
         encoding: 'utf8',
         timeout: 60000,
         maxBuffer: 4 * 1024 * 1024,
+        windowsHide: true,
       });
       if (res.status !== 0) {
         appendLesson('deaths_log',

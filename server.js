@@ -1286,6 +1286,68 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, r);
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Agent patcher — LLM-driven live aimbot tuning
+  if (url === '/api/halo/patcher/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startAgentPatcher } = await import('./agent_mode/halo/agent_patcher.js');
+      return jsonResp(res, startAgentPatcher(opts));
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/patcher/stop' && req.method === 'POST') {
+    try {
+      const { stopAgentPatcher } = await import('./agent_mode/halo/agent_patcher.js');
+      return jsonResp(res, stopAgentPatcher());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/patcher/status' && req.method === 'GET') {
+    try {
+      const { agentPatcherStatus } = await import('./agent_mode/halo/agent_patcher.js');
+      return jsonResp(res, agentPatcherStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Game data dumper — snapshots MCC modules + file tree ──
+  if (url === '/api/halo/dump/run' && req.method === 'POST') {
+    try {
+      const { runGameDump } = await import('./agent_mode/halo/game_dumper.js');
+      return jsonResp(res, runGameDump());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/dump/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startGameDumpLoop } = await import('./agent_mode/halo/game_dumper.js');
+      return jsonResp(res, startGameDumpLoop(opts));
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/dump/stop' && req.method === 'POST') {
+    try {
+      const { stopGameDumpLoop } = await import('./agent_mode/halo/game_dumper.js');
+      return jsonResp(res, stopGameDumpLoop());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/dump/status' && req.method === 'GET') {
+    try {
+      const { gameDumpStatus } = await import('./agent_mode/halo/game_dumper.js');
+      return jsonResp(res, gameDumpStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Training pass — direct ollama spawn bypassing orchestrator
+  // so agents actually write their findings to files instead of
+  // drifting into their role persona and chit-chatting.
+  if (url === '/api/halo/train/run' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { runTrainingPass, DEFAULT_TASKS } = await import('./agent_mode/halo/train_pass.js');
+      const tasks = Array.isArray(opts.tasks) && opts.tasks.length ? opts.tasks : DEFAULT_TASKS;
+      const results = await runTrainingPass(tasks);
+      log('Halo training pass: ' + results.filter(r=>r.ok).length + '/' + results.length + ' written');
+      return jsonResp(res, { results });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
   // ── Training mode — safety-net flag the drive prompt
   // reads to tell the agent whether external cheats are on.
   // Ken enables the actual cheats via WeMod / Cheat Engine /

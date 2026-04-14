@@ -28,15 +28,26 @@ let _intervalMs = 60000;
 let _lastStats = null;
 let _stats = { tunes: 0, startedAt: null, lastTuneAt: null, lastChange: null };
 
-// Runtime-mutable tuning state. startAimLoop reads these as
-// the current defaults. Bounded to keep the aimbot sane.
+// Runtime-mutable tuning state. Seeded on first pass from
+// the live aim config so the tuner respects whatever profile
+// Ken started the aimbot with instead of clobbering it.
 let _tuning = {
-  intervalMs: 80,
+  intervalMs: 60,
   palette: 'all',
-  minConfidence: 0.025,
-  burstSize: 3,
-  shotDelay: 100,
-  maxShots: 4,
+  minConfidence: 0.015,
+  burstSize: 5,
+  shotDelay: 85,
+  maxShots: 7,
+};
+let _seeded = false;
+
+// Aggression floors — tuner may walk values UP from here but
+// never back below. Ken's "DIAL IT IN" directive: headhunt hard.
+const FLOORS = {
+  burstSize: 4,
+  maxShots: 5,
+  minConfidenceMax: 0.035, // never tighten past this
+  intervalMsMax: 90,       // never slow past this
 };
 
 export function getTuning() { return { ..._tuning }; }
@@ -44,6 +55,19 @@ export function getTuning() { return { ..._tuning }; }
 /* ── Core tuning logic. Takes current aim stats + delta
    vs last cycle, returns a new tuning config. ── */
 function computeNextTuning(currentStats, prevStats) {
+  // First pass: seed _tuning from whatever config is live so we
+  // don't stomp Ken's initial aggressive profile.
+  if (!_seeded && currentStats) {
+    _tuning = {
+      intervalMs:    currentStats.intervalMs    || _tuning.intervalMs,
+      palette:       currentStats.palette       || _tuning.palette,
+      minConfidence: currentStats.minConfidence != null ? currentStats.minConfidence : _tuning.minConfidence,
+      burstSize:     currentStats.burstSize     || _tuning.burstSize,
+      shotDelay:     currentStats.shotDelay     || _tuning.shotDelay,
+      maxShots:      currentStats.maxShots      || _tuning.maxShots,
+    };
+    _seeded = true;
+  }
   const next = { ..._tuning };
   if (!currentStats || !currentStats.stats) return null;
   const s = currentStats.stats;
@@ -88,31 +112,38 @@ function computeNextTuning(currentStats, prevStats) {
     }
   }
 
-  // High hit rate — tighten a hair to favor quality
+  // High hit rate — tighten a hair to favor quality, but
+  // never past the aggression floor.
   if (hitRate > 0.40 && scansDelta >= 20) {
-    if (next.minConfidence < 0.06) {
-      next.minConfidence = Math.min(0.06, next.minConfidence + 0.003);
+    if (next.minConfidence < FLOORS.minConfidenceMax) {
+      next.minConfidence = Math.min(FLOORS.minConfidenceMax, next.minConfidence + 0.003);
       changed = true;
       reason += `raise min_conf → ${next.minConfidence.toFixed(3)}; `;
     }
   }
 
-  // Trigger-happy — lots of shots, reduce burst to conserve
-  if (shotsDelta > 50) {
-    if (next.burstSize > 2) {
-      next.burstSize = 2;
+  // Quiet period — widen burst for punchy engagements
+  if (shotsDelta > 0 && shotsDelta < 10 && scansDelta > 30) {
+    if (next.burstSize < 6) {
+      next.burstSize = Math.min(6, next.burstSize + 1);
       changed = true;
-      reason += 'burst → 2; ';
+      reason += `burst → ${next.burstSize}; `;
     }
   }
 
-  // Quiet period — widen burst for punchy engagements
-  if (shotsDelta > 0 && shotsDelta < 10 && scansDelta > 30) {
-    if (next.burstSize < 4) {
-      next.burstSize = 4;
-      changed = true;
-      reason += 'burst → 4; ';
-    }
+  // Hard clamps against the aggression floors — tuner may NEVER
+  // walk below these regardless of what rules fired above.
+  if (next.burstSize < FLOORS.burstSize) {
+    next.burstSize = FLOORS.burstSize;
+    changed = true;
+  }
+  if (next.maxShots < FLOORS.maxShots) {
+    next.maxShots = FLOORS.maxShots;
+    changed = true;
+  }
+  if (next.intervalMs > FLOORS.intervalMsMax) {
+    next.intervalMs = FLOORS.intervalMsMax;
+    changed = true;
   }
 
   if (!changed) return null;

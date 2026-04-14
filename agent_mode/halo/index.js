@@ -114,6 +114,29 @@ function loadGuideBullets() {
   } catch (e) { /* skip */ }
 }
 
+function loadGameDumpBullets() {
+  // halo-game-dump.md holds loaded MCC modules + install file
+  // tree + reverse-engineering hints. Indexing it lets agents
+  // query "halo2.dll" or "shield offset" and get the module
+  // metadata back in their retrieval hit.
+  const path = join(MEM_DIR, 'halo-game-dump.md');
+  if (!existsSync(path)) return;
+  try {
+    const raw = readFileSync(path, 'utf8');
+    const lines = raw.split('\n');
+    let currentSection = 'gamedump';
+    for (const line of lines) {
+      const h = /^## (.+)/.exec(line);
+      if (h) {
+        currentSection = h[1].toLowerCase().replace(/\s+/g, '_').slice(0, 32);
+        continue;
+      }
+      const b = /^-\s+(.+)/.exec(line);
+      if (b) addBullet(`gamedump:${currentSection}`, b[1]);
+    }
+  } catch (e) { /* skip */ }
+}
+
 function loadRecentTicks() {
   const path = join(MEM_DIR, 'halo-log.jsonl');
   if (!existsSync(path)) return;
@@ -142,6 +165,7 @@ export function rebuildIndex() {
   };
   loadMemoryBullets();
   loadGuideBullets();
+  loadGameDumpBullets();
   loadRecentTicks();
   return {
     bullets: _index.bullets.length,

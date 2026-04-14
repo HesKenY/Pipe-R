@@ -1104,6 +1104,29 @@ const server = createServer(async (req, res) => {
       return jsonResp(res, { events: readRecentEvents(60) });
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
+  // ── Keylog analyzer — detects combat patterns from Ken's presses
+  if (url === '/api/halo/analyzer/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startKeylogAnalyzer } = await import('./agent_mode/halo/keylog_analyzer.js');
+      const r = startKeylogAnalyzer(opts);
+      log('Keylog analyzer start: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/analyzer/stop' && req.method === 'POST') {
+    try {
+      const { stopKeylogAnalyzer } = await import('./agent_mode/halo/keylog_analyzer.js');
+      return jsonResp(res, stopKeylogAnalyzer());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/halo/analyzer/status' && req.method === 'GET') {
+    try {
+      const { analyzerStatus } = await import('./agent_mode/halo/keylog_analyzer.js');
+      return jsonResp(res, analyzerStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
 
   // POST /api/runtime/active-party { activeParty: [ids] }
   // Persists the active-team selection into runtime.json. Capped

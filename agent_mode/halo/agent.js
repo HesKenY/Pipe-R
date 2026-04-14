@@ -229,8 +229,12 @@ let _aimMinConfidence = 0.03;
 let _aimTimer = null;
 let _aimRunning = false;
 let _aimIntervalMs = 250;
-let _aimFire = false;  // if true, the continuous loop also fires LMB on target
-let _aimStats = { scans: 0, hits: 0, lastConfidence: 0, startedAt: null };
+let _aimFire = false;      // single-shot auto-fire after snap
+let _aimEngage = false;    // full engagement burst mode (overrides _aimFire)
+let _aimBurstSize = 3;
+let _aimShotDelay = 140;
+let _aimMaxShots = 5;
+let _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: null };
 
 function ensureLogDir() {
   const dir = join(MEMORIES_DIR, KEN_AI_SLUG);
@@ -399,16 +403,34 @@ function fireAction(action, durationMs = 150) {
 
 /* ── Aim assist — spawn aimbot.py to scan for enemy-signature
    pixels in the center of the screen, snap mouse to the biggest
-   blob, optionally fire. Returns the aimbot's JSON report.
+   blob, optionally fire. Supports three modes:
+
+     scan-only   (default)   — just find a target, no mouse
+     snap        (--snap)    — snap mouse onto target
+     snap+fire   (--fire)    — snap then single click
+     engage      (--engage)  — full burst with rescan between
+                                shots and target tracking
+                                ("better control" mode)
+
    Non-fatal on any error — callers just proceed without assist. ── */
 function runAimbot(opts = {}) {
   const args = [AIM_PY, '--palette', opts.palette || _aimPalette,
                 '--min-confidence', String(opts.minConfidence ?? _aimMinConfidence)];
-  if (opts.snap !== false) args.push('--snap');
-  if (opts.fire) args.push('--fire');
+  if (opts.engage) {
+    args.push('--engage');
+    if (opts.burstSize)  args.push('--burst-size', String(opts.burstSize));
+    if (opts.shotDelay)  args.push('--shot-delay', String(opts.shotDelay));
+    if (opts.maxShots)   args.push('--max-shots', String(opts.maxShots));
+  } else {
+    if (opts.snap !== false) args.push('--snap');
+    if (opts.fire) args.push('--fire');
+  }
+  // Engagement can take up to ~1500ms (snap + 3-5 shots + rescans).
+  // Bump timeout accordingly.
+  const timeout = opts.engage ? 6000 : 4000;
   const res = spawnSync(_pythonBin, args, {
     encoding: 'utf8',
-    timeout: 4000,
+    timeout,
     maxBuffer: 2 * 1024 * 1024,
   });
   if (res.status !== 0) {
@@ -675,14 +697,22 @@ export function startAimLoop(opts = {}) {
   _aimPalette = opts.palette || _aimPalette;
   _aimMinConfidence = opts.minConfidence ?? _aimMinConfidence;
   _aimFire = !!opts.fire;
+  _aimEngage = !!opts.engage;
+  _aimBurstSize = opts.burstSize || 3;
+  _aimShotDelay = opts.shotDelay || 140;
+  _aimMaxShots = opts.maxShots || 5;
   _aimRunning = true;
-  _aimStats = { scans: 0, hits: 0, lastConfidence: 0, startedAt: new Date().toISOString() };
+  _aimStats = { scans: 0, hits: 0, shots: 0, lastConfidence: 0, startedAt: new Date().toISOString() };
   const tick = () => {
     if (!_aimRunning) return;
     try {
       const r = runAimbot({
         snap: true,
         fire: _aimFire,
+        engage: _aimEngage,
+        burstSize: _aimBurstSize,
+        shotDelay: _aimShotDelay,
+        maxShots: _aimMaxShots,
         palette: _aimPalette,
         minConfidence: _aimMinConfidence,
       });
@@ -690,6 +720,7 @@ export function startAimLoop(opts = {}) {
       if (r && r.found) {
         _aimStats.hits += 1;
         _aimStats.lastConfidence = r.confidence || 0;
+        if (typeof r.shots_fired === 'number') _aimStats.shots += r.shots_fired;
       }
     } catch (e) { /* swallow so loop never dies */ }
     if (_aimRunning) _aimTimer = setTimeout(tick, _aimIntervalMs);
@@ -701,6 +732,10 @@ export function startAimLoop(opts = {}) {
     palette: _aimPalette,
     minConfidence: _aimMinConfidence,
     fire: _aimFire,
+    engage: _aimEngage,
+    burstSize: _aimBurstSize,
+    shotDelay: _aimShotDelay,
+    maxShots: _aimMaxShots,
   };
 }
 
@@ -718,6 +753,10 @@ export function aimStatus() {
     palette: _aimPalette,
     minConfidence: _aimMinConfidence,
     fire: _aimFire,
+    engage: _aimEngage,
+    burstSize: _aimBurstSize,
+    shotDelay: _aimShotDelay,
+    maxShots: _aimMaxShots,
     stats: _aimStats,
   };
 }

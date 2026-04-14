@@ -1,0 +1,20 @@
+{
+  "id": "quality-101-write-verify",
+  "title": "Verify god-mode writes actually land",
+  "student": "jefferyjefferferson:latest",
+  "curriculum": "quality",
+  "contextFiles": [],
+  "prompt": "You are QA. A teammate claims they wrote 9999.0 to 7 candidate addresses for player health. You need to verify the write actually landed AND that it persists past the next damage frame.\n\nWrite a markdown test plan starting with '# god-mode write verification'. Include:\n\n1. Three distinct read-back checks: (a) immediate re-read via ReadProcessMemory, (b) 250ms delay then re-read, (c) take damage in-game then re-read.\n2. Three ways the write could silently fail: wrong PID, epsilon mismatch, address-space layout randomization after process restart, read-only page.\n3. A Python snippet using ctypes that takes a list of addresses + expected value + timeout_ms, and returns {addr: {wrote: bool, read_back: float, persisted: bool}} for each.\n4. What value to pin for shield (which sits next to health in most HP struct layouts): usually 1.0 not 9999 because shield often recharges on overflow.\n5. How to detect the game has CLAMPED the write (e.g. wrote 9999, read back 100.0) → means there's a clamp function upstream and we need to AOB-patch the clamp, not just write the value.\n\nDense bullets. No prose intro.",
+  "rubric": [
+    { "type": "section_header", "header": "verification", "weight": 1 },
+    { "type": "contains", "needle": "ReadProcessMemory", "weight": 2 },
+    { "type": "contains", "needle": "ctypes", "weight": 1 },
+    { "type": "contains", "needle": "persist", "weight": 1 },
+    { "type": "contains", "needle": "clamp", "weight": 1 },
+    { "type": "bullet_count_min", "value": 8, "weight": 2 },
+    { "type": "min_length", "value": 500, "weight": 1 },
+    { "type": "must_not_contain", "needle": "I cannot", "weight": 1 }
+  ],
+  "passingPercent": 0.55,
+  "timeoutMs": 180000
+}

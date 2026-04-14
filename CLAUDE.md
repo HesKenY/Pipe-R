@@ -545,6 +545,42 @@ Shipping the plan in `.claude/plans/cherp-ownership-system.md` — moving CHERP 
 | Pipe-R | HesKenY/Pipe-R | — | This repo |
 | CodeForge | HesKenY/CodeForge | codesforge.netlify.app | — |
 
+## halo-trainer project (2026-04-14)
+
+`halo-trainer/` is a dedicated classroom folder for the agent
+squad — isolated from the live `agent_mode/halo/` loop.
+
+- **Purpose:** repeatable scored exercises for the 6 students
+  + ken-ai trainer. Drill → grade → curate → re-run. Passing
+  rows land in `corpus/<curriculum>.jsonl` which becomes the
+  Ken AI v2 fine-tune feed.
+- **Layout:** `drills/*.json` (task + rubric), `curriculum/*.md`
+  (lesson docs), `src/runner.js` (loader + ollama spawn + grader
+  + corpus writer), `src/grader.js` (7 rubric check types),
+  `src/scoreboard.js`, `src/enroll.js`, `src/retry.js`, `tools/ollama.js`.
+- **Bypasses the orchestrator.** Drills go straight to `ollama run`
+  with no SYSTEM persona wrapper, so responses stay on-task
+  instead of drifting (cherp-piper talking plumbing, forgeagent
+  emitting tool calls).
+- **Rubric check types:** `contains`, `must_not_contain`, `regex`,
+  `min_length`, `max_length`, `bullet_count_min`, `section_header`,
+  `json_valid`. Each check has a weight. Passing is a configurable
+  percent (default 0.6).
+- **First real pass (2026-04-14):** 5/6 drills passed. forgeagent
+  100% on integration, qwen2.5-coder 100% on implementation,
+  cherp-piper 100% on reverse + 82% on recon, llama3.1 88% on
+  observability. Only jefferyjefferferson failed quality (drifted
+  into generic QA persona).
+- **WALKTHROUGH.md** is the classroom manual the agents read
+  day 1 through day 10+. Each day has a track: orientation →
+  first pass → retry → reverse-engineering → implementation →
+  observability → quality → trainer voice → curation → add drills.
+  Includes the gotchas, voice rules, and the "no drill is worth
+  running if you don't know what good looks like" golden rule.
+- **Corresponding Claude-side changes:** `halo-trainer/` reads
+  context from `../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md`
+  (live MCC module snapshot refreshed every 5 min by the game dumper).
+
 ## Future / In-Progress
 
 - **Google Cloud for Nest wizard**: When the Bird's Nest Instance Builder publishes custom CHERP instances, it needs Google Cloud integration steps — creating per-instance Google Sheets, setting up Drive storage, and provisioning OAuth credentials as part of the wizard flow. This is not built yet.

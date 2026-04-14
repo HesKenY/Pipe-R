@@ -1,0 +1,21 @@
+{
+  "id": "reverse-101-dll-base",
+  "title": "Find halo2.dll base address from the MCC game dump",
+  "student": "cherp-piper:latest",
+  "curriculum": "reverse-engineering",
+  "contextFiles": [
+    "../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"
+  ],
+  "prompt": "The document above is a live game-data dump from MCC. Answer these questions in a structured markdown reply starting with '# halo2.dll identification':\n\n1. What is the base address of halo2.dll in the loaded MCC process? Copy the exact hex value from the dump.\n2. What is its size in bytes?\n3. What file path does the DLL load from?\n4. Which PE section is most likely to hold the mutable player state (health, shield, ammo): .text, .rdata, .data, or .bss — and why?\n5. Given the base + size, what is the highest address halo2.dll occupies (base + size)?\n\nKeep answers tight. No prose intro. No fenced code blocks around the whole thing. Use bullet lists.",
+  "rubric": [
+    { "type": "contains", "needle": "halo2.dll", "weight": 1 },
+    { "type": "regex",    "pattern": "0x[0-9a-f]{10,}", "flags": "i", "weight": 3 },
+    { "type": "contains", "needle": ".data", "weight": 2 },
+    { "type": "bullet_count_min", "value": 5, "weight": 1 },
+    { "type": "min_length", "value": 300, "weight": 1 },
+    { "type": "must_not_contain", "needle": "I'm sorry", "weight": 2 },
+    { "type": "section_header", "header": "halo2.dll", "weight": 1 }
+  ],
+  "passingPercent": 0.65,
+  "timeoutMs": 120000
+}

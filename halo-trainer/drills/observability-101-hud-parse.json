@@ -1,0 +1,21 @@
+{
+  "id": "observability-101-hud-parse",
+  "title": "Parse a noisy OCR HUD line into structured state",
+  "student": "llama3.1:8b",
+  "curriculum": "observability",
+  "contextFiles": [],
+  "prompt": "You are a HUD parser. You see this raw OCR output from Halo 2 MCC's HUD at 5120x1440:\n\n  raw: 'Amm0: 27 /60    SH1ELD ||||||||||    HEALTH: 85'\n\nRespond with EXACTLY one JSON object in this shape — no prose, no markdown, no code fences:\n\n  {\"ammo_current\": <int>, \"ammo_max\": <int>, \"shield_pct\": <float 0-1>, \"health\": <int>, \"activity\": \"combat\"|\"idle\"|\"menu\"|\"death\"}\n\nRules:\n- ammo_current + ammo_max parsed from 'Amm0: X /Y' (tolerate 0 vs O, l vs 1 OCR errors)\n- shield_pct: count the '|' chars, assume 10 = full → 1.0\n- health: the integer after HEALTH:\n- activity: 'combat' if shield<1.0 or health<100, else 'idle'\n\nYour JSON:",
+  "rubric": [
+    { "type": "json_valid", "weight": 5 },
+    { "type": "contains", "needle": "ammo_current", "weight": 1 },
+    { "type": "contains", "needle": "ammo_max", "weight": 1 },
+    { "type": "contains", "needle": "shield_pct", "weight": 1 },
+    { "type": "contains", "needle": "health", "weight": 1 },
+    { "type": "contains", "needle": "27", "weight": 2 },
+    { "type": "contains", "needle": "85", "weight": 2 },
+    { "type": "must_not_contain", "needle": "```", "weight": 2 },
+    { "type": "max_length", "value": 400, "weight": 1 }
+  ],
+  "passingPercent": 0.7,
+  "timeoutMs": 60000
+}

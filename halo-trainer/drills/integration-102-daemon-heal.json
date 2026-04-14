@@ -1,0 +1,22 @@
+{
+  "id": "integration-102-daemon-heal",
+  "title": "Propose a healing sequence when the aim daemon dies",
+  "student": "forgeagent:latest",
+  "curriculum": "integration",
+  "contextFiles": [],
+  "prompt": "The halo aim daemon is a python subprocess (halo_aim_daemon.py) that the node server launches with spawn() and communicates with over stdin/stdout JSON. Sometimes it dies — crashes, OOMs, gets killed by admin windows. Write a markdown doc '# Aim daemon heal sequence' describing a 6-step recovery:\n\n1. Detect the death: how does node know the daemon is gone? (exit event, stdin EPIPE, stdout EOF, heartbeat timeout).\n2. What state to preserve: the last-known good config (intervalMs, minConfidence, palette, engage flag).\n3. Cooldown: why spamming restart is bad (OOM loops, admin process orphans, steam overlay races).\n4. The restart: spawn a fresh python subprocess, windowsHide=true, wait up to 8s for the 'ready' signal.\n5. Config replay: push the preserved config back to the daemon over stdin.\n6. Verification: one scan_once cycle to confirm the daemon responds before declaring healed.\n\nAlso include a JSON state object example showing `{ running: false, lastDeathAt, deathReason, cooldownUntil, restartCount, lastGoodConfig }`.\n\nDense bullets. No prose intro.",
+  "rubric": [
+    { "type": "section_header", "header": "heal", "weight": 1 },
+    { "type": "contains", "needle": "heartbeat", "weight": 1 },
+    { "type": "contains", "needle": "cooldown", "weight": 2 },
+    { "type": "contains", "needle": "windowsHide", "weight": 1 },
+    { "type": "contains", "needle": "ready", "weight": 1 },
+    { "type": "contains", "needle": "verification", "weight": 1 },
+    { "type": "bullet_count_min", "value": 8, "weight": 2 },
+    { "type": "min_length", "value": 600, "weight": 1 },
+    { "type": "json_valid", "weight": 2 },
+    { "type": "must_not_contain", "needle": "I cannot", "weight": 1 }
+  ],
+  "passingPercent": 0.55,
+  "timeoutMs": 180000
+}

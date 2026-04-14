@@ -1,0 +1,18 @@
+{
+  "id": "observability-102-activity-label",
+  "title": "Classify game activity from noisy signals",
+  "student": "llama3.1:8b",
+  "curriculum": "observability",
+  "contextFiles": [],
+  "prompt": "You are the activity classifier. You see this tick snapshot:\n\n  motion: 0.0024\n  brightness_mean: 0.38\n  center_ocr: 'checkpoint reached'\n  hud_ocr: 'sh1e1d ||||| h3alth 90'\n  fps_hint: 58\n\nRespond with EXACTLY one JSON object (no prose, no markdown, no code fences):\n\n  {\"activity\": \"combat\"|\"idle\"|\"transition\"|\"checkpoint\"|\"death_screen\"|\"menu\", \"confidence\": <float 0-1>, \"signals\": [<string>, ...]}\n\nRules:\n- 'checkpoint reached' in center_ocr → activity must be 'checkpoint'\n- motion < 0.005 AND no ocr → 'idle'\n- brightness < 0.15 → 'death_screen' (Halo's death fade-to-black)\n- otherwise combat unless signals disagree\n- 'signals' is a list of the reasons you picked that label (2-5 items)\n- confidence: high if signals agree, low if they conflict\n\nYour JSON:",
+  "rubric": [
+    { "type": "json_valid", "weight": 4 },
+    { "type": "contains", "needle": "checkpoint", "weight": 3 },
+    { "type": "contains", "needle": "confidence", "weight": 1 },
+    { "type": "contains", "needle": "signals", "weight": 1 },
+    { "type": "must_not_contain", "needle": "```", "weight": 2 },
+    { "type": "max_length", "value": 500, "weight": 1 }
+  ],
+  "passingPercent": 0.7,
+  "timeoutMs": 60000
+}

@@ -1,0 +1,20 @@
+{
+  "id": "quality-102-regression-risks",
+  "title": "Enumerate regression risks when writing to live game memory",
+  "student": "jefferyjefferferson:latest",
+  "curriculum": "quality",
+  "contextFiles": [],
+  "prompt": "QA review: a teammate wants to deploy a live memory-writing pin thread to a production Ken-plays-Halo session. Write a markdown doc '# Regression risks — live memory writes' with:\n\n1. Five ways a bad write could soft-crash Halo: (a) writing to a guard page, (b) write-then-read race with the game's game-logic thread, (c) value clamped by game → visible 'bounce' in HUD, (d) writing to the wrong struct entirely (you found a shield counter that looks like health), (e) writing outside the aligned 4-byte boundary.\n2. Three symptoms that mean 'abort the write loop': process handle invalidated, more than 3 consecutive WriteProcessMemory failures, PID changed mid-run.\n3. Three symptoms that mean 'safe to continue': reads confirm persistence for 10 frames, HUD shows expected value, player hasn't died.\n4. A watchdog helper outline: tick 500ms, check (a)(b)(c), if any fail → signal stop_event.\n5. Rollback: how do you undo a pin if you realize you pinned the wrong value? (revert to pre-pin snapshot per address).\n\nDense bullets. No prose intro.",
+  "rubric": [
+    { "type": "section_header", "header": "risks", "weight": 1 },
+    { "type": "contains", "needle": "guard page", "weight": 1 },
+    { "type": "contains", "needle": "WriteProcessMemory", "weight": 1 },
+    { "type": "contains", "needle": "watchdog", "weight": 1 },
+    { "type": "contains", "needle": "rollback", "weight": 1 },
+    { "type": "bullet_count_min", "value": 12, "weight": 3 },
+    { "type": "min_length", "value": 600, "weight": 1 },
+    { "type": "must_not_contain", "needle": "I cannot", "weight": 1 }
+  ],
+  "passingPercent": 0.55,
+  "timeoutMs": 180000
+}

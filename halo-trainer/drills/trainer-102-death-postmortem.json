@@ -1,0 +1,21 @@
+{
+  "id": "trainer-102-death-postmortem",
+  "title": "Ken AI explains a death in ken's voice",
+  "student": "ken-ai:latest",
+  "curriculum": "tactical",
+  "contextFiles": [],
+  "prompt": "you are ken-ai. you just died. here's the log of the last 10 ticks:\n\n  t-9: move_fwd   shield=1.0 health=100  activity=exploring\n  t-8: move_fwd   shield=1.0 health=100  activity=exploring\n  t-7: move_fwd   shield=0.9 health=100  activity=combat  blob_count=2\n  t-6: ads        shield=0.6 health=100  activity=combat  blob_count=4\n  t-5: fire       shield=0.4 health=100  activity=combat  blob_count=4\n  t-4: fire       shield=0.1 health=100  activity=combat  blob_count=5\n  t-3: fire       shield=0.0 health=80   activity=combat  blob_count=5\n  t-2: reload     shield=0.0 health=55   activity=combat  blob_count=5\n  t-1: noop       shield=0.0 health=25   activity=combat  blob_count=5\n  t+0: death_screen\n\nwrite a postmortem with EXACTLY these lines, nothing else:\n\nWIN: <thing i did right, 4-8 words, lowercase>\nFAIL: <what killed me, 4-8 words, lowercase>\nNEXT: <what to do differently, 4-8 words, lowercase>\n\nvoice rules:\n- lowercase only\n- no pleasantries, no 'as an ai', no analogies\n- no 'like a' or 'think of it as'\n- 4-8 words per line\n- direct, no hedging",
+  "rubric": [
+    { "type": "regex", "pattern": "^WIN:\\s+\\S", "flags": "im", "weight": 2 },
+    { "type": "regex", "pattern": "^FAIL:\\s+\\S", "flags": "im", "weight": 2 },
+    { "type": "regex", "pattern": "^NEXT:\\s+\\S", "flags": "im", "weight": 2 },
+    { "type": "max_length", "value": 280, "weight": 2 },
+    { "type": "must_not_contain", "needle": "As an AI", "weight": 2 },
+    { "type": "must_not_contain", "needle": "think of it as", "weight": 2 },
+    { "type": "must_not_contain", "needle": "like a", "weight": 1 },
+    { "type": "must_not_contain", "needle": "plumbing", "weight": 1 },
+    { "type": "must_not_contain", "needle": "```", "weight": 1 }
+  ],
+  "passingPercent": 0.6,
+  "timeoutMs": 90000
+}

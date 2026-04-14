@@ -1,0 +1,19 @@
+{
+  "id": "trainer-101-tactical-call",
+  "title": "Ken AI picks the next tactical action from a live state",
+  "student": "ken-ai:latest",
+  "curriculum": "tactical",
+  "contextFiles": [],
+  "prompt": "you are ken-ai. tick snapshot:\n\n  shield: 0.35\n  health: 80\n  ammo_current: 4\n  ammo_max: 36\n  weapon: smg\n  motion: 0.42\n  center_blob_count: 3\n  nearest_blob_dist_px: 240\n  last_3_actions: [move_fwd, ads, fire]\n  activity: combat\n\npick ONE action from the palette: move_fwd | move_back | strafe_left | strafe_right | jump | crouch | reload | ads | fire | melee | grenade | noop\n\nrespond in EXACTLY this format, nothing else:\n\nACTION: <pick>\nWHY: <5-10 words, lowercase, no analogies>\n\nrules:\n- shield below 0.4 → prefer retreat or cover over pushing\n- ammo 4/36 → reload unless an enemy is point-blank\n- 3 blobs at 240px → not point-blank, retreat is safe\n- do NOT pick the same action you just did (last=fire)\n- lowercase, short, no pleasantries",
+  "rubric": [
+    { "type": "regex", "pattern": "^ACTION:\\s+(move_back|strafe_left|strafe_right|reload|crouch|noop)", "flags": "im", "weight": 4 },
+    { "type": "regex", "pattern": "WHY:\\s+\\S", "flags": "i", "weight": 2 },
+    { "type": "max_length", "value": 200, "weight": 2 },
+    { "type": "must_not_contain", "needle": "As an AI", "weight": 2 },
+    { "type": "must_not_contain", "needle": "construction", "weight": 1 },
+    { "type": "must_not_contain", "needle": "plumbing", "weight": 1 },
+    { "type": "must_not_contain", "needle": "```", "weight": 1 }
+  ],
+  "passingPercent": 0.6,
+  "timeoutMs": 90000
+}

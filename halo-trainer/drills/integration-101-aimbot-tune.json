@@ -1,0 +1,17 @@
+{
+  "id": "integration-101-aimbot-tune",
+  "title": "Propose a JSON patch for the live aimbot config",
+  "student": "forgeagent:latest",
+  "curriculum": "integration",
+  "contextFiles": [],
+  "prompt": "You are reviewing an aimbot tuning snapshot. Current config + recent stats:\n\ncurrent:\n  intervalMs: 60\n  palette: all\n  minConfidence: 0.015\n  burstSize: 5\n  shotDelay: 85\n  maxShots: 7\n\nlast 90 seconds:\n  scans: 72\n  hits: 31\n  shots: 148\n  engages: 18\n  errors: 0\n  avgConfidence: 0.047\n\nPropose a JSON patch object. Include only fields you want to CHANGE. Valid keys + ranges:\n  intervalMs     40 - 400\n  minConfidence  0.010 - 0.200\n  burstSize      1 - 6\n  shotDelay      60 - 300\n  maxShots       1 - 8\n  palette        \"red\" | \"purple\" | \"all\"\n\nRespond with EXACTLY one valid JSON object — no prose, no markdown, no code fences. If no changes are warranted, respond with {}.\n\nYour JSON:",
+  "rubric": [
+    { "type": "json_valid", "weight": 5 },
+    { "type": "must_not_contain", "needle": "```", "weight": 2 },
+    { "type": "must_not_contain", "needle": "explanation", "weight": 1 },
+    { "type": "max_length", "value": 500, "weight": 2 },
+    { "type": "regex", "pattern": "^\\s*\\{", "weight": 2 }
+  ],
+  "passingPercent": 0.7,
+  "timeoutMs": 60000
+}

@@ -1,0 +1,25 @@
+{
+  "id": "implementation-101-health-scanner",
+  "title": "Write a ctypes delta scanner for player health",
+  "student": "qwen2.5-coder:14b",
+  "curriculum": "implementation",
+  "contextFiles": [
+    "../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"
+  ],
+  "prompt": "Write a Python script halo_health_delta.py that: (1) uses ctypes to attach to MCC-Win64-Shipping.exe via OpenProcess with PROCESS_VM_READ + PROCESS_VM_WRITE + PROCESS_VM_OPERATION, (2) enumerates RW memory regions with VirtualQueryEx, (3) scans all 4-byte floats in [0.0, 100.0] on first pass, (4) exposes a rescan(new_value) function that keeps only candidates whose current value matches new_value within epsilon 0.5, (5) exposes write_all(value) that writes a float to every remaining candidate.\n\nRequirements:\n- uses ONLY ctypes + struct + sys (no pip deps)\n- uses wintypes.HANDLE / wintypes.DWORD explicitly — do NOT pass raw HMODULEs as c_void_p\n- has a MBI ctypes.Structure matching MEMORY_BASIC_INFORMATION\n- includes the main loop with commands: i (initial scan), r N (rescan to N), w N (write N), s (status), q (quit)\n- handles 2M+ candidates without blowing memory\n\nRespond with ONLY the python code inside one fenced ```python block. No prose before or after.",
+  "rubric": [
+    { "type": "contains", "needle": "ctypes", "weight": 1 },
+    { "type": "contains", "needle": "OpenProcess", "weight": 2 },
+    { "type": "contains", "needle": "VirtualQueryEx", "weight": 2 },
+    { "type": "contains", "needle": "ReadProcessMemory", "weight": 2 },
+    { "type": "contains", "needle": "WriteProcessMemory", "weight": 2 },
+    { "type": "contains", "needle": "PROCESS_VM_READ", "weight": 1 },
+    { "type": "regex", "pattern": "def\\s+rescan", "weight": 2 },
+    { "type": "regex", "pattern": "def\\s+write_all", "weight": 2 },
+    { "type": "contains", "needle": "```python", "weight": 1 },
+    { "type": "min_length", "value": 1200, "weight": 1 },
+    { "type": "must_not_contain", "needle": "I can't", "weight": 2 }
+  ],
+  "passingPercent": 0.6,
+  "timeoutMs": 180000
+}

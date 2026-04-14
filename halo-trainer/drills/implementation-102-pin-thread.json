@@ -1,0 +1,21 @@
+{
+  "id": "implementation-102-pin-thread",
+  "title": "Write a threaded pin loop for continuous memory writes",
+  "student": "qwen2.5-coder:14b",
+  "curriculum": "implementation",
+  "contextFiles": [],
+  "prompt": "Write a python snippet that starts a background thread pinning a float value to a list of addresses in a remote process. Requirements:\n\n- takes (process_handle, [addrs], value, interval_ms, stop_event) as arguments\n- uses threading.Thread as a daemon\n- uses ctypes.WriteProcessMemory on every address in the list each tick\n- respects the stop_event via stop_event.wait(interval_ms/1000) between ticks\n- creates exactly one ctypes.c_float buffer and one ctypes.c_size_t nwrit outside the loop (do not allocate per tick)\n- catches broad Exception around WriteProcessMemory so one bad address doesn't crash the thread\n- has a matching stop_pin_thread(thread, stop_event) helper that sets the event + joins with timeout 1.5s\n\nAlso write: a 4-line usage example that starts the thread pinning [0x1234, 0x5678] to 9999.0 every 80ms, waits 3 seconds, then stops.\n\nRespond with ONLY the python code in one fenced ```python block. No prose.",
+  "rubric": [
+    { "type": "contains", "needle": "threading.Thread", "weight": 2 },
+    { "type": "contains", "needle": "daemon", "weight": 1 },
+    { "type": "contains", "needle": "stop_event", "weight": 2 },
+    { "type": "contains", "needle": "WriteProcessMemory", "weight": 2 },
+    { "type": "contains", "needle": "c_float", "weight": 1 },
+    { "type": "regex", "pattern": "def\\s+\\w*pin\\w*", "weight": 2 },
+    { "type": "contains", "needle": "```python", "weight": 1 },
+    { "type": "min_length", "value": 500, "weight": 1 },
+    { "type": "must_not_contain", "needle": "I cannot", "weight": 2 }
+  ],
+  "passingPercent": 0.6,
+  "timeoutMs": 180000
+}

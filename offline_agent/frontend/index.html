@@ -569,6 +569,43 @@
     letter-spacing: 0.3px;
   }
 
+  /* ── Live stats grid ───────────────────────────────── */
+  #live-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .stat-card .sc-title {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .stat-card .sc-value {
+    font-size: 16px;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .stat-card .sc-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .stat-card.live   .sc-value { color: var(--green); }
+  .stat-card.stale  .sc-value { color: var(--amber); }
+  .stat-card.dead   .sc-value { color: var(--red); }
+  .stat-card.active .sc-value { color: var(--purple); }
+
   /* ── Mission tracker ───────────────────────────────── */
   .mission-banner {
     display: none;
@@ -952,6 +989,13 @@ Type a task or ask a question to begin.</div>
     </div>
     <div id="halo-panel" style="display:none;padding:18px;overflow-y:auto;flex:1">
 
+      <!-- Live stats dashboard -->
+      <div class="halo-section">
+        <div class="halo-section-title">LIVE STATS</div>
+        <div id="live-stats-grid"></div>
+        <div class="halo-hint" id="live-stats-hint">refreshes every 5s while this tab is open</div>
+      </div>
+
       <!-- Mission tracker -->
       <div class="halo-section">
         <div class="halo-section-title">HALO 2 CAMPAIGN</div>
@@ -1276,17 +1320,169 @@ function showGameComplete(data) {
 
 // Refresh missions every 30s while halo tab is visible
 let missionRefreshTimer = null;
+let liveStatsTimer = null;
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.dataset.tab === 'halo') {
       refreshMissions();
+      refreshLiveStats();
       if (missionRefreshTimer) clearInterval(missionRefreshTimer);
       missionRefreshTimer = setInterval(refreshMissions, 30000);
+      if (liveStatsTimer) clearInterval(liveStatsTimer);
+      liveStatsTimer = setInterval(refreshLiveStats, 5000);
     } else {
       if (missionRefreshTimer) { clearInterval(missionRefreshTimer); missionRefreshTimer = null; }
+      if (liveStatsTimer) { clearInterval(liveStatsTimer); liveStatsTimer = null; }
     }
   });
 });
+
+// ─── Live stats dashboard ─────────────────────────────
+const liveStatsGrid = document.getElementById('live-stats-grid');
+
+function fmtBytes(n) {
+  if (!n && n !== 0) return '—';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  if (n < 1024 * 1024 * 1024) return (n / 1048576).toFixed(1) + ' MB';
+  return (n / 1073741824).toFixed(2) + ' GB';
+}
+
+function fmtAge(ts) {
+  if (!ts) return '—';
+  const sec = Math.max(0, Math.floor(Date.now() / 1000 - ts));
+  if (sec < 60) return sec + 's ago';
+  if (sec < 3600) return Math.floor(sec / 60) + 'm ago';
+  if (sec < 86400) return Math.floor(sec / 3600) + 'h ago';
+  return Math.floor(sec / 86400) + 'd ago';
+}
+
+function stateFromAge(ts, liveWindowSec) {
+  if (!ts) return 'dead';
+  const age = Date.now() / 1000 - ts;
+  if (age <= liveWindowSec) return 'live';
+  if (age <= liveWindowSec * 4) return 'stale';
+  return 'dead';
+}
+
+function statCard(klass, title, value, sub) {
+  const el = document.createElement('div');
+  el.className = 'stat-card ' + klass;
+  el.innerHTML = `
+    <div class="sc-title">${title}</div>
+    <div class="sc-value">${value}</div>
+    <div class="sc-sub">${sub || ''}</div>
+  `;
+  return el;
+}
+
+async function refreshLiveStats() {
+  if (!liveStatsGrid) return;
+  try {
+    const [learning, watcher, missions, corpus] = await Promise.all([
+      fetch('/api/halo/learning/status').then(r => r.json()).catch(() => null),
+      fetch('/api/halo/training/watch/status').then(r => r.json()).catch(() => null),
+      fetch('/api/halo/missions').then(r => r.json()).catch(() => null),
+      fetch('/api/halo/corpus/stats').then(r => r.json()).catch(() => null),
+    ]);
+
+    liveStatsGrid.innerHTML = '';
+
+    // Learning loop cards — 4 feeds with live/stale/dead state
+    if (learning && learning.status) {
+      const loops = [
+        ['keylog', 'KEYLOG',  15],
+        ['vision', 'VISION',  25],
+        ['driver', 'DRIVER',  5],
+        ['aimbot', 'AIMBOT',  10],
+      ];
+      for (const [key, label, win] of loops) {
+        const info = learning.status[key] || {};
+        const state = stateFromAge(info.last_mtime, win);
+        liveStatsGrid.appendChild(statCard(
+          state,
+          label,
+          fmtBytes(info.bytes || 0),
+          `last ${fmtAge(info.last_mtime)}`
+        ));
+      }
+    }
+
+    // Death-train watcher cards
+    if (watcher) {
+      const wState = watcher.running
+        ? (watcher.training_in_progress ? 'active' : 'live')
+        : 'dead';
+      liveStatsGrid.appendChild(statCard(
+        wState,
+        'DEATH-WATCH',
+        watcher.running ? (watcher.training_in_progress ? 'TRAINING' : 'ARMED') : 'OFF',
+        watcher.running
+          ? `cooldown ${watcher.cooldown_s}s`
+          : 'click DEATH-WATCH ON to arm'
+      ));
+      liveStatsGrid.appendChild(statCard(
+        watcher.deaths_seen > 0 ? 'live' : 'dead',
+        'DEATHS SEEN',
+        String(watcher.deaths_seen || 0),
+        watcher.last_event
+          ? `last: ${(watcher.last_event.slug || watcher.last_event.mission || '').slice(0, 24)}`
+          : 'since watcher armed'
+      ));
+      liveStatsGrid.appendChild(statCard(
+        watcher.training_count > 0 ? 'live' : 'dead',
+        'TRAININGS FIRED',
+        String(watcher.training_count || 0),
+        watcher.last_training_at
+          ? `last ${fmtAge(watcher.last_training_at)}`
+          : 'no training yet'
+      ));
+      // If the last training has stats, show the last model name
+      if (watcher.last_result && watcher.last_result.model_name) {
+        liveStatsGrid.appendChild(statCard(
+          watcher.last_result.ok ? 'live' : 'dead',
+          'LAST MODEL',
+          watcher.last_result.model_name,
+          watcher.last_result.ok ? 'build ok' : 'build failed'
+        ));
+      }
+    }
+
+    // Mission cards
+    if (missions) {
+      liveStatsGrid.appendChild(statCard(
+        missions.game_complete ? 'active' : (missions.current_mission ? 'live' : 'dead'),
+        'MISSION',
+        missions.current_mission
+          ? (missions.missions.find(m => m.slug === missions.current_mission)?.name || missions.current_mission).slice(0, 18)
+          : (missions.game_complete ? 'COMPLETE' : 'idle'),
+        `${missions.total_missions_complete}/${missions.total_missions} cleared`
+      ));
+      liveStatsGrid.appendChild(statCard(
+        missions.current_deaths > 0 ? 'stale' : 'live',
+        'RUN DEATHS',
+        String(missions.current_deaths || 0),
+        missions.current_started_at
+          ? `since ${fmtAge(new Date(missions.current_started_at).getTime() / 1000)}`
+          : '—'
+      ));
+    }
+
+    // Corpus card
+    if (corpus && corpus.logs) {
+      const totalRows = corpus.total_rows || 0;
+      liveStatsGrid.appendChild(statCard(
+        totalRows > 0 ? 'live' : 'dead',
+        'CORPUS ROWS',
+        String(totalRows),
+        Object.keys(corpus.logs).length + ' jsonl files'
+      ));
+    }
+
+  } catch (e) {
+    // silent — UI still works without stats
+  }
+}
 
 // ─── Clock ────────────────────────────────────────────
 document.getElementById('boot-time').textContent = new Date().toLocaleTimeString();

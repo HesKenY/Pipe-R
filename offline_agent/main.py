@@ -405,16 +405,18 @@ async def websocket_endpoint(websocket: WebSocket):
 # ─── Entry Point ──────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("\n" + "═" * 60)
-    print("  OfflineAgent v1.0")
-    print("  http://localhost:7777")
-    print("  Ollama: http://localhost:11434")
-    print("═" * 60 + "\n")
+    # ASCII-only banner — Windows cp1252 console can't render
+    # box-drawing unicode without a utf-8 reconfigure.
+    print("\n" + "=" * 60)
+    print("  Ken AI offline v0.1.0-skeleton")
+    print("  http://127.0.0.1:7778")
+    print("  Ollama: http://127.0.0.1:11434")
+    print("=" * 60 + "\n")
 
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
-        port=7777,
+        port=7778,
         reload=False,
         log_level="info",
     )

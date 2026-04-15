@@ -89,6 +89,8 @@ def run_detect(model="llama3.2-vision"):
 
     try:
         input_blob = f"{img_path}\n{PROMPT}"
+        import os as _os
+        _flags = 0x08000000 if _os.name == "nt" else 0
         result = subprocess.run(
             ["ollama", "run", model],
             input=input_blob,
@@ -96,6 +98,8 @@ def run_detect(model="llama3.2-vision"):
             text=True,
             timeout=35,
             encoding="utf-8",
+            errors="replace",
+            creationflags=_flags,
         )
         if result.returncode != 0:
             return {

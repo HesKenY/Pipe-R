@@ -138,6 +138,7 @@ def start_server() -> bool:
     creationflags = 0
     creationflags |= getattr(subprocess, "DETACHED_PROCESS", 0)
     creationflags |= getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    creationflags |= 0x08000000  # CREATE_NO_WINDOW — no visible cmd
     subprocess.Popen(
         ["node", "server.js"],
         cwd=str(ROOT),
@@ -167,6 +168,7 @@ def restart_server_process() -> bool:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         check=False,
+        creationflags=0x08000000,  # CREATE_NO_WINDOW
     )
     deadline = time.time() + 8
     while time.time() < deadline and server_running():

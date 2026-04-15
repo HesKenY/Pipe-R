@@ -24,6 +24,7 @@ Outputs JSON:
     }
 """
 
+import os
 import sys
 import json
 import time
@@ -85,6 +86,10 @@ def run_vision(model="llama3.2-vision"):
         # via a special prefix. On recent ollama versions the
         # supported syntax is `/path/to/img.png<newline>prompt`.
         input_blob = f"{img_path}\n{PROMPT}"
+        # CREATE_NO_WINDOW = 0x08000000 — hides the subprocess
+        # console so the vision loop doesn't pop a cmd window
+        # every 20s when Halo is focused.
+        _flags = 0x08000000 if os.name == "nt" else 0
         result = subprocess.run(
             ["ollama", "run", model],
             input=input_blob,
@@ -92,6 +97,8 @@ def run_vision(model="llama3.2-vision"):
             text=True,
             timeout=45,
             encoding="utf-8",
+            errors="replace",
+            creationflags=_flags,
         )
         if result.returncode != 0:
             return {

@@ -464,22 +464,9 @@ async def halo_hunt_vision():
     return halo_vision_hunt_start()
 
 
-@app.post("/api/halo/pipe_r/on")
-async def halo_piper_on():
-    from tools.halo_actions import pipe_r_halo_on
-    return pipe_r_halo_on()
-
-
-@app.post("/api/halo/pipe_r/off")
-async def halo_piper_off():
-    from tools.halo_actions import pipe_r_halo_off
-    return pipe_r_halo_off()
-
-
-@app.post("/api/halo/pipe_r/control")
-async def halo_piper_control():
-    from tools.halo_actions import pipe_r_halo_control
-    return pipe_r_halo_control()
+# Pipe-R halo stack endpoints removed — KenAI is the only
+# halo system now (2026-04-14). The bats are still on disk
+# but nothing in KenAI wires them.
 
 
 @app.post("/api/halo/training/run")
@@ -588,14 +575,13 @@ async def halo_keylog_start():
 @app.post("/api/halo/learning/start")
 async def halo_learning_start():
     """
-    Master button — fire the entire learning stack:
-      1. aimbot on
-      2. pipe-r halo agent stack on (keylog + aim loop + analyzer
-         + tuner + patcher + vision + dumper + observe loop)
-      3. mark next unlocked mission as in-progress if one isn't
-         already running
+    Master button — fire KenAI's halo learning stack:
+      1. aimbot on (native, halo_tools/scripts/ken_aimbot.py)
+      2. mark next unlocked mission as in-progress
+    KenAI is the only halo system now — Pipe-R halo stack
+    was removed from this orchestration on 2026-04-14.
     """
-    from tools.halo_actions import aimbot_start, pipe_r_halo_on
+    from tools.halo_actions import aimbot_start
     from tools.halo_missions import get_status, start_mission
 
     results = {"started_at": datetime.now().isoformat(timespec="seconds"), "steps": []}
@@ -604,11 +590,7 @@ async def halo_learning_start():
     r1 = aimbot_start()
     results["steps"].append({"step": "aimbot_start", **r1})
 
-    # 2. pipe-r halo stack
-    r2 = pipe_r_halo_on()
-    results["steps"].append({"step": "pipe_r_halo_on", **r2})
-
-    # 3. mission state — if nothing in-progress, start the next unlocked
+    # 2. mission state — if nothing in-progress, start the next unlocked
     mstatus = get_status()
     if not mstatus.get("current_mission"):
         next_mission = None

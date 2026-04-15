@@ -122,20 +122,11 @@ def halo_vision_hunt_start() -> dict:
     return _run_launcher("HALO_VISION_HUNT.bat", detached=True)
 
 
-# ─── Pipe-R halo agent stack control ────────────────────
-
-def pipe_r_halo_on() -> dict:
-    """Kick the Pipe-R halo agent stack via the controller."""
-    return _run_launcher("KEN_AI_HALO_ON.bat")
-
-
-def pipe_r_halo_off() -> dict:
-    return _run_launcher("KEN_AI_HALO_OFF.bat")
-
-
-def pipe_r_halo_control() -> dict:
-    """Open the halo control TUI in a new window."""
-    return _run_launcher("KEN_AI_HALO_CONTROL.bat", detached=True)
+# ─── Pipe-R halo stack — removed 2026-04-14 ─────────────
+# KenAI is the only halo system now. The Pipe-R agent_mode/halo
+# stack is deprecated. If Ken ever needs to reference it, the
+# launcher bats are still in halo_tools/launchers/ but are not
+# wired into the UI anymore.
 
 
 # ─── Halo model training pipeline ────────────────────────

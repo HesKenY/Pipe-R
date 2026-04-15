@@ -75,7 +75,8 @@ def ocr_region(image, crop_box):
         try:
             subprocess.run(
                 ["tesseract", img_path, out_base, "--psm", "7", "-l", "eng"],
-                capture_output=True, text=True, timeout=5
+                capture_output=True, text=True, timeout=5,
+                creationflags=0x08000000 if os.name == "nt" else 0,
             )
             out_file = out_base + ".txt"
             txt = ""

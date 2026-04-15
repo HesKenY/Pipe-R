@@ -167,18 +167,24 @@ def overnight_learn_start() -> dict:
       2. vision ON    — 20s llama3.2-vision observer loop
       3. aimbot ON    — color-blob SendInput aim + fire
       4. driver ON    — movement policy reads vision + fires keys
-      5. next mission — flip tracker to in-progress
+      5. death watch  — auto-train pipeline every new death
+      6. next mission — flip tracker to in-progress
     All processes survive Ken walking away and keep logging
     until a stop flag or taskkill. No cheats — no memory
     reads/writes into MCC.
     """
     from tools.halo_missions import get_status, start_mission as _start_mission
+    from tools import death_watcher as _dw
 
     steps = []
     steps.append({"step": "keylog",    **keylog_start()})
     steps.append({"step": "vision",    **vision_observe_start()})
     steps.append({"step": "aimbot",    **aimbot_start()})
     steps.append({"step": "driver",    **driver_start()})
+    try:
+        steps.append({"step": "death_watch", **_dw.start()})
+    except Exception as e:
+        steps.append({"step": "death_watch", "ok": False, "error": str(e)})
 
     mstatus = get_status()
     if not mstatus.get("current_mission"):
@@ -207,12 +213,18 @@ def overnight_learn_start() -> dict:
 
 def overnight_learn_stop() -> dict:
     """Stop all learning loops."""
+    from tools import death_watcher as _dw
+    try:
+        dw_stop = _dw.stop()
+    except Exception as e:
+        dw_stop = {"ok": False, "error": str(e)}
     return {
-        "ok":     True,
-        "driver": driver_stop(),
-        "aimbot": aimbot_stop(),
-        "vision": vision_observe_stop(),
-        "keylog": keylog_stop(),
+        "ok":          True,
+        "driver":      driver_stop(),
+        "aimbot":      aimbot_stop(),
+        "vision":      vision_observe_stop(),
+        "keylog":      keylog_stop(),
+        "death_watch": dw_stop,
     }
 
 

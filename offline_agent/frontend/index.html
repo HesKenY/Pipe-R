@@ -1022,6 +1022,16 @@ Type a task or ask a question to begin.</div>
       </div>
 
       <div class="halo-section">
+        <div class="halo-section-title">AUTO-TRAIN ON DEATH</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn halo-go" data-action="/api/halo/training/watch/start" data-slug="ken-ai-offline-v0">DEATH-WATCH ON</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/training/watch/stop">DEATH-WATCH OFF</button>
+          <button class="halo-btn" data-action="/api/halo/training/watch/status" data-method="GET">STATUS</button>
+        </div>
+        <div class="halo-hint">tails halo_events.jsonl for new death events. every death fires the full training pipeline (brain_build → model_designer → modelfile_builder). debounced 120s so respawn bursts collapse into one run. the vision observer auto-fires death events when it sees a death_screen. overnight learn mode starts this automatically.</div>
+      </div>
+
+      <div class="halo-section">
         <div class="halo-section-title">OUTPUT</div>
         <pre id="halo-output" style="background:var(--bg);border:1px solid var(--border);padding:12px;max-height:320px;overflow:auto;font-size:11px;color:var(--text-dim);white-space:pre-wrap"></pre>
       </div>

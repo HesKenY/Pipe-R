@@ -526,6 +526,29 @@ async def halo_learning_status():
     return learning_status()
 
 
+# ─── Death-triggered training watcher ───────────────────
+
+@app.post("/api/halo/training/watch/start")
+async def halo_train_watch_start(slug: str = "ken-ai-offline-v0"):
+    """Start a background task that auto-runs the training
+    pipeline every time a new death event appears in the
+    session halo_events.jsonl."""
+    from tools import death_watcher
+    return death_watcher.start(slug)
+
+
+@app.post("/api/halo/training/watch/stop")
+async def halo_train_watch_stop():
+    from tools import death_watcher
+    return death_watcher.stop()
+
+
+@app.get("/api/halo/training/watch/status")
+async def halo_train_watch_status():
+    from tools import death_watcher
+    return death_watcher.status()
+
+
 @app.post("/api/halo/training/run")
 async def halo_training_run(design_slug: str = "ken-ai-offline-v0"):
     """Full training pipeline: brain refresh → dataset → modelfile."""

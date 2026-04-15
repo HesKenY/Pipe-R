@@ -204,9 +204,23 @@ def parse_vision(raw: str) -> dict:
 def notify_mission_complete() -> dict:
     """Fire POST /api/halo/missions/complete to KenAI."""
     try:
-        import urllib.request
         req = urllib.request.Request(
             f"{KENAI_BASE}/api/halo/missions/complete?notes=auto-detected+from+vision",
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return {"ok": True, "http": resp.status}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def notify_death() -> dict:
+    """Fire POST /api/halo/missions/death — the death_watcher
+    tails the resulting halo_events.jsonl row and kicks off
+    training."""
+    try:
+        req = urllib.request.Request(
+            f"{KENAI_BASE}/api/halo/missions/death",
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -220,6 +234,9 @@ def run_loop(interval_s: int, out_path: Path) -> int:
     fh = open(out_path, "a", encoding="utf-8", buffering=1)
     ticks = 0
     missed = 0
+    # Death detection state — one fire per contiguous death_screen
+    # run so respawn-loop doesn't spam the watcher with duplicates.
+    death_fired = False
     print(f"[vision_observe] loop every {interval_s}s, writing to {out_path}")
     print(f"[vision_observe] drop {STOP_FLAG.name} to stop")
     try:
@@ -246,12 +263,27 @@ def run_loop(interval_s: int, out_path: Path) -> int:
             if result.get("ok"):
                 parsed = parse_vision(result.get("raw", ""))
                 row["parsed"] = parsed
+                raw_lower = result.get("raw", "").lower()
+                situation = parsed.get("situation", "")
+
                 # Auto-detect mission complete
-                if parsed.get("situation") == "mission_complete" or \
-                   "mission complete" in result.get("raw", "").lower():
+                if situation == "mission_complete" or "mission complete" in raw_lower:
                     notify = notify_mission_complete()
                     row["mission_complete_fired"] = notify
                     print(f"[vision_observe] MISSION COMPLETE detected — notified: {notify}")
+
+                # Auto-detect death_screen (fire death event once
+                # per contiguous death state — reset when we see
+                # combat/exploration again).
+                if situation == "death_screen" or "you died" in raw_lower or "respawn" in raw_lower:
+                    if not death_fired:
+                        notify = notify_death()
+                        row["death_fired"] = notify
+                        death_fired = True
+                        print(f"[vision_observe] DEATH detected — notified: {notify}")
+                else:
+                    if situation in ("combat", "exploration"):
+                        death_fired = False
 
             fh.write(json.dumps(row, default=str) + "\n")
             print(f"[vision_observe] tick {ticks}: {result.get('raw','(err)')[:80]}")

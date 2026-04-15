@@ -27,6 +27,7 @@ import time
 import random
 import ctypes
 import json
+from ctypes import wintypes
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -46,6 +47,17 @@ try:
 except Exception:
     _kb = None
     HAS_KB = False
+
+# ── DPI awareness — required on 4K/ultrawide so mouse deltas
+# aren't silently scaled by Windows Pointer Precision ────
+try:
+    # Per-monitor v2 is the best mode on Win10 1703+
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)
+except Exception:
+    try:
+        ctypes.windll.user32.SetProcessDPIAware()
+    except Exception:
+        pass
 
 
 # ── Config — aggressive headhunting profile ──────────────
@@ -108,26 +120,115 @@ def maybe_trim_log():
         pass
 
 
-# ── Mouse primitives via ctypes (reliable across games) ──
-MOUSEEVENTF_MOVE     = 0x0001
-MOUSEEVENTF_LEFTDOWN = 0x0002
-MOUSEEVENTF_LEFTUP   = 0x0004
+# ── Mouse primitives via SendInput ────────────────────────
+# mouse_event is deprecated and some games that listen via
+# Raw Input ignore it. SendInput is what every modern aimbot
+# uses because it routes through the same input queue as a
+# real USB mouse — Halo MCC's Raw Input pipe picks it up.
+#
+# INPUT struct layout from winuser.h. We only care about
+# mouse input so the union is padded with a MOUSEINPUT + a
+# bit of slack for KEYBDINPUT that we don't use.
+
+MOUSEEVENTF_MOVE       = 0x0001
+MOUSEEVENTF_LEFTDOWN   = 0x0002
+MOUSEEVENTF_LEFTUP     = 0x0004
+MOUSEEVENTF_ABSOLUTE   = 0x8000  # not used for game aim
+INPUT_MOUSE            = 0
+
+ULONG_PTR = ctypes.c_ulong if ctypes.sizeof(ctypes.c_void_p) == 4 else ctypes.c_ulonglong
+
+class MOUSEINPUT(ctypes.Structure):
+    _fields_ = [
+        ("dx",          ctypes.c_long),
+        ("dy",          ctypes.c_long),
+        ("mouseData",   ctypes.c_ulong),
+        ("dwFlags",     ctypes.c_ulong),
+        ("time",        ctypes.c_ulong),
+        ("dwExtraInfo", ULONG_PTR),
+    ]
+
+class _INPUT_UNION(ctypes.Union):
+    _fields_ = [("mi", MOUSEINPUT)]
+
+class INPUT(ctypes.Structure):
+    _fields_ = [
+        ("type", ctypes.c_ulong),
+        ("mi",   MOUSEINPUT),  # direct field is fine since we only do mouse
+        ("_pad", ctypes.c_ulong * 4),  # pad out to full INPUT size on x64
+    ]
+
+_user32 = ctypes.windll.user32
+_user32.SendInput.argtypes = [wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int]
+_user32.SendInput.restype  = wintypes.UINT
+_SIZEOF_INPUT = ctypes.sizeof(INPUT)
+
+
+def _send_mouse(dx: int, dy: int, flags: int) -> None:
+    """Send one mouse event via SendInput. Relative coords."""
+    inp = INPUT()
+    inp.type = INPUT_MOUSE
+    inp.mi.dx = int(dx)
+    inp.mi.dy = int(dy)
+    inp.mi.mouseData = 0
+    inp.mi.dwFlags = flags
+    inp.mi.time = 0
+    inp.mi.dwExtraInfo = 0
+    _user32.SendInput(1, ctypes.byref(inp), _SIZEOF_INPUT)
+
+
+def _halo_is_foreground() -> bool:
+    """Cheap check — are we aiming at the Halo window?
+    Returns True if foreground window title contains 'Halo'
+    or 'MCC' or 'Master Chief'. False means we're alt-tabbed
+    away and should skip this cycle (no point snapping the
+    OS cursor onto nothing)."""
+    try:
+        hwnd = _user32.GetForegroundWindow()
+        if not hwnd:
+            return False
+        length = _user32.GetWindowTextLengthW(hwnd)
+        buf = ctypes.create_unicode_buffer(length + 1)
+        _user32.GetWindowTextW(hwnd, buf, length + 1)
+        title = (buf.value or "").lower()
+        return any(k in title for k in ("halo", "mcc", "master chief"))
+    except Exception:
+        return True  # fail open — don't block aim on a probe error
+
 
 def snap_mouse(dx, dy, smoothing=4):
-    step_x = int(dx / smoothing)
-    step_y = int(dy / smoothing)
+    """
+    Split the move into `smoothing` mini-steps so Halo's Raw
+    Input sampler catches each one. With SendInput the delta
+    is in raw mouse units, NOT screen pixels — Windows still
+    scales by the mouse driver's sensitivity curve.
+
+    Skip entirely if Halo doesn't have foreground focus — the
+    mouse would move on the desktop for no reason.
+    """
+    if not _halo_is_foreground():
+        return
+    dx = int(dx)
+    dy = int(dy)
+    if dx == 0 and dy == 0:
+        return
+    step_x = dx // smoothing
+    step_y = dy // smoothing
     rem_x = dx - step_x * smoothing
     rem_y = dy - step_y * smoothing
     for i in range(smoothing):
         rx = step_x + (rem_x if i == smoothing - 1 else 0)
         ry = step_y + (rem_y if i == smoothing - 1 else 0)
-        ctypes.windll.user32.mouse_event(MOUSEEVENTF_MOVE, rx, ry, 0, 0)
-        time.sleep(0.008)
+        _send_mouse(rx, ry, MOUSEEVENTF_MOVE)
+        time.sleep(0.006)
+
 
 def fire_shot(hold_ms=70):
-    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
+    if not _halo_is_foreground():
+        return
+    _send_mouse(0, 0, MOUSEEVENTF_LEFTDOWN)
     time.sleep(hold_ms / 1000.0)
-    ctypes.windll.user32.mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+    _send_mouse(0, 0, MOUSEEVENTF_LEFTUP)
 
 
 # ── Pixel matching + flood fill ──────────────────────────

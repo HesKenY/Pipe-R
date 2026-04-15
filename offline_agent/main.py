@@ -1,6 +1,6 @@
 """
 main.py
-Ken AI offline — local coding agent server.
+KenAI — Ken's local coding agent server.
 Serves the UI at http://localhost:7778
 WebSocket at ws://localhost:7778/ws
 
@@ -78,10 +78,35 @@ async def brain_refresh_loop():
 _refresh_task: Optional[asyncio.Task] = None
 
 
+async def warm_planner_model():
+    """
+    Fire a trivial chat at the planner model once at boot so
+    the first real request doesn't eat a 15-45s cold load.
+    Non-fatal — logs a warning if ollama isn't ready yet.
+    """
+    try:
+        from models.ollama_client import OllamaClient
+        client = OllamaClient(profile="planner")
+        if not await client.health_check():
+            logger.warning(f"warmup skipped: ollama not reachable at {client.base_url}")
+            return
+        logger.info(f"warming {client.model} ...")
+        await client.chat(
+            [{"role": "user", "content": "ready"}],
+            system="reply with the single word ok",
+        )
+        logger.info(f"warmup ok: {client.model} loaded")
+    except Exception as e:
+        logger.warning(f"warmup failed (non-fatal): {e}")
+
+
 async def on_startup():
     global _refresh_task
     logger.info(f"brain auto-refresh scheduled every {BRAIN_REFRESH_SECONDS}s")
     _refresh_task = asyncio.create_task(brain_refresh_loop())
+    # Warm the planner model in the background so the first
+    # real chat turn isn't a 30s cold load. Doesn't block boot.
+    asyncio.create_task(warm_planner_model())
 
 
 async def on_shutdown():
@@ -94,7 +119,7 @@ async def on_shutdown():
             pass
 
 
-app = FastAPI(title="Ken AI offline", version="0.1.0-skeleton", on_startup=[on_startup], on_shutdown=[on_shutdown])
+app = FastAPI(title="KenAI", version="0.1.0", on_startup=[on_startup], on_shutdown=[on_shutdown])
 
 # Global singletons
 permissions = PermissionsEngine(initial_mode=0)
@@ -213,7 +238,7 @@ async def get_status():
         pass
 
     return {
-        "agent": "Ken AI offline v0.1.0-skeleton",
+        "agent": "KenAI v0.1.0",
         "ollama": ollama_ok,
         "mode": permissions.get_mode_info(),
         "session": session.get_status(),
@@ -407,6 +432,69 @@ async def evaluate_model_api(slug: str, model: str, timeout: int = 120):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
+# ─── Halo tab endpoints ──────────────────────────────────
+
+@app.post("/api/halo/aimbot/start")
+async def halo_aimbot_start():
+    from tools.halo_actions import aimbot_start
+    return aimbot_start()
+
+
+@app.post("/api/halo/aimbot/stop")
+async def halo_aimbot_stop():
+    from tools.halo_actions import aimbot_stop
+    return aimbot_stop()
+
+
+@app.get("/api/halo/aimbot/stats")
+async def halo_aimbot_stats():
+    from tools.halo_actions import aimbot_stats
+    return aimbot_stats()
+
+
+@app.post("/api/halo/hunt/delta")
+async def halo_hunt_delta():
+    from tools.halo_actions import halo_hunt_start
+    return halo_hunt_start()
+
+
+@app.post("/api/halo/hunt/vision")
+async def halo_hunt_vision():
+    from tools.halo_actions import halo_vision_hunt_start
+    return halo_vision_hunt_start()
+
+
+@app.post("/api/halo/pipe_r/on")
+async def halo_piper_on():
+    from tools.halo_actions import pipe_r_halo_on
+    return pipe_r_halo_on()
+
+
+@app.post("/api/halo/pipe_r/off")
+async def halo_piper_off():
+    from tools.halo_actions import pipe_r_halo_off
+    return pipe_r_halo_off()
+
+
+@app.post("/api/halo/pipe_r/control")
+async def halo_piper_control():
+    from tools.halo_actions import pipe_r_halo_control
+    return pipe_r_halo_control()
+
+
+@app.post("/api/halo/training/run")
+async def halo_training_run(design_slug: str = "ken-ai-offline-v0"):
+    """Full training pipeline: brain refresh → dataset → modelfile."""
+    from tools.halo_actions import halo_training_run as _run
+    return _run(design_slug)
+
+
+@app.get("/api/halo/corpus/stats")
+async def halo_corpus_stats():
+    from tools.halo_actions import halo_corpus_stats
+    return halo_corpus_stats()
+
+
 # ─── WebSocket Handler ────────────────────────────────────────────────────────
 
 @app.websocket("/ws")
@@ -489,7 +577,7 @@ if __name__ == "__main__":
     # ASCII-only banner — Windows cp1252 console can't render
     # box-drawing unicode without a utf-8 reconfigure.
     print("\n" + "=" * 60)
-    print("  Ken AI offline v0.1.0-skeleton")
+    print("  KenAI v0.1.0")
     print("  http://127.0.0.1:7778")
     print("  Ollama: http://127.0.0.1:11434")
     print("=" * 60 + "\n")

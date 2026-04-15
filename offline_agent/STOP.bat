@@ -8,7 +8,7 @@ REM ========================================================
 
 setlocal enableextensions
 
-title Ken AI offline — stop
+title KenAI — stop
 
 echo.
 echo [stop ] asking /api/stop politely...

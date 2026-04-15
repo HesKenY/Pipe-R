@@ -15,11 +15,11 @@ setlocal enableextensions enabledelayedexpansion
 
 cd /d "%~dp0"
 
-title Ken AI offline — launcher
+title KenAI — launcher
 
 echo.
 echo ============================================================
-echo   Ken AI offline v0.1.0-skeleton
+echo   KenAI v0.1.0
 echo   http://127.0.0.1:7778
 echo ============================================================
 echo.
@@ -52,7 +52,7 @@ REM ── Check port 7778 is free ───────────────
 netstat -ano | findstr ":7778 " | findstr "LISTENING" >nul 2>&1
 if not errorlevel 1 (
     echo [warn] something is already listening on :7778.
-    echo        if that's a stale Ken AI server, run STOP.bat first.
+    echo        if that's a stale KenAI server, run STOP.bat first.
     echo.
     echo        opening browser to the existing server...
     goto open_browser

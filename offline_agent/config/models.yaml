@@ -8,10 +8,10 @@ models:
   profiles:
     planner:
       model: "ken-ai:latest"
-      num_ctx: 32768
+      num_ctx: 16384
       temperature: 0.2
       top_p: 0.9
-      description: "Ken's voice planner — reads brain, picks tools, writes session"
+      description: "Ken's voice planner — reads brain, picks tools, writes session. 16k context keeps VRAM happy when Halo or another model is loaded."
 
     coder:
       model: "qwen2.5-coder:14b"

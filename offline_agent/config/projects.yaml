@@ -47,8 +47,8 @@ projects:
     notes: "LIVE on cherp.live. supabase backend (nptmzihtujgkmqougkzd). offline-first via window.store. touch carefully."
 
 agent:
-  name: "Ken AI (offline)"
-  version: "0.1.0-skeleton"
+  name: "KenAI"
+  version: "0.1.0"
   persona: "Ken's personal offline coding assistant. Disciplined. Methodical. Lowercase voice. No analogies. Reads before writing."
   loop_delay_ms: 500
   max_task_steps: 50

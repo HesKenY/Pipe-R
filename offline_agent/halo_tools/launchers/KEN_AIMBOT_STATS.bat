@@ -1,0 +1,7 @@
+@echo off
+REM Quick stats from the aimbot log. Reads aimbot.log.jsonl and
+REM prints a summary: scans, hits, shots, hit rate, top confidences.
+
+cd /d "%~dp0..\scripts"
+python -c "import json; from collections import Counter; lines = open('aimbot.log.jsonl', encoding='utf-8').read().splitlines() if __import__('os').path.exists('aimbot.log.jsonl') else []; rows = [json.loads(l) for l in lines if l.strip()]; scans = [r for r in rows if r.get('kind')=='scan']; engages = [r for r in rows if r.get('kind')=='engage']; hbs = [r for r in rows if r.get('kind')=='heartbeat']; starts = [r for r in rows if r.get('kind')=='start']; print('='*50); print('KEN AIMBOT — SESSION STATS'); print('='*50); print(f'total rows: {len(rows)}'); print(f'starts:     {len(starts)}'); print(f'heartbeats: {len(hbs)}'); print(f'scans:      {len(scans)} (no engage)'); print(f'engagements:{len(engages)}'); print(); shots = sum(e.get('fired',0) for e in engages); print(f'total shots fired: {shots}'); print(f'avg shots/engagement: {shots/max(1,len(engages)):.1f}'); confs = [e.get('initial_conf',0) for e in engages]; print(f'confidence range: {min(confs) if confs else 0:.3f} - {max(confs) if confs else 0:.3f}'); print(f'avg confidence:   {sum(confs)/max(1,len(confs)):.3f}'); scan_ms = [e.get('scan_ms',0) for e in engages]; print(f'avg scan time:    {sum(scan_ms)/max(1,len(scan_ms)):.0f}ms'); total_ms = [e.get('total_ms',0) for e in engages]; print(f'avg engage time:  {sum(total_ms)/max(1,len(total_ms)):.0f}ms'); print()"
+pause

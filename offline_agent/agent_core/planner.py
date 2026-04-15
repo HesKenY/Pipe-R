@@ -91,10 +91,35 @@ class Planner:
             await self.emit("thinking", {"step": steps})
 
             try:
-                response = await self.client.chat(messages, system=system)
-                content = response.get("message", {}).get("content", "").strip()
+                # Stream tokens to the UI as they arrive. Big
+                # perceptual speedup — first token typically lands
+                # in 200-600ms instead of waiting 3-15s for the
+                # full completion.
+                stream = await self.client.chat(messages, system=system, stream=True)
+                content_parts: list[str] = []
+                first_token_emitted = False
+                async for chunk in stream:
+                    msg = chunk.get("message") or {}
+                    delta = msg.get("content", "")
+                    if delta:
+                        if not first_token_emitted:
+                            await self.emit("agent_first_token", {})
+                            first_token_emitted = True
+                        content_parts.append(delta)
+                        await self.emit("agent_token", {"delta": delta})
+                    if chunk.get("done"):
+                        break
+                content = "".join(content_parts).strip()
             except Exception as e:
-                await self.emit("error", {"msg": f"Model error: {e}"})
+                # The ollama client retries transient 500/502/503
+                # internally. If we still landed here, it's a real
+                # error worth surfacing to the user + session log.
+                err = f"{type(e).__name__}: {e}"[:400]
+                await self.emit("error", {
+                    "msg": f"model error after retries: {err}",
+                    "hint": "check that ollama is running and the planner model is pulled. try the same task again in 5-10s.",
+                })
+                self.session.add_agent_message(f"[error] model call failed: {err}")
                 break
 
             self.session.add_agent_message(content)

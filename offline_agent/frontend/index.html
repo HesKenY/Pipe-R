@@ -486,6 +486,89 @@
   #send-btn:hover { background: rgba(245,158,11,0.1); border-color: var(--amber); }
   #send-btn:active { transform: scale(0.96); }
 
+  /* ── CHAT/HALO TAB BUTTONS ─────────────────────────── */
+  .tab-btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text-dim);
+    padding: 4px 12px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { color: var(--amber); border-color: var(--amber-dim); }
+  .tab-btn.active {
+    color: var(--amber);
+    border-color: var(--amber);
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  /* ── HALO PANEL ────────────────────────────────────── */
+  .halo-section {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .halo-section:last-child { border-bottom: none; }
+  .halo-section-title {
+    font-family: var(--font-ui);
+    font-size: 11px;
+    color: var(--amber);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .halo-btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .halo-btn {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 10px 18px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .halo-btn:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: var(--bg3);
+  }
+  .halo-btn.halo-go {
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+  .halo-btn.halo-go:hover { border-color: var(--green); background: rgba(34, 197, 94, 0.1); }
+  .halo-btn.halo-stop {
+    border-color: var(--red-dim);
+    color: var(--red);
+  }
+  .halo-btn.halo-stop:hover { border-color: var(--red); background: rgba(239, 68, 68, 0.1); }
+  .halo-btn.halo-train {
+    border-color: var(--purple);
+    color: var(--purple);
+    font-size: 13px;
+    padding: 12px 22px;
+  }
+  .halo-btn.halo-train:hover { background: rgba(168, 85, 247, 0.12); }
+  .halo-btn:active { transform: scale(0.97); }
+  .halo-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+
   /* ── TERMINAL PANEL ────────────────────────────────── */
   #terminal-panel {
     width: 42%;
@@ -745,17 +828,66 @@
 
   <!-- Chat Panel -->
   <div id="chat-panel">
-    <div class="panel-header">
+    <div class="panel-header" style="display:flex;gap:10px;align-items:center">
       <span class="ph-dot" style="background:var(--amber)"></span>
-      Agent Chat
+      <span id="ph-label">Agent Chat</span>
+      <div style="flex:1"></div>
+      <div id="panel-tabs" style="display:flex;gap:4px">
+        <button class="tab-btn active" data-tab="chat">Chat</button>
+        <button class="tab-btn" data-tab="halo">Halo</button>
+      </div>
     </div>
     <div id="chat-messages">
       <div class="msg msg-sys">
         <div class="msg-header"><span class="mh-name">System</span><span class="mh-time" id="boot-time"></span></div>
-        <div class="msg-body">OfflineAgent v1.0 initialized.
+        <div class="msg-body">KenAI v0.1.0 initialized.
 Connecting to Ollama on localhost:11434...
 Start in Mode 0 (Read Only). Escalate modes as needed.
 Type a task or ask a question to begin.</div>
+      </div>
+    </div>
+    <div id="halo-panel" style="display:none;padding:18px;overflow-y:auto;flex:1">
+      <div class="halo-section">
+        <div class="halo-section-title">KEN AIMBOT</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn halo-go" data-action="/api/halo/aimbot/start">AIMBOT ON</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/aimbot/stop">AIMBOT OFF</button>
+          <button class="halo-btn" data-action="/api/halo/aimbot/stats" data-method="GET">STATS</button>
+        </div>
+        <div class="halo-hint">pythonw background loop. logs to halo_tools/scripts/aimbot.log.jsonl. F10 pauses.</div>
+      </div>
+
+      <div class="halo-section">
+        <div class="halo-section-title">MEMORY HUNTERS</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn" data-action="/api/halo/hunt/delta">DELTA HUNT</button>
+          <button class="halo-btn" data-action="/api/halo/hunt/vision">VISION HUNT</button>
+        </div>
+        <div class="halo-hint">self-elevating to admin. delta = cheat-engine style. vision = llama3.2-vision reads the HUD.</div>
+      </div>
+
+      <div class="halo-section">
+        <div class="halo-section-title">PIPE-R HALO AGENT STACK</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn halo-go" data-action="/api/halo/pipe_r/on">STACK ON</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/pipe_r/off">STACK OFF</button>
+          <button class="halo-btn" data-action="/api/halo/pipe_r/control">CONTROL TUI</button>
+        </div>
+        <div class="halo-hint">kicks agent_mode/halo/ken_ai_halo_control.py — full keylog + aim + tuner + patcher + vision loop.</div>
+      </div>
+
+      <div class="halo-section">
+        <div class="halo-section-title">MODEL TRAINING</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn halo-train" data-action="/api/halo/training/run" data-slug="ken-ai-offline-v0">TRAIN KEN-AI FROM HALO CORPUS</button>
+          <button class="halo-btn" data-action="/api/halo/corpus/stats" data-method="GET">CORPUS STATS</button>
+        </div>
+        <div class="halo-hint">pipeline: brain_build → dataset → modelfile. next step shown in output: ollama create &lt;name&gt; -f &lt;modelfile&gt;</div>
+      </div>
+
+      <div class="halo-section">
+        <div class="halo-section-title">OUTPUT</div>
+        <pre id="halo-output" style="background:var(--bg);border:1px solid var(--border);padding:12px;max-height:320px;overflow:auto;font-size:11px;color:var(--text-dim);white-space:pre-wrap"></pre>
       </div>
     </div>
     <div id="chat-input-area">
@@ -815,6 +947,75 @@ const agentDot       = document.getElementById('agent-dot');
 const agentStatus    = document.getElementById('agent-status');
 const modeBadge      = document.getElementById('mode-badge');
 const btnKill        = document.getElementById('btn-kill');
+const haloPanel      = document.getElementById('halo-panel');
+const haloOutput     = document.getElementById('halo-output');
+const phLabel        = document.getElementById('ph-label');
+
+// ─── Tab switching ────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    if (tab === 'chat') {
+      chatMessages.style.display = '';
+      haloPanel.style.display = 'none';
+      phLabel.textContent = 'Agent Chat';
+    } else if (tab === 'halo') {
+      chatMessages.style.display = 'none';
+      haloPanel.style.display = 'flex';
+      haloPanel.style.flexDirection = 'column';
+      phLabel.textContent = 'Halo Control';
+    }
+  });
+});
+
+// ─── Halo button dispatcher ───────────────────────────
+async function haloDispatch(btn) {
+  const action = btn.dataset.action;
+  const method = btn.dataset.method || 'POST';
+  const slug   = btn.dataset.slug;
+  if (!action) return;
+
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '...';
+  haloOutputLine(`[${new Date().toLocaleTimeString()}] ${method} ${action}${slug ? ' slug=' + slug : ''}`);
+
+  try {
+    let url = action;
+    const opts = { method };
+    if (slug && method === 'POST') {
+      url += '?design_slug=' + encodeURIComponent(slug);
+    }
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    haloOutputLine(typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
+    haloOutputLine('');
+  } catch (e) {
+    haloOutputLine(`ERROR: ${e.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+function haloOutputLine(line) {
+  if (!haloOutput) return;
+  haloOutput.textContent += (line + '\n');
+  haloOutput.scrollTop = haloOutput.scrollHeight;
+  // Keep at most 500 lines
+  const lines = haloOutput.textContent.split('\n');
+  if (lines.length > 500) {
+    haloOutput.textContent = lines.slice(-400).join('\n');
+  }
+}
+
+document.querySelectorAll('.halo-btn').forEach(btn => {
+  btn.addEventListener('click', () => haloDispatch(btn));
+});
 
 // ─── Clock ────────────────────────────────────────────
 document.getElementById('boot-time').textContent = new Date().toLocaleTimeString();
@@ -881,9 +1082,29 @@ function handleEvent(msg) {
     return;
   }
 
+  if (type === 'agent_first_token') {
+    // Planner is about to stream tokens. Swap the thinking
+    // dots for an empty agent bubble we'll append into.
+    removeThinking();
+    startStreamingBubble();
+    return;
+  }
+
+  if (type === 'agent_token') {
+    // Append the delta to the current streaming bubble.
+    appendStreamingToken(data.delta || '');
+    return;
+  }
+
   if (type === 'agent_message') {
     removeThinking();
-    addChatMsg('agent', data.content);
+    if (isStreaming()) {
+      // Streaming bubble is already on screen — just finalize
+      // it so the next turn starts fresh.
+      finalizeStreamingBubble(data.content);
+    } else {
+      addChatMsg('agent', data.content);
+    }
     termLine(`Agent responded (${data.content.length} chars)`, 'term-muted');
     return;
   }
@@ -1054,6 +1275,57 @@ function addChatMsg(type, content) {
   chatMessages.appendChild(el);
   chatMessages.scrollTop = chatMessages.scrollHeight;
   return el;
+}
+
+// ─── Streaming bubble state ───────────────────────────
+let streamingBubbleEl = null;
+let streamingBubbleBody = null;
+let streamingText = '';
+
+function isStreaming() {
+  return streamingBubbleEl !== null;
+}
+
+function startStreamingBubble() {
+  if (streamingBubbleEl) return;
+  streamingBubbleEl = document.createElement('div');
+  streamingBubbleEl.className = 'msg msg-agent streaming';
+  streamingBubbleEl.innerHTML = `
+    <div class="msg-header">
+      <span class="mh-name">Agent</span>
+      <span class="mh-time">${new Date().toLocaleTimeString()}</span>
+    </div>
+    <div class="msg-body"></div>
+  `;
+  streamingBubbleBody = streamingBubbleEl.querySelector('.msg-body');
+  streamingText = '';
+  chatMessages.appendChild(streamingBubbleEl);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function appendStreamingToken(delta) {
+  if (!streamingBubbleEl) startStreamingBubble();
+  streamingText += delta;
+  // Re-escape the whole accumulator each tick so html stays safe
+  // — tokens are small enough that this is cheap.
+  streamingBubbleBody.textContent = streamingText;
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function finalizeStreamingBubble(finalContent) {
+  if (!streamingBubbleEl) {
+    addChatMsg('agent', finalContent);
+    return;
+  }
+  // If server-side final content differs from accumulated
+  // (rare — usually trimmed whitespace), use the final.
+  if (finalContent && finalContent !== streamingText) {
+    streamingBubbleBody.textContent = finalContent;
+  }
+  streamingBubbleEl.classList.remove('streaming');
+  streamingBubbleEl = null;
+  streamingBubbleBody = null;
+  streamingText = '';
 }
 
 function showThinking(step) {

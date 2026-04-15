@@ -72,9 +72,12 @@ class OllamaClient:
             "model": self.model,
             "messages": messages,
             "options": {
-                "num_ctx": self.profile.get("num_ctx", 32768),
+                "num_ctx":     self.profile.get("num_ctx", 16384),
                 "temperature": self.profile.get("temperature", 0.2),
-                "top_p": self.profile.get("top_p", 0.9),
+                "top_p":       self.profile.get("top_p", 0.9),
+                # Cap response length — cuts 2-5s off verbose
+                # replies without meaningfully hurting quality.
+                "num_predict": self.profile.get("num_predict", 1024),
             },
             "stream": stream,
         }
@@ -88,10 +91,27 @@ class OllamaClient:
         else:
             return await self._chat_once(payload)
 
-    async def _chat_once(self, payload: dict) -> dict:
+    async def _chat_once(self, payload: dict, _attempt: int = 1) -> dict:
+        # Retry transient 500s — ollama runners wedge briefly
+        # between model loads, especially under VRAM pressure.
+        # First retry is fast; second waits for a full model
+        # reload.
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            resp = await client.post(f"{self.base_url}/api/chat", json=payload)
-            resp.raise_for_status()
+            try:
+                resp = await client.post(f"{self.base_url}/api/chat", json=payload)
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                status = e.response.status_code if e.response is not None else 0
+                if status in (500, 502, 503) and _attempt < 3:
+                    await asyncio.sleep(1.2 if _attempt == 1 else 4.0)
+                    return await self._chat_once(payload, _attempt + 1)
+                raise
+            except (httpx.ReadTimeout, httpx.ConnectError) as e:
+                if _attempt < 2:
+                    await asyncio.sleep(2.0)
+                    return await self._chat_once(payload, _attempt + 1)
+                raise
+
             data = resp.json()
             # Strip ANSI from the assistant content before
             # returning — downstream memory + logs will reuse
@@ -103,12 +123,30 @@ class OllamaClient:
                 data["message"] = msg
             return data
 
-    async def _stream_chat(self, payload: dict) -> AsyncGenerator[str, None]:
+    async def _stream_chat(self, payload: dict) -> AsyncGenerator[dict, None]:
+        """
+        Yield one NDJSON object per chunk. Each chunk has shape:
+          {"message": {"role":"assistant","content":"<delta>"},
+           "done": false}
+        Final chunk has `done: true` and may include stats.
+        Content is ANSI-stripped before being yielded so
+        downstream token handlers don't see terminal noise.
+        """
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             async with client.stream("POST", f"{self.base_url}/api/chat", json=payload) as resp:
+                resp.raise_for_status()
                 async for line in resp.aiter_lines():
-                    if line.strip():
-                        yield json.loads(line)
+                    if not line.strip():
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    msg = chunk.get("message")
+                    if isinstance(msg, dict) and "content" in msg:
+                        msg["content"] = strip_ansi(msg["content"])
+                        chunk["message"] = msg
+                    yield chunk
 
     async def generate_structured(
         self,

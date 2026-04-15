@@ -1,5 +1,20 @@
 # Project Rules — Ken's offline agent
 
+## Platform — Windows 11 Pro
+
+Ken's machine is Windows 11 Pro. **Read `windows_rules.md`
+before suggesting any shell command, file path, or subprocess
+spawn.** Generic Linux advice will break — wrong slashes,
+wrong kill commands, wrong env var syntax, wrong line
+endings. Default to:
+- Windows paths: forward slashes in code, backslashes in `.bat`
+- Subprocess spawns: `creationflags=CREATE_NO_WINDOW`, `encoding="utf-8"`
+- Process kill: `taskkill /PID <id> /F`, never `kill`
+- Console print: ASCII only (cp1252 can't render box-drawing)
+- Elevation: only when needed, always visible UAC prompt
+- Paths with spaces: always quoted
+- Never hardcode `C:/Users/Ken/...` — use `%USERPROFILE%` or `Path.home()`
+
 ## General Rules
 - **Read before write.** Always. No exceptions. No edit without a
   prior read of the target file.

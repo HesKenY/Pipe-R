@@ -28,7 +28,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
 import ctypes
+import io
 import json
 import os
 import re
@@ -36,6 +38,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.error
+import urllib.request
 from ctypes import wintypes
 from datetime import datetime, timezone
 from pathlib import Path
@@ -54,7 +58,11 @@ DEFAULT_OUT = HERE.parent.parent / "brain" / "corpus" / "halo_tools_logs" / "hal
 STOP_FLAG = HERE / "VISION_STOP.flag"
 
 KENAI_BASE = os.environ.get("KENAI_URL", "http://127.0.0.1:7778")
-VISION_MODEL = "llama3.2-vision"
+OLLAMA_BASE = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
+VISION_MODEL = os.environ.get("VISION_MODEL", "llama3.2-vision")
+# keep_alive tells Ollama to keep the vision model loaded in
+# VRAM between calls instead of cold-loading each time.
+KEEP_ALIVE = "10m"
 
 PROMPT = (
     "This is a screenshot of Halo 2 MCC. Respond with ONE short line in "
@@ -107,55 +115,64 @@ def halo_is_foreground() -> bool:
         return False
 
 
-def capture_downsampled(target_w: int = 896) -> Path:
-    """Screenshot + downsample to vision-friendly width."""
+def capture_downsampled_b64(target_w: int = 640) -> str:
+    """
+    Screenshot, downsample to 640px wide (smaller than 896
+    so prefill is faster on the vision model), JPEG-encode
+    at quality 80 (smaller payload than PNG), return as
+    base64 — that's what Ollama's /api/generate expects for
+    multimodal `images`.
+    """
     shot = pyautogui.screenshot()
     w, h = shot.size
     if w > target_w:
         scale = target_w / w
         shot = shot.resize((target_w, int(h * scale)), Image.BILINEAR)
-    f = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
-    path = Path(f.name)
-    f.close()
-    shot.save(path, "PNG")
-    return path
+    buf = io.BytesIO()
+    shot.convert("RGB").save(buf, format="JPEG", quality=80)
+    return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-def ask_vision(img_path: Path, timeout_s: int = 45) -> dict:
-    """Send the screenshot to llama3.2-vision via ollama."""
+def ask_vision(img_b64: str, timeout_s: int = 90) -> dict:
+    """
+    Send the base64-encoded image to Ollama via HTTP API with
+    keep_alive so the vision model stays warm in VRAM between
+    calls. Massively faster than `ollama run` subprocess
+    because there's no cold load per tick.
+    """
     t0 = time.time()
-    input_blob = f"{img_path}\n{PROMPT}"
-    flags = 0x08000000 if os.name == "nt" else 0
+    payload = {
+        "model":      VISION_MODEL,
+        "prompt":     PROMPT,
+        "images":     [img_b64],
+        "stream":     False,
+        "keep_alive": KEEP_ALIVE,
+        "options": {
+            "temperature": 0.1,
+            "num_predict": 80,  # short pipe-delimited response, cap tokens
+        },
+    }
     try:
-        res = subprocess.run(
-            ["ollama", "run", VISION_MODEL],
-            input=input_blob,
-            capture_output=True,
-            text=True,
-            timeout=timeout_s,
-            encoding="utf-8",
-            errors="replace",
-            creationflags=flags,
+        req = urllib.request.Request(
+            f"{OLLAMA_BASE}/api/generate",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
         )
-    except subprocess.TimeoutExpired:
-        return {"ok": False, "error": f"vision timeout {timeout_s}s"}
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        return {"ok": False, "error": f"http {e.code}: {e.reason}"}
     except Exception as e:
-        return {"ok": False, "error": str(e)}
-    finally:
-        try: img_path.unlink()
-        except Exception: pass
+        return {"ok": False, "error": str(e)[:200]}
 
-    if res.returncode != 0:
-        return {
-            "ok": False,
-            "error": f"ollama exit {res.returncode}",
-            "stderr": (res.stderr or "")[:200],
-        }
-    raw = strip_ansi(res.stdout or "").strip()
+    raw = strip_ansi(str(data.get("response", ""))).strip()
     return {
         "ok": True,
         "raw": raw[:400],
         "elapsedMs": int((time.time() - t0) * 1000),
+        "model_load_ms": data.get("load_duration", 0) // 1_000_000,
+        "eval_count": data.get("eval_count"),
     }
 
 
@@ -217,8 +234,8 @@ def run_loop(interval_s: int, out_path: Path) -> int:
                 time.sleep(min(interval_s, 4))
                 continue
 
-            img = capture_downsampled()
-            result = ask_vision(img)
+            img_b64 = capture_downsampled_b64()
+            result = ask_vision(img_b64)
             ticks += 1
 
             row = {
@@ -261,8 +278,8 @@ def main() -> int:
         if not halo_is_foreground():
             print(json.dumps({"ok": False, "error": "halo not foreground"}))
             return 1
-        img = capture_downsampled()
-        result = ask_vision(img)
+        img_b64 = capture_downsampled_b64()
+        result = ask_vision(img_b64)
         if result.get("ok"):
             result["parsed"] = parse_vision(result.get("raw", ""))
         print(json.dumps(result, default=str))

@@ -27,18 +27,32 @@ WIN_CREATE_NO_WINDOW = 0x08000000
 
 
 def _run_launcher(name: str, detached: bool = False) -> dict:
-    """Spawn a launcher from halo_tools/launchers/ by filename."""
+    """
+    Spawn a launcher from halo_tools/launchers/ by filename.
+    CREATE_NO_WINDOW is ALWAYS set on Windows so cmd windows
+    don't pop up and steal focus from Halo — that was the
+    "cmd spam" bug.
+    """
     bat = LAUNCHERS / name
     if not bat.exists():
         return {"ok": False, "error": f"launcher not found: {name}"}
+
+    # Windows-specific: hide every subprocess console window.
+    # CREATE_NO_WINDOW is 0x08000000. For detached long-runners
+    # also add CREATE_NEW_PROCESS_GROUP so a Ctrl+C on the
+    # KenAI server doesn't cascade-kill them.
+    flags = 0
+    if os.name == "nt":
+        flags = WIN_CREATE_NO_WINDOW
+        if detached:
+            flags |= WIN_CREATE_NEW_PROCESS_GROUP
+
     try:
         if detached:
-            # Fire and forget — we don't wait for the launcher.
-            flags = WIN_CREATE_NEW_PROCESS_GROUP | WIN_CREATE_NO_WINDOW if os.name == "nt" else 0
             subprocess.Popen(
                 ["cmd", "/c", str(bat)],
                 cwd=str(bat.parent),
-                creationflags=flags if os.name == "nt" else 0,
+                creationflags=flags,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
@@ -49,6 +63,9 @@ def _run_launcher(name: str, detached: bool = False) -> dict:
             capture_output=True,
             text=True,
             timeout=30,
+            creationflags=flags,
+            encoding="utf-8",
+            errors="replace",
         )
         return {
             "ok": res.returncode == 0,

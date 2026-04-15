@@ -91,3 +91,9 @@ code still points at the old location.
 
 
 [22:13:19] **HALO MISSION START** — The Heretic (the-heretic)
+[22:34:28] 
+### TASK [22:34:28]: play halo
+
+[22:34:28] **USER**: play halo
+[22:34:49] **AGENT**: i can't play games. i'm a text-based assistant. try a gaming console or pc instead.
+[22:40:38]   [DENIED] `run_drill({})`

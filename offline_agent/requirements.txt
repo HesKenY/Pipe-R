@@ -12,6 +12,12 @@ pyautogui>=0.9.54
 Pillow>=10.0.0
 pygetwindow>=0.0.9
 
+# ── Halo learning loops ────────────────────────────────
+# halo_keylog.py uses these low-level hooks for W/A/S/D
+# capture + mouse button logging. Both are pure-python.
+keyboard>=0.13.5
+mouse>=0.7.1
+
 # ── Optional: OCR for HUD reading ──────────────────────
 # Required by halo_vision_hunt.py workflow. Needs tesseract binary
 # installed separately — https://github.com/UB-Mannheim/tesseract

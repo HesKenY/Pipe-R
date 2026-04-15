@@ -28,7 +28,11 @@ cd /d "%~dp0..\scripts"
 
 if /i not "%MODE%"=="restart" (
     set "RUNNING_PID="
-    for /f %%P in ('powershell -NoProfile -Command "$p = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'halo_vision_hunt\.py' -and $_.Name -match 'python|cmd' } | Select-Object -First 1 -ExpandProperty ProcessId; if ($p) { Write-Output $p }"') do set "RUNNING_PID=%%P"
+    for /f "tokens=2" %%P in ('tasklist /v /fi "IMAGENAME eq cmd.exe" ^| findstr /i /c:"halo_vision_hunt.py" /c:"Halo Vision Hunt"') do (
+        set "RUNNING_PID=%%P"
+        goto :running_found
+    )
+    :running_found
     if defined RUNNING_PID (
         echo [vh] already running on pid %RUNNING_PID%
         echo [vh] use HALO_VISION_HUNT.bat restart to relaunch cleanly
@@ -45,7 +49,9 @@ if %ERRORLEVEL% neq 0 (
 
 if /i "%MODE%"=="restart" (
     echo [vh] stopping existing vision hunt instances...
-    powershell -NoProfile -Command "$ErrorActionPreference = 'SilentlyContinue'; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'halo_vision_hunt\.py' -and $_.Name -match 'python|cmd' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+    for /f "tokens=2" %%P in ('tasklist /v /fi "IMAGENAME eq cmd.exe" ^| findstr /i /c:"halo_vision_hunt.py" /c:"Halo Vision Hunt"') do (
+        taskkill /PID %%P /T /F >nul 2>&1
+    )
     timeout /t 1 >nul
 )
 

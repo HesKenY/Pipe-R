@@ -967,22 +967,36 @@ Type a task or ask a question to begin.</div>
       </div>
 
       <div class="halo-section">
+        <div class="halo-section-title">OVERNIGHT LEARN MODE</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn halo-train" data-action="/api/halo/overnight/start">START OVERNIGHT LEARN</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/overnight/stop">STOP ALL LOOPS</button>
+          <button class="halo-btn" data-action="/api/halo/learning/status" data-method="GET">LEARNING STATUS</button>
+        </div>
+        <div class="halo-hint">master button — keylog + vision observer (20s) + aimbot + KenAI driver + mission tracker. runs until you drop the stop flags or taskkill. logs to brain/corpus/halo_tools_logs/. no cheats.</div>
+      </div>
+
+      <div class="halo-section">
+        <div class="halo-section-title">LEARNING LOOPS (individual)</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn halo-go" data-action="/api/halo/keylog/on">KEYLOG ON</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/keylog/off">KEYLOG OFF</button>
+          <button class="halo-btn halo-go" data-action="/api/halo/vision/on">VISION ON</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/vision/off">VISION OFF</button>
+          <button class="halo-btn halo-go" data-action="/api/halo/driver/on">DRIVER ON</button>
+          <button class="halo-btn halo-stop" data-action="/api/halo/driver/off">DRIVER OFF</button>
+        </div>
+        <div class="halo-hint">keylog captures w/a/s/d/mouse buttons (halo-focus guarded). vision sends a screenshot to llama3.2-vision every 20s. driver reads vision + drives movement via SendInput.</div>
+      </div>
+
+      <div class="halo-section">
         <div class="halo-section-title">KEN AIMBOT</div>
         <div class="halo-btn-row">
           <button class="halo-btn halo-go" data-action="/api/halo/aimbot/start">AIMBOT ON</button>
           <button class="halo-btn halo-stop" data-action="/api/halo/aimbot/stop">AIMBOT OFF</button>
           <button class="halo-btn" data-action="/api/halo/aimbot/stats" data-method="GET">STATS</button>
         </div>
-        <div class="halo-hint">pythonw background loop. logs to halo_tools/scripts/aimbot.log.jsonl. F10 pauses.</div>
-      </div>
-
-      <div class="halo-section">
-        <div class="halo-section-title">MEMORY HUNTERS</div>
-        <div class="halo-btn-row">
-          <button class="halo-btn" data-action="/api/halo/hunt/delta">DELTA HUNT</button>
-          <button class="halo-btn" data-action="/api/halo/hunt/vision">VISION HUNT</button>
-        </div>
-        <div class="halo-hint">self-elevating to admin. delta = cheat-engine style. vision = llama3.2-vision reads the HUD.</div>
+        <div class="halo-hint">color-blob aim + fire. SendInput + DPI aware + foreground guard. logs to halo_tools/scripts/aimbot.log.jsonl. F10 pauses.</div>
       </div>
 
       <div class="halo-section">

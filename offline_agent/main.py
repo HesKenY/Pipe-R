@@ -469,6 +469,63 @@ async def halo_hunt_vision():
 # but nothing in KenAI wires them.
 
 
+# ─── KenAI native learning endpoints ─────────────────────
+
+@app.post("/api/halo/keylog/on")
+async def halo_keylog_on():
+    from tools.halo_actions import keylog_start
+    return keylog_start()
+
+
+@app.post("/api/halo/keylog/off")
+async def halo_keylog_off():
+    from tools.halo_actions import keylog_stop
+    return keylog_stop()
+
+
+@app.post("/api/halo/vision/on")
+async def halo_vision_on():
+    from tools.halo_actions import vision_observe_start
+    return vision_observe_start()
+
+
+@app.post("/api/halo/vision/off")
+async def halo_vision_off():
+    from tools.halo_actions import vision_observe_stop
+    return vision_observe_stop()
+
+
+@app.post("/api/halo/driver/on")
+async def halo_driver_on():
+    from tools.halo_actions import driver_start
+    return driver_start()
+
+
+@app.post("/api/halo/driver/off")
+async def halo_driver_off():
+    from tools.halo_actions import driver_stop
+    return driver_stop()
+
+
+@app.post("/api/halo/overnight/start")
+async def halo_overnight_start():
+    """Master overnight learn mode: keylog + vision + aimbot + driver + next mission."""
+    from tools.halo_actions import overnight_learn_start
+    return overnight_learn_start()
+
+
+@app.post("/api/halo/overnight/stop")
+async def halo_overnight_stop():
+    from tools.halo_actions import overnight_learn_stop
+    return overnight_learn_stop()
+
+
+@app.get("/api/halo/learning/status")
+async def halo_learning_status():
+    from tools.halo_actions import learning_status
+    return learning_status()
+
+
 @app.post("/api/halo/training/run")
 async def halo_training_run(design_slug: str = "ken-ai-offline-v0"):
     """Full training pipeline: brain refresh → dataset → modelfile."""

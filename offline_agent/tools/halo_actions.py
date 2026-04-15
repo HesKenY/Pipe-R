@@ -25,7 +25,7 @@ SCRIPTS   = PROJECT_ROOT / "halo_tools" / "scripts"
 CORPUS    = PROJECT_ROOT / "brain" / "corpus" / "halo_tools_logs"
 
 
-def _run_launcher(name: str, detached: bool = False) -> dict:
+def _run_launcher(name: str, detached: bool = False, args: list[str] | None = None) -> dict:
     """
     Spawn a launcher from halo_tools/launchers/ by filename.
     Uses the win_subprocess helpers which always set
@@ -35,19 +35,20 @@ def _run_launcher(name: str, detached: bool = False) -> dict:
     bat = LAUNCHERS / name
     if not bat.exists():
         return {"ok": False, "error": f"launcher not found: {name}"}
+    argv = ["cmd", "/c", str(bat), *(args or [])]
 
     try:
         if detached:
             _popen(
-                ["cmd", "/c", str(bat)],
+                argv,
                 cwd=str(bat.parent),
                 stdout=DEVNULL,
                 stderr=DEVNULL,
                 detached=True,
             )
-            return {"ok": True, "launcher": name, "detached": True}
+            return {"ok": True, "launcher": name, "detached": True, "args": args or []}
         res = _run(
-            ["cmd", "/c", str(bat)],
+            argv,
             cwd=str(bat.parent),
             capture_output=True,
             text=True,
@@ -56,6 +57,7 @@ def _run_launcher(name: str, detached: bool = False) -> dict:
         return {
             "ok": res.returncode == 0,
             "launcher": name,
+            "args": args or [],
             "stdout": (res.stdout or "")[:2000],
             "stderr": (res.stderr or "")[:500],
         }
@@ -118,8 +120,8 @@ def halo_hunt_start() -> dict:
 
 
 def halo_vision_hunt_start() -> dict:
-    """Vision-assisted memory hunter — self-elevates to admin."""
-    return _run_launcher("HALO_VISION_HUNT.bat", detached=True)
+    """Vision-assisted memory hunter — always relaunch cleanly via KenAI."""
+    return _run_launcher("HALO_VISION_HUNT.bat", detached=True, args=["restart"])
 
 
 # ─── Pipe-R halo stack — removed 2026-04-14 ─────────────
@@ -127,6 +129,128 @@ def halo_vision_hunt_start() -> dict:
 # stack is deprecated. If Ken ever needs to reference it, the
 # launcher bats are still in halo_tools/launchers/ but are not
 # wired into the UI anymore.
+
+
+# ─── KenAI native learning loops ────────────────────────
+
+def keylog_start() -> dict:
+    """Start the KenAI keystroke + mouse button capture."""
+    return _run_launcher("KEN_KEYLOG_ON.bat", detached=True)
+
+
+def keylog_stop() -> dict:
+    return _run_launcher("KEN_KEYLOG_OFF.bat")
+
+
+def vision_observe_start() -> dict:
+    """Start the 20s vision observer loop."""
+    return _run_launcher("KEN_VISION_ON.bat", detached=True)
+
+
+def vision_observe_stop() -> dict:
+    return _run_launcher("KEN_VISION_OFF.bat")
+
+
+def driver_start() -> dict:
+    """Start KenAI's gameplay driver — takes over movement."""
+    return _run_launcher("KEN_DRIVER_ON.bat", detached=True)
+
+
+def driver_stop() -> dict:
+    return _run_launcher("KEN_DRIVER_OFF.bat")
+
+
+def overnight_learn_start() -> dict:
+    """
+    Master overnight learn mode:
+      1. keylog ON    — capture any Ken input as training signal
+      2. vision ON    — 20s llama3.2-vision observer loop
+      3. aimbot ON    — color-blob SendInput aim + fire
+      4. driver ON    — movement policy reads vision + fires keys
+      5. next mission — flip tracker to in-progress
+    All processes survive Ken walking away and keep logging
+    until a stop flag or taskkill. No cheats — no memory
+    reads/writes into MCC.
+    """
+    from tools.halo_missions import get_status, start_mission as _start_mission
+
+    steps = []
+    steps.append({"step": "keylog",    **keylog_start()})
+    steps.append({"step": "vision",    **vision_observe_start()})
+    steps.append({"step": "aimbot",    **aimbot_start()})
+    steps.append({"step": "driver",    **driver_start()})
+
+    mstatus = get_status()
+    if not mstatus.get("current_mission"):
+        next_mission = next(
+            (m for m in mstatus["missions"] if m["status"] == "unlocked"),
+            None,
+        )
+        if next_mission:
+            steps.append({"step": "mission", **_start_mission(next_mission["slug"])})
+        else:
+            steps.append({"step": "mission", "ok": False, "error": "no unlocked mission"})
+    else:
+        steps.append({
+            "step": "mission",
+            "ok": True,
+            "already_in_progress": mstatus["current_mission"],
+        })
+
+    return {
+        "ok":             all(s.get("ok", True) for s in steps),
+        "started_at":     datetime.now().isoformat(timespec="seconds"),
+        "steps":          steps,
+        "mission_status": get_status(),
+    }
+
+
+def overnight_learn_stop() -> dict:
+    """Stop all learning loops."""
+    return {
+        "ok":     True,
+        "driver": driver_stop(),
+        "aimbot": aimbot_stop(),
+        "vision": vision_observe_stop(),
+        "keylog": keylog_stop(),
+    }
+
+
+def learning_status() -> dict:
+    """Snapshot every running learning component."""
+    import os, json
+    status = {}
+
+    # Keylog — check if process is up by looking at recent file mtime
+    keylog_path = PROJECT_ROOT / "brain" / "corpus" / "halo_tools_logs" / "halo-keylog.jsonl"
+    status["keylog"] = {
+        "exists":    keylog_path.exists(),
+        "bytes":     keylog_path.stat().st_size if keylog_path.exists() else 0,
+        "last_mtime": keylog_path.stat().st_mtime if keylog_path.exists() else None,
+    }
+
+    vision_path = PROJECT_ROOT / "brain" / "corpus" / "halo_tools_logs" / "halo-vision.jsonl"
+    status["vision"] = {
+        "exists":    vision_path.exists(),
+        "bytes":     vision_path.stat().st_size if vision_path.exists() else 0,
+        "last_mtime": vision_path.stat().st_mtime if vision_path.exists() else None,
+    }
+
+    driver_path = PROJECT_ROOT / "brain" / "corpus" / "halo_tools_logs" / "halo-driver.jsonl"
+    status["driver"] = {
+        "exists":    driver_path.exists(),
+        "bytes":     driver_path.stat().st_size if driver_path.exists() else 0,
+        "last_mtime": driver_path.stat().st_mtime if driver_path.exists() else None,
+    }
+
+    aimbot_path = SCRIPTS / "aimbot.log.jsonl"
+    status["aimbot"] = {
+        "exists":    aimbot_path.exists(),
+        "bytes":     aimbot_path.stat().st_size if aimbot_path.exists() else 0,
+        "last_mtime": aimbot_path.stat().st_mtime if aimbot_path.exists() else None,
+    }
+
+    return {"ok": True, "at": datetime.now().isoformat(timespec="seconds"), "status": status}
 
 
 # ─── Halo model training pipeline ────────────────────────

@@ -1,24 +1,24 @@
 ollama:
   base_url: "http://localhost:11434"
-  timeout: 120
+  timeout: 180
 
 models:
-  default: "qwen2.5-coder:14b"
-  
+  default: "ken-ai:latest"
+
   profiles:
     planner:
-      model: "qwen2.5-coder:14b"
-      num_ctx: 65536
+      model: "ken-ai:latest"
+      num_ctx: 32768
       temperature: 0.2
       top_p: 0.9
-      description: "Task planning and tool selection"
+      description: "Ken's voice planner — reads brain, picks tools, writes session"
 
     coder:
       model: "qwen2.5-coder:14b"
       num_ctx: 65536
       temperature: 0.1
       top_p: 0.95
-      description: "Code generation and patching"
+      description: "Code generation and patching. No voice constraint — code must be correct."
 
     reviewer:
       model: "qwen2.5-coder:14b"
@@ -27,23 +27,47 @@ models:
       description: "Code review and diff analysis"
 
     vision:
-      model: "llava:13b"
+      model: "llama3.2-vision"
       num_ctx: 8192
       temperature: 0.1
-      description: "Screenshot and image understanding"
+      description: "Screenshot + HUD reading — the one Ken has pulled locally"
 
     fast:
-      model: "qwen2.5-coder:7b"
+      model: "llama3.1:8b"
+      num_ctx: 16384
+      temperature: 0.2
+      description: "Quick tasks, grep, summaries, JSON patches"
+
+    recon:
+      model: "cherp-piper:latest"
       num_ctx: 32768
       temperature: 0.2
-      description: "Quick tasks, grep, summaries"
+      description: "Terrain mapping, memory budgeting, install tree walks"
+
+    integration:
+      model: "forgeagent:latest"
+      num_ctx: 32768
+      temperature: 0.2
+      description: "Wiring modules, JSON config patches, daemon healing"
+
+    quality:
+      model: "jefferyjefferferson:latest"
+      num_ctx: 16384
+      temperature: 0.1
+      description: "QA checks, rubric verification, regression risk taxonomy"
+
+    tutor:
+      model: "m3w-learning:latest"
+      num_ctx: 16384
+      temperature: 0.3
+      description: "Prompt tuning and post-task learning reflection"
 
   # Fallback priority order if primary model not available
   fallback_chain:
+    - "ken-ai:latest"
     - "qwen2.5-coder:14b"
+    - "llama3.1:8b"
     - "qwen2.5-coder:7b"
-    - "codellama:13b"
-    - "llama3.2:latest"
 
 tool_calling:
   enabled: true

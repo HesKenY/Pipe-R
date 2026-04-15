@@ -5,11 +5,38 @@ Handles chat, tool calling, structured outputs, and model management.
 """
 
 import json
+import re
 import httpx
 import asyncio
 from typing import Any, AsyncGenerator, Optional
 from pathlib import Path
 import yaml
+
+# ANSI CSI + OSC sequences that ollama run and some models
+# leak into responses. Strip before passing text upward so
+# chat-log + memory don't get polluted.
+_ANSI_CSI = re.compile(r"\u001b\[\??[0-9;]*[a-zA-Z]")
+_ANSI_OSC = re.compile(r"\u001b\][^\u0007]*\u0007")
+
+
+def strip_ansi(s: str) -> str:
+    if not s:
+        return ""
+    return _ANSI_OSC.sub("", _ANSI_CSI.sub("", s))
+
+
+def strip_json_fence(s: str) -> str:
+    """Remove a ```json ... ``` wrapper if present."""
+    if not s:
+        return ""
+    t = s.strip()
+    if t.startswith("```"):
+        # drop opening fence (with optional language tag)
+        t = re.sub(r"^```[a-zA-Z0-9]*\n?", "", t)
+        # drop closing fence
+        if t.endswith("```"):
+            t = t[:-3]
+    return t.strip()
 
 
 def _load_config() -> dict:
@@ -65,7 +92,16 @@ class OllamaClient:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
             resp = await client.post(f"{self.base_url}/api/chat", json=payload)
             resp.raise_for_status()
-            return resp.json()
+            data = resp.json()
+            # Strip ANSI from the assistant content before
+            # returning — downstream memory + logs will reuse
+            # this string and we don't want terminal noise in
+            # the brain index.
+            msg = data.get("message", {})
+            if isinstance(msg, dict) and "content" in msg:
+                msg["content"] = strip_ansi(msg["content"])
+                data["message"] = msg
+            return data
 
     async def _stream_chat(self, payload: dict) -> AsyncGenerator[str, None]:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
@@ -89,9 +125,13 @@ class OllamaClient:
         )
         messages = [{"role": "user", "content": prompt}]
         result = await self.chat(messages, system=sys_prompt)
-        raw = result.get("message", {}).get("content", "")
-        # Strip any accidental markdown fences
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        raw = strip_ansi(result.get("message", {}).get("content", ""))
+        raw = strip_json_fence(raw)
+        # Last-ditch: grab the first {...} block if there's still noise
+        if not raw.startswith("{"):
+            m = re.search(r"\{[\s\S]*\}", raw)
+            if m:
+                raw = m.group(0)
         return json.loads(raw)
 
     async def list_models(self) -> list[str]:

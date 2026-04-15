@@ -34,6 +34,8 @@ from tools import git_tools as git
 from tools import shell_tools as shell
 from tools import search_tools as search
 from tools import ui_tools as ui
+from tools import memory_tools as mem
+from tools import drill_tools as drill
 
 logging.basicConfig(
     level=logging.INFO,
@@ -102,6 +104,27 @@ def register_tools():
     router.register("type_text",          ui.type_text,          min_mode=3, description="Type text")
     router.register("hotkey",             ui.hotkey,             min_mode=3, description="Keyboard shortcut")
     router.register("scroll",             ui.scroll,             min_mode=3, description="Scroll mouse wheel")
+
+    # Brain / memory — Mode 0 read, Mode 1 write to brain/
+    router.register("search_brain",        mem.search_brain,        min_mode=0, description="FTS across brain_index + sessions + tasks")
+    router.register("read_brain_file",     mem.read_brain_file,     min_mode=0, description="Read one brain_index/*.md file")
+    router.register("list_brain_files",    mem.list_brain_files,    min_mode=0, description="List all brain_index files")
+    router.register("brain_stats",         mem.brain_stats,         min_mode=0, description="FTS table row counts")
+    router.register("list_open_tasks",     mem.list_open_tasks,     min_mode=0, description="List open task files")
+    router.register("read_task",           mem.read_task,           min_mode=0, description="Read one task file (open|done)")
+    router.register("write_brain_file",    mem.write_brain_file,    min_mode=1, description="Overwrite a brain_index/*.md file")
+    router.register("append_session_entry",mem.append_session_entry,min_mode=1, description="Append to today's session log")
+    router.register("open_task",           mem.open_task,           min_mode=1, description="Create a new open task file")
+    router.register("close_task",          mem.close_task,          min_mode=1, description="Move open task → done with summary")
+
+    # Halo-trainer bridge — Mode 0 read, Mode 1 run
+    router.register("list_drills",           drill.list_drills,           min_mode=0, description="List halo-trainer drill definitions")
+    router.register("read_drill",            drill.read_drill,            min_mode=0, description="Read one drill's JSON by id")
+    router.register("read_run",              drill.read_run,              min_mode=0, description="Read last N run rows for a drill")
+    router.register("scoreboard",            drill.scoreboard,            min_mode=0, description="Run halo-trainer scoreboard")
+    router.register("curated_corpus_summary",drill.curated_corpus_summary,min_mode=0, description="Row counts of curated corpus per curriculum")
+    router.register("run_drill",             drill.run_drill,             min_mode=1, description="Execute one drill or all drills")
+    router.register("retry_failed_drills",   drill.retry_failed_drills,   min_mode=1, description="Re-run only drills whose last attempt failed")
 
     logger.info(f"Registered {len(router._registry)} tools")
 
@@ -227,6 +250,80 @@ async def get_tools():
         "all": list(router._registry.keys()),
         "mode": permissions.mode,
     }
+
+
+# ─── Model Designer endpoints ────────────────────────────
+
+@app.get("/api/model_designs")
+async def list_model_designs():
+    """List every design.json under brain/model_designs/."""
+    try:
+        from brain.model_designer import list_designs
+        return {"designs": list_designs()}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/model_designs/{slug}")
+async def get_model_design(slug: str):
+    try:
+        from brain.model_designer import load_design, validate
+        design = load_design(slug)
+        return {"design": design, "validation": validate(design)}
+    except FileNotFoundError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/model_designs/{slug}/build")
+async def build_model_spec(slug: str):
+    """Validate → build dataset → emit training spec."""
+    try:
+        from brain.model_designer import (
+            load_design, validate, build_dataset, build_training_spec, save_spec,
+        )
+        design = load_design(slug)
+        v = validate(design)
+        if not v["ok"]:
+            return JSONResponse(
+                {"ok": False, "validation": v, "error": "design not valid"},
+                status_code=400,
+            )
+        ds_path, stats = build_dataset(design)
+        spec = build_training_spec(design, ds_path, stats)
+        spec_path = save_spec(design, spec)
+        return {
+            "ok":      True,
+            "dataset": str(ds_path),
+            "spec":    str(spec_path),
+            "stats":   stats,
+        }
+    except FileNotFoundError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/brain/rebuild")
+async def rebuild_brain():
+    """Re-run the import manifest + rebuild FTS."""
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["python", "brain/brain_build.py", "--once"],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        return {
+            "ok":     res.returncode == 0,
+            "stdout": (res.stdout or "")[:2000],
+            "stderr": (res.stderr or "")[:500],
+        }
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ─── WebSocket Handler ────────────────────────────────────────────────────────

@@ -47,7 +47,54 @@ logger = logging.getLogger("main")
 
 ROOT = Path(__file__).parent
 
-app = FastAPI(title="Ken AI offline", version="0.1.0-skeleton")
+# Brain auto-refresh cadence — run brain_build.py --once on this
+# schedule so imports from Claude/Pipe-R/halo-trainer stay fresh
+# while the server is up. 30 min default.
+BRAIN_REFRESH_SECONDS = int(os.environ.get("BRAIN_REFRESH_SECONDS", "1800"))
+
+
+async def brain_refresh_loop():
+    """Background task: periodically rerun brain_build.py and rebuild FTS."""
+    # First pass waits a bit so the server is fully up
+    await asyncio.sleep(5)
+    while True:
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                "python", "brain/brain_build.py", "--once",
+                cwd=str(ROOT),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+            stdout, stderr = await proc.communicate()
+            if proc.returncode == 0:
+                logger.info("brain auto-refresh ok")
+            else:
+                logger.warning(f"brain auto-refresh failed: {(stderr or b'').decode(errors='ignore')[:200]}")
+        except Exception as e:
+            logger.warning(f"brain auto-refresh exception: {e}")
+        await asyncio.sleep(BRAIN_REFRESH_SECONDS)
+
+
+_refresh_task: Optional[asyncio.Task] = None
+
+
+async def on_startup():
+    global _refresh_task
+    logger.info(f"brain auto-refresh scheduled every {BRAIN_REFRESH_SECONDS}s")
+    _refresh_task = asyncio.create_task(brain_refresh_loop())
+
+
+async def on_shutdown():
+    global _refresh_task
+    if _refresh_task and not _refresh_task.done():
+        _refresh_task.cancel()
+        try:
+            await _refresh_task
+        except asyncio.CancelledError:
+            pass
+
+
+app = FastAPI(title="Ken AI offline", version="0.1.0-skeleton", on_startup=[on_startup], on_shutdown=[on_shutdown])
 
 # Global singletons
 permissions = PermissionsEngine(initial_mode=0)
@@ -322,6 +369,40 @@ async def rebuild_brain():
             "stdout": (res.stdout or "")[:2000],
             "stderr": (res.stderr or "")[:500],
         }
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/model_designs/{slug}/modelfile")
+async def build_modelfile_api(slug: str, model_name: Optional[str] = None):
+    """Emit an Ollama Modelfile from a design + its latest dataset."""
+    try:
+        from brain.modelfile_builder import load_design, latest_dataset_for, build_modelfile
+        design = load_design(slug)
+        ds = latest_dataset_for(slug)
+        if not ds:
+            return JSONResponse(
+                {"error": f"no dataset for {slug} — run POST /api/model_designs/{slug}/build first"},
+                status_code=400,
+            )
+        name = model_name or f"{slug.replace('-', '')}v1"
+        out_path, stats = build_modelfile(design, ds, name)
+        return {"ok": True, **stats}
+    except FileNotFoundError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/model_designs/{slug}/evaluate")
+async def evaluate_model_api(slug: str, model: str, timeout: int = 120):
+    """Run the evaluator against a given ollama model tag."""
+    try:
+        from brain.evaluator import evaluate
+        report = evaluate(slug, model, timeout_s=timeout)
+        return report
+    except FileNotFoundError as e:
+        return JSONResponse({"error": str(e)}, status_code=404)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
 

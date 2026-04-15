@@ -5,6 +5,7 @@ All run as subprocesses. Repo path validated before every call.
 """
 
 import subprocess
+from tools.win_subprocess import run as _win_run
 from pathlib import Path
 from typing import Optional
 import logging
@@ -15,7 +16,7 @@ logger = logging.getLogger("git_tools")
 def _run_git(args: list[str], cwd: str) -> str:
     """Run a git command and return combined stdout/stderr."""
     try:
-        result = subprocess.run(
+        result = _win_run(
             ["git"] + args,
             cwd=cwd,
             capture_output=True,

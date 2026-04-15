@@ -182,6 +182,7 @@ Sections are scanned by agent_mode/halo/memory.js appendLesson.
 
 ## tactics_learned
 
+- 2026-04-15 03:20:07 — ken:strafe_shoot — a + lmb within 600ms
 - 2026-04-14 02:57:56 — coach:NEXT Experiment with burst fire after aiming instead of single shots.
 - 2026-04-14 02:55:45 — coach:NEXT Experiment with burst fire after aiming.
 - 2026-04-14 02:53:52 — coach:NEXT Practice quick shield pops after taking hits.

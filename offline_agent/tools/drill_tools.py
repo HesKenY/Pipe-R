@@ -16,6 +16,8 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+from tools.win_subprocess import run as _run
+
 # halo-trainer sits next to offline_agent in the Codex clone:
 #   Codex/offline_agent/
 #   Codex/halo-trainer/
@@ -92,7 +94,7 @@ def scoreboard() -> dict:
         return {"ok": False, "error": err}
     # Run the scoreboard script and capture stdout
     try:
-        res = subprocess.run(
+        res = _run(
             ["node", "src/scoreboard.js"],
             cwd=str(TRAINER_ROOT),
             capture_output=True,
@@ -123,7 +125,7 @@ def run_drill(drill_id: Optional[str] = None, timeout: int = 600) -> dict:
     if drill_id:
         args.append(drill_id)
     try:
-        res = subprocess.run(
+        res = _run(
             args,
             cwd=str(TRAINER_ROOT),
             capture_output=True,
@@ -149,7 +151,7 @@ def retry_failed_drills(timeout: int = 900) -> dict:
     if not ok:
         return {"ok": False, "error": err}
     try:
-        res = subprocess.run(
+        res = _run(
             ["node", "src/retry.js"],
             cwd=str(TRAINER_ROOT),
             capture_output=True,

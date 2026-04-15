@@ -24,6 +24,7 @@ import argparse
 import json
 import re
 import subprocess
+from tools.win_subprocess import run as _win_run
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,7 +48,7 @@ def strip_ansi(s: str) -> str:
 def ask_model(model: str, prompt: str, timeout_s: int = 120) -> tuple[bool, str, int]:
     started = datetime.now(timezone.utc)
     try:
-        res = subprocess.run(
+        res = _win_run(
             ["ollama", "run", model],
             input=prompt,
             capture_output=True,

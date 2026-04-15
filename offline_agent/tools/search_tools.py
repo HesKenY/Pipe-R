@@ -5,6 +5,7 @@ Also includes file-finding and SQLite brain search.
 """
 
 import subprocess
+from tools.win_subprocess import run as _win_run
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -56,7 +57,7 @@ def _rg_search(query, path, file_pattern, case_sensitive, context_lines) -> str:
         args += ["--glob", file_pattern]
 
     try:
-        result = subprocess.run(args, capture_output=True, text=True, timeout=30)
+        result = _win_run(args, capture_output=True, text=True, timeout=30)
         out = result.stdout.strip()
         if not out:
             return f"No matches for '{query}' in {path}"
@@ -76,7 +77,7 @@ def _grep_search(query, path, file_pattern, case_sensitive) -> str:
         args.append("-i")
     args += [query, path]
     try:
-        result = subprocess.run(args, capture_output=True, text=True, timeout=30)
+        result = _win_run(args, capture_output=True, text=True, timeout=30)
         out = result.stdout.strip()
         return out if out else f"No matches for '{query}' in {path}"
     except Exception as e:

@@ -16,56 +16,42 @@ import time
 from pathlib import Path
 from datetime import datetime
 
+from tools.win_subprocess import run as _run, popen as _popen, DEVNULL
+
 HERE = Path(__file__).resolve().parent
 PROJECT_ROOT = HERE.parent
 LAUNCHERS = PROJECT_ROOT / "halo_tools" / "launchers"
 SCRIPTS   = PROJECT_ROOT / "halo_tools" / "scripts"
 CORPUS    = PROJECT_ROOT / "brain" / "corpus" / "halo_tools_logs"
 
-WIN_CREATE_NEW_PROCESS_GROUP = 0x00000200
-WIN_CREATE_NO_WINDOW = 0x08000000
-
 
 def _run_launcher(name: str, detached: bool = False) -> dict:
     """
     Spawn a launcher from halo_tools/launchers/ by filename.
-    CREATE_NO_WINDOW is ALWAYS set on Windows so cmd windows
-    don't pop up and steal focus from Halo — that was the
-    "cmd spam" bug.
+    Uses the win_subprocess helpers which always set
+    CREATE_NO_WINDOW on Windows so no cmd window pops up
+    and steals focus from Halo.
     """
     bat = LAUNCHERS / name
     if not bat.exists():
         return {"ok": False, "error": f"launcher not found: {name}"}
 
-    # Windows-specific: hide every subprocess console window.
-    # CREATE_NO_WINDOW is 0x08000000. For detached long-runners
-    # also add CREATE_NEW_PROCESS_GROUP so a Ctrl+C on the
-    # KenAI server doesn't cascade-kill them.
-    flags = 0
-    if os.name == "nt":
-        flags = WIN_CREATE_NO_WINDOW
-        if detached:
-            flags |= WIN_CREATE_NEW_PROCESS_GROUP
-
     try:
         if detached:
-            subprocess.Popen(
+            _popen(
                 ["cmd", "/c", str(bat)],
                 cwd=str(bat.parent),
-                creationflags=flags,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+                detached=True,
             )
             return {"ok": True, "launcher": name, "detached": True}
-        res = subprocess.run(
+        res = _run(
             ["cmd", "/c", str(bat)],
             cwd=str(bat.parent),
             capture_output=True,
             text=True,
             timeout=30,
-            creationflags=flags,
-            encoding="utf-8",
-            errors="replace",
         )
         return {
             "ok": res.returncode == 0,
@@ -172,13 +158,12 @@ def halo_training_run(design_slug: str = "ken-ai-offline-v0") -> dict:
     def _step(name: str, args: list[str], timeout: int = 300) -> dict:
         t0 = time.time()
         try:
-            r = subprocess.run(
+            r = _run(
                 args,
                 cwd=root,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                encoding="utf-8",
             )
             elapsed = round(time.time() - t0, 1)
             return {

@@ -381,8 +381,8 @@ async def build_model_spec(slug: str):
 async def rebuild_brain():
     """Re-run the import manifest + rebuild FTS."""
     try:
-        import subprocess
-        res = subprocess.run(
+        from tools.win_subprocess import run as _win_run
+        res = _win_run(
             ["python", "brain/brain_build.py", "--once"],
             cwd=str(ROOT),
             capture_output=True,
@@ -538,6 +538,20 @@ async def halo_mission_reset():
 async def halo_mission_death():
     from tools.halo_missions import log_death
     return log_death()
+
+
+@app.post("/api/dispatch/tool")
+async def dispatch_tool(tool: str, params: Optional[dict] = None):
+    """
+    Direct tool router call from the UI. Bypasses the planner
+    so halo buttons can fire drill_tools / memory_tools without
+    going through the chat loop.
+    """
+    try:
+        result = await router.call(tool, params or {})
+        return result
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.post("/api/halo/keylog/scrub")

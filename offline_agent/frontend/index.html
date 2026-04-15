@@ -996,12 +996,25 @@ Type a task or ask a question to begin.</div>
       </div>
 
       <div class="halo-section">
-        <div class="halo-section-title">MODEL TRAINING</div>
+        <div class="halo-section-title">HALO-TRAINER DRILLS (classroom)</div>
+        <div class="halo-btn-row">
+          <button class="halo-btn" data-action="/api/dispatch/tool" data-tool="run_drill">RUN ALL DRILLS</button>
+          <button class="halo-btn" data-action="/api/dispatch/tool" data-tool="scoreboard">SCOREBOARD</button>
+          <button class="halo-btn" data-action="/api/dispatch/tool" data-tool="list_drills">LIST DRILLS</button>
+          <button class="halo-btn" data-action="/api/dispatch/tool" data-tool="retry_failed_drills">RETRY FAILURES</button>
+          <button class="halo-btn" data-action="/api/dispatch/tool" data-tool="curated_corpus_summary">CORPUS</button>
+        </div>
+        <div class="halo-hint">rubric-scored drills across the 6 squad agents. passing rows land in halo-trainer/corpus/ and feed the fine-tune pipeline below.</div>
+      </div>
+
+      <div class="halo-section">
+        <div class="halo-section-title">MODEL TRAINING (fine-tune pipeline)</div>
         <div class="halo-btn-row">
           <button class="halo-btn halo-train" data-action="/api/halo/training/run" data-slug="ken-ai-offline-v0">TRAIN KEN-AI FROM HALO CORPUS</button>
-          <button class="halo-btn" data-action="/api/halo/corpus/stats" data-method="GET">CORPUS STATS</button>
+          <button class="halo-btn" data-action="/api/halo/corpus/stats" data-method="GET">HALO CORPUS STATS</button>
+          <button class="halo-btn" data-action="/api/brain/rebuild">REBUILD BRAIN INDEX</button>
         </div>
-        <div class="halo-hint">pipeline: brain_build → dataset → modelfile. next step shown in output: ollama create &lt;name&gt; -f &lt;modelfile&gt;</div>
+        <div class="halo-hint">pipeline: brain_build → model_designer → modelfile_builder. next step printed in output: ollama create ken-ai-v1 -f &lt;modelfile&gt;</div>
       </div>
 
       <div class="halo-section">
@@ -1104,8 +1117,12 @@ async function haloDispatch(btn) {
   try {
     let url = action;
     const opts = { method };
+    const tool = btn.dataset.tool;
+    if (tool) {
+      url += '?tool=' + encodeURIComponent(tool);
+    }
     if (slug && method === 'POST') {
-      url += '?design_slug=' + encodeURIComponent(slug);
+      url += (url.includes('?') ? '&' : '?') + 'design_slug=' + encodeURIComponent(slug);
     }
     const res = await fetch(url, opts);
     const text = await res.text();
@@ -1113,6 +1130,8 @@ async function haloDispatch(btn) {
     try { parsed = JSON.parse(text); } catch { parsed = text; }
     haloOutputLine(typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2));
     haloOutputLine('');
+    // Refresh mission state after halo-related button clicks
+    if (action.includes('/halo/')) setTimeout(refreshMissions, 500);
   } catch (e) {
     haloOutputLine(`ERROR: ${e.message}`);
   } finally {

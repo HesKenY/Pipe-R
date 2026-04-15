@@ -5,6 +5,7 @@ Command allowlist enforced upstream by ToolRouter/PermissionsEngine.
 """
 
 import subprocess
+from tools.win_subprocess import run as _win_run
 import sys
 import shutil
 from pathlib import Path
@@ -29,7 +30,7 @@ def run_command(cmd: str, cwd: str = ".", timeout: int = DEFAULT_TIMEOUT) -> str
     logger.info(f"run_command: {cmd!r} in {cwd_path}")
 
     try:
-        result = subprocess.run(
+        result = _win_run(
             cmd,
             shell=True,
             cwd=str(cwd_path),

@@ -183,6 +183,37 @@ def fire_once(hold_ms: int = 80) -> None:
     _send_mouse_btn(MOUSEEVENTF_LEFTUP)
 
 
+def _send_mouse_move(dx: int, dy: int) -> None:
+    inp = INPUT()
+    inp.type = INPUT_MOUSE
+    inp.u.mi.dx = int(dx)
+    inp.u.mi.dy = int(dy)
+    inp.u.mi.mouseData = 0
+    inp.u.mi.dwFlags = MOUSEEVENTF_MOVE
+    inp.u.mi.time = 0
+    inp.u.mi.dwExtraInfo = 0
+    _user32.SendInput(1, ctypes.byref(inp), _SIZEOF_INPUT)
+
+
+def look(dx: int, dy: int, smoothing: int = 5) -> None:
+    """
+    Mouse-look via relative SendInput. Halo takes the delta
+    through Raw Input. Split into mini-steps so each one is
+    sampled. Foreground-guarded.
+    """
+    if not halo_is_foreground():
+        return
+    step_x = dx // smoothing
+    step_y = dy // smoothing
+    rem_x = dx - step_x * smoothing
+    rem_y = dy - step_y * smoothing
+    for i in range(smoothing):
+        rx = step_x + (rem_x if i == smoothing - 1 else 0)
+        ry = step_y + (rem_y if i == smoothing - 1 else 0)
+        _send_mouse_move(rx, ry)
+        time.sleep(0.008)
+
+
 # ── Vision log tail ──────────────────────────────────────
 
 def read_latest_vision() -> dict | None:
@@ -206,50 +237,78 @@ def read_latest_vision() -> dict | None:
 
 # ── Policy ───────────────────────────────────────────────
 
-RANDOM_ACTIONS = ["w", "a", "d", "w", "w", "space"]
+# Exploration pattern — 20-step loop that mixes movement,
+# look, jump, crouch, fire, and reload. When vision is stale
+# or says "unknown", the driver cycles through this pattern
+# so the character never gets stuck walking into a wall.
+EXPLORATION_PATTERN = [
+    "forward", "forward", "look_right", "forward",
+    "strafe_right", "fire", "forward", "look_left",
+    "forward", "strafe_left", "jump", "forward",
+    "fire", "look_down", "forward", "forward",
+    "crouch", "look_up", "forward", "reload",
+]
+
+COMBAT_PATTERN = [
+    "fire", "strafe_left", "fire", "forward",
+    "fire", "strafe_right", "fire", "look_right",
+    "fire", "back", "fire", "look_left",
+]
 
 
 def pick_action(vision_row: dict | None, tick_count: int) -> tuple[str, dict]:
     """
-    Return (action, metadata). The action is one of:
-      forward, back, strafe_left, strafe_right, jump, reload,
-      fire, crouch, noop, look_small
+    Return (action, metadata). Actions:
+      forward / back / strafe_left / strafe_right /
+      jump / crouch / reload / fire /
+      look_left / look_right / look_up / look_down /
+      noop
+
+    Policy priority:
+      1. If vision says mission_complete / death / menu → noop
+      2. If vision says combat → combat pattern (fire heavy +
+         strafe + look sweeps)
+      3. Else (exploration, unknown, stale) → exploration pattern
+         (rotating mix so we never get stuck walking forward)
+      4. Every N ticks inject a random "stuck breaker" —
+         jump + look_right + fire burst.
     """
     ctx = {"tick": tick_count}
 
+    situation = "unknown"
+    vision_action = None
     if vision_row:
         parsed = vision_row.get("parsed") or {}
         situation = (parsed.get("situation") or "unknown").lower()
-        action = (parsed.get("action") or "noop").lower()
+        vision_action = (parsed.get("action") or "").lower()
         ctx["situation"] = situation
-        ctx["vision_action"] = action
+        ctx["vision_action"] = vision_action
 
-        if situation == "death_screen":
-            return "noop", ctx
-        if situation in ("menu", "cutscene"):
-            return "noop", ctx
-        if situation == "mission_complete":
-            return "noop", ctx
-        if situation == "combat":
-            # Pick based on vision's suggestion, bias toward fire+forward
-            if action in ("fire", "ads"):
-                return "fire", ctx
-            if action in ("move_back", "back"):
-                return "back", ctx
-            if action == "strafe_left":
-                return "strafe_left", ctx
-            if action == "strafe_right":
-                return "strafe_right", ctx
-            return "forward", ctx
-        if situation == "exploration":
-            if tick_count % 8 == 0:
-                return random.choice(["strafe_left", "strafe_right"]), ctx
-            return "forward", ctx
+    # Hard noop cases
+    if situation in ("death_screen", "menu", "cutscene", "mission_complete"):
+        return "noop", ctx
 
-    # Fallback — cautious forward burst every tick
-    if tick_count % 20 == 19:
-        return "reload", ctx
-    return "forward", ctx
+    # Combat — use the combat pattern + occasional vision override
+    if situation == "combat":
+        if vision_action in ("fire", "ads"):
+            return "fire", ctx
+        if vision_action in ("move_back", "back"):
+            return "back", ctx
+        action = COMBAT_PATTERN[tick_count % len(COMBAT_PATTERN)]
+        return action, ctx
+
+    # Stuck breaker every ~25 ticks — random burst to unwedge
+    if tick_count > 0 and tick_count % 25 == 0:
+        breaker = random.choice([
+            "jump", "look_right", "look_left", "strafe_left",
+            "strafe_right", "fire",
+        ])
+        ctx["breaker"] = True
+        return breaker, ctx
+
+    # Exploration / unknown — cycle the pattern
+    action = EXPLORATION_PATTERN[tick_count % len(EXPLORATION_PATTERN)]
+    return action, ctx
 
 
 ACTION_IMPL = {
@@ -262,6 +321,13 @@ ACTION_IMPL = {
     "crouch":      lambda: press_key("ctrl_l", 140),
     "fire":        lambda: fire_once(70),
     "noop":        lambda: None,
+    # Mouse-look — relative deltas. Halo takes these through
+    # Raw Input. Values are in raw mouse units, which Windows
+    # scales by the game's sensitivity curve.
+    "look_left":   lambda: look(-220, 0),
+    "look_right":  lambda: look(220, 0),
+    "look_up":     lambda: look(0, -140),
+    "look_down":   lambda: look(0, 140),
 }
 
 
@@ -334,12 +400,52 @@ def run(tick_ms: int, out_path: Path) -> int:
     return 0
 
 
+SINGLETON_LOCK = HERE / "halo_driver.lock"
+
+
+def _claim_singleton() -> bool:
+    """Prevent double-launches. Writes our PID to a lock file;
+    if the file already exists with a live PID, bail out."""
+    if SINGLETON_LOCK.exists():
+        try:
+            other_pid = int(SINGLETON_LOCK.read_text(encoding="utf-8").strip() or "0")
+            if other_pid > 0:
+                # Probe if that PID is still alive
+                OPEN = ctypes.windll.kernel32.OpenProcess
+                CLOSE = ctypes.windll.kernel32.CloseHandle
+                h = OPEN(0x0400, False, other_pid)
+                if h:
+                    CLOSE(h)
+                    print(f"[halo_driver] another instance already running (pid {other_pid})")
+                    return False
+        except Exception:
+            pass
+    try:
+        import os
+        SINGLETON_LOCK.write_text(str(os.getpid()), encoding="utf-8")
+    except Exception:
+        pass
+    return True
+
+
+def _release_singleton() -> None:
+    try:
+        SINGLETON_LOCK.unlink()
+    except Exception:
+        pass
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tick", type=int, default=800, help="tick interval in ms")
     ap.add_argument("--out", type=str, default=str(DEFAULT_OUT))
     args = ap.parse_args()
-    return run(args.tick, Path(args.out).resolve())
+    if not _claim_singleton():
+        return 1
+    try:
+        return run(args.tick, Path(args.out).resolve())
+    finally:
+        _release_singleton()
 
 
 if __name__ == "__main__":

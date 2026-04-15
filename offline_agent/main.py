@@ -495,6 +495,126 @@ async def halo_corpus_stats():
     return halo_corpus_stats()
 
 
+# ─── Halo mission tracker ────────────────────────────────
+
+@app.get("/api/halo/missions")
+async def halo_missions_status():
+    from tools.halo_missions import get_status
+    return get_status()
+
+
+@app.post("/api/halo/missions/{slug}/start")
+async def halo_mission_start(slug: str):
+    from tools.halo_missions import start_mission
+    return start_mission(slug)
+
+
+@app.post("/api/halo/missions/{slug}/complete")
+async def halo_mission_complete(slug: str, notes: str = ""):
+    from tools.halo_missions import mark_complete
+    return mark_complete(slug, notes)
+
+
+@app.post("/api/halo/missions/complete")
+async def halo_mission_complete_current(notes: str = ""):
+    """Mark whichever mission is currently in-progress as complete."""
+    from tools.halo_missions import mark_complete
+    return mark_complete(None, notes)
+
+
+@app.post("/api/halo/missions/{slug}/skip")
+async def halo_mission_skip(slug: str, reason: str = ""):
+    from tools.halo_missions import skip_mission
+    return skip_mission(slug, reason)
+
+
+@app.post("/api/halo/missions/reset")
+async def halo_mission_reset():
+    from tools.halo_missions import reset_progress
+    return reset_progress()
+
+
+@app.post("/api/halo/missions/death")
+async def halo_mission_death():
+    from tools.halo_missions import log_death
+    return log_death()
+
+
+@app.post("/api/halo/keylog/scrub")
+async def halo_keylog_scrub(dry: bool = False):
+    """Strip obvious terminal chatter from the halo keylog."""
+    try:
+        from tools.keylog_scrubber import scrub_all
+        return scrub_all(dry_run=dry)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/halo/keylog/start")
+async def halo_keylog_start():
+    """
+    Start the Pipe-R halo keylogger subprocess. This hits the
+    running Pipe-R server (Pipe-R owns the keylog + the observe
+    loop). KenAI ONLY launches the aimbot directly — the full
+    keylog + vision + dumper stack runs inside Pipe-R so both
+    sides can read the outputs.
+    """
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=15) as client:
+            try:
+                r = await client.post("http://127.0.0.1:7777/api/halo/keylog/start", json={})
+                return {"ok": True, "source": "pipe-r", "response": r.json()}
+            except Exception as e:
+                return {"ok": False, "error": f"pipe-r not reachable: {e}", "hint": "start the Pipe-R server (Codex/server.js) on :7777 first"}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/halo/learning/start")
+async def halo_learning_start():
+    """
+    Master button — fire the entire learning stack:
+      1. aimbot on
+      2. pipe-r halo agent stack on (keylog + aim loop + analyzer
+         + tuner + patcher + vision + dumper + observe loop)
+      3. mark next unlocked mission as in-progress if one isn't
+         already running
+    """
+    from tools.halo_actions import aimbot_start, pipe_r_halo_on
+    from tools.halo_missions import get_status, start_mission
+
+    results = {"started_at": datetime.now().isoformat(timespec="seconds"), "steps": []}
+
+    # 1. aimbot
+    r1 = aimbot_start()
+    results["steps"].append({"step": "aimbot_start", **r1})
+
+    # 2. pipe-r halo stack
+    r2 = pipe_r_halo_on()
+    results["steps"].append({"step": "pipe_r_halo_on", **r2})
+
+    # 3. mission state — if nothing in-progress, start the next unlocked
+    mstatus = get_status()
+    if not mstatus.get("current_mission"):
+        next_mission = None
+        for m in mstatus["missions"]:
+            if m["status"] == "unlocked":
+                next_mission = m
+                break
+        if next_mission:
+            r3 = start_mission(next_mission["slug"])
+            results["steps"].append({"step": "mission_start", **r3})
+        else:
+            results["steps"].append({"step": "mission_start", "ok": False, "error": "no unlocked mission available"})
+    else:
+        results["steps"].append({"step": "mission_start", "ok": True, "note": f"already in-progress: {mstatus['current_mission']}"})
+
+    results["ok"] = all(s.get("ok", True) for s in results["steps"])
+    results["mission_status"] = get_status()
+    return results
+
+
 # ─── WebSocket Handler ────────────────────────────────────────────────────────
 
 @app.websocket("/ws")

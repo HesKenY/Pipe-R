@@ -569,6 +569,110 @@
     letter-spacing: 0.3px;
   }
 
+  /* ── Mission tracker ───────────────────────────────── */
+  .mission-banner {
+    display: none;
+    padding: 16px 20px;
+    border: 1px solid var(--green);
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.04));
+    margin-bottom: 12px;
+    font-family: var(--font-ui);
+    text-align: center;
+  }
+  .mission-banner.complete {
+    display: block;
+    animation: victoryPulse 2.5s ease-out;
+  }
+  .mission-banner.game-complete {
+    display: block;
+    border-color: var(--purple);
+    background: linear-gradient(90deg, rgba(168, 85, 247, 0.22), rgba(168, 85, 247, 0.06));
+  }
+  .mission-banner .mb-title {
+    font-size: 14px;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .mission-banner.game-complete .mb-title { color: var(--purple); }
+  .mission-banner .mb-name {
+    font-size: 22px;
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .mission-banner .mb-stats {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+  }
+  @keyframes victoryPulse {
+    0%   { transform: scale(0.92); opacity: 0; }
+    20%  { transform: scale(1.02); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .mission-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .mission-progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .mission-progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: linear-gradient(90deg, var(--green), var(--amber));
+    transition: width 0.4s ease;
+  }
+
+  #mission-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 4px;
+    font-size: 10px;
+  }
+  .mission-chip {
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    text-align: center;
+    cursor: default;
+  }
+  .mission-chip.unlocked {
+    border-color: var(--amber-dim);
+    color: var(--amber);
+    cursor: pointer;
+  }
+  .mission-chip.unlocked:hover { background: rgba(245, 158, 11, 0.08); }
+  .mission-chip.in-progress {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(245, 158, 11, 0.12);
+    font-weight: 600;
+  }
+  .mission-chip.complete {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(34, 197, 94, 0.1);
+  }
+  .mission-chip.skipped {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+
   /* ── TERMINAL PANEL ────────────────────────────────── */
   #terminal-panel {
     width: 42%;
@@ -847,6 +951,21 @@ Type a task or ask a question to begin.</div>
       </div>
     </div>
     <div id="halo-panel" style="display:none;padding:18px;overflow-y:auto;flex:1">
+
+      <!-- Mission tracker -->
+      <div class="halo-section">
+        <div class="halo-section-title">HALO 2 CAMPAIGN</div>
+        <div id="mission-banner" class="mission-banner"></div>
+        <div id="mission-progress" class="mission-progress"></div>
+        <div id="mission-list"></div>
+        <div class="halo-btn-row" style="margin-top:10px">
+          <button class="halo-btn halo-go" data-action="/api/halo/learning/start">START LEARNING + NEXT MISSION</button>
+          <button class="halo-btn halo-go" data-action="/api/halo/missions/complete">MARK CURRENT MISSION COMPLETE</button>
+          <button class="halo-btn" data-action="/api/halo/missions" data-method="GET">REFRESH</button>
+        </div>
+        <div class="halo-hint">start button fires aimbot + pipe-r halo stack + flips the next unlocked mission to in-progress. complete button flips current → complete and unlocks the next.</div>
+      </div>
+
       <div class="halo-section">
         <div class="halo-section-title">KEN AIMBOT</div>
         <div class="halo-btn-row">
@@ -1015,6 +1134,125 @@ function haloOutputLine(line) {
 
 document.querySelectorAll('.halo-btn').forEach(btn => {
   btn.addEventListener('click', () => haloDispatch(btn));
+});
+
+// ─── Mission tracker rendering ────────────────────────
+const missionBanner   = document.getElementById('mission-banner');
+const missionProgress = document.getElementById('mission-progress');
+const missionList     = document.getElementById('mission-list');
+let lastMissionState  = null;
+
+async function refreshMissions() {
+  try {
+    const res = await fetch('/api/halo/missions');
+    const data = await res.json();
+    renderMissions(data);
+    // Detect fresh completions for celebration
+    if (lastMissionState && data.total_missions_complete > lastMissionState.total_missions_complete) {
+      const newComplete = data.missions.find(m =>
+        m.status === 'complete' &&
+        !lastMissionState.missions.find(o => o.slug === m.slug && o.status === 'complete')
+      );
+      if (newComplete) showCelebration(newComplete, data);
+    }
+    if (data.game_complete && !(lastMissionState && lastMissionState.game_complete)) {
+      showGameComplete(data);
+    }
+    lastMissionState = data;
+  } catch (e) {
+    // silent — UI still works without mission data
+  }
+}
+
+function renderMissions(data) {
+  if (!missionList) return;
+
+  // Progress bar
+  const pct = data.total_missions > 0
+    ? Math.round((data.total_missions_complete / data.total_missions) * 100)
+    : 0;
+  missionProgress.innerHTML = `
+    <div>${data.total_missions_complete} / ${data.total_missions}</div>
+    <div class="mission-progress-bar"><div class="mission-progress-fill" style="width:${pct}%"></div></div>
+    <div>${pct}%</div>
+  `;
+
+  // Mission chips
+  missionList.innerHTML = '';
+  for (const m of data.missions) {
+    const chip = document.createElement('div');
+    chip.className = `mission-chip ${m.status}`;
+    const statLabel = m.status === 'complete'
+      ? `✓ ${m.deaths || 0}d`
+      : m.status === 'in-progress'
+      ? '• NOW'
+      : m.status === 'skipped'
+      ? 'skip'
+      : m.status === 'unlocked'
+      ? 'ready'
+      : '🔒';
+    chip.innerHTML = `<div>${String(m.num).padStart(2,'0')} ${m.name}</div><div style="opacity:.6;font-size:9px">${statLabel}</div>`;
+    if (m.status === 'unlocked') {
+      chip.addEventListener('click', async () => {
+        const r = await fetch(`/api/halo/missions/${m.slug}/start`, {method: 'POST'});
+        haloOutputLine(`mission start: ${m.name}`);
+        haloOutputLine(JSON.stringify(await r.json(), null, 2));
+        haloOutputLine('');
+        refreshMissions();
+      });
+    }
+    missionList.appendChild(chip);
+  }
+}
+
+function showCelebration(mission, data) {
+  if (!missionBanner) return;
+  const elapsedMin = (() => {
+    if (!mission.started_at || !mission.completed_at) return '?';
+    const ms = new Date(mission.completed_at) - new Date(mission.started_at);
+    return Math.round(ms / 60000);
+  })();
+  missionBanner.className = 'mission-banner complete';
+  missionBanner.innerHTML = `
+    <div class="mb-title">★ mission complete ★</div>
+    <div class="mb-name">${mission.name}</div>
+    <div class="mb-stats">
+      ${elapsedMin}min &nbsp; • &nbsp; ${mission.deaths} deaths &nbsp; • &nbsp; ${mission.aimbot_shots} aimbot shots &nbsp; • &nbsp; ${data.total_missions_complete}/${data.total_missions} missions cleared
+    </div>
+  `;
+  toast(`mission complete: ${mission.name}`, 'ok');
+  // Auto-hide after 15s unless it's game complete
+  setTimeout(() => {
+    if (!missionBanner.classList.contains('game-complete')) {
+      missionBanner.className = 'mission-banner';
+      missionBanner.innerHTML = '';
+    }
+  }, 15000);
+}
+
+function showGameComplete(data) {
+  if (!missionBanner) return;
+  missionBanner.className = 'mission-banner game-complete';
+  missionBanner.innerHTML = `
+    <div class="mb-title">★ HALO 2 COMPLETE ★</div>
+    <div class="mb-name">ken beat the game</div>
+    <div class="mb-stats">all 15 missions cleared. training corpus seeded.</div>
+  `;
+  toast('HALO 2 COMPLETE', 'ok');
+}
+
+// Refresh missions every 30s while halo tab is visible
+let missionRefreshTimer = null;
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'halo') {
+      refreshMissions();
+      if (missionRefreshTimer) clearInterval(missionRefreshTimer);
+      missionRefreshTimer = setInterval(refreshMissions, 30000);
+    } else {
+      if (missionRefreshTimer) { clearInterval(missionRefreshTimer); missionRefreshTimer = null; }
+    }
+  });
 });
 
 // ─── Clock ────────────────────────────────────────────

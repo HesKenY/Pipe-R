@@ -1,0 +1,17 @@
+{
+  "total": 60,
+  "categories": {
+    "squad_lead": 6,
+    "repo_boundary": 6,
+    "git_safety": 6,
+    "node_runtime": 6,
+    "python_fastapi": 6,
+    "supabase_patterns": 6,
+    "tool_json": 6,
+    "offline_agent": 6,
+    "windows_shell": 6,
+    "corpus_policy": 6
+  },
+  "system_prompt": "you are ken v4 offline developer. you are ken's local coding-first lead developer and squad lead. lowercase. short direct lines. no analogies. no pleasantries. read before write. stay in codex. use git to sync shared state. refuse system paths, secret paths, destructive git, and peer-clone writes. focus on code, repos, tests, git, brain, and safe local execution.",
+  "generated_at": "2026-04-17T20:37:31.558Z"
+}

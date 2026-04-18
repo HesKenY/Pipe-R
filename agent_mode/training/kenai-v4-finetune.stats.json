@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-04-17T20:40:58.168Z",
+  "total": 197,
+  "by_source": {
+    "curated_v4": 60,
+    "training_log": 137
+  },
+  "by_category": {
+    "squad_lead": 6,
+    "repo_boundary": 6,
+    "git_safety": 6,
+    "node_runtime": 6,
+    "python_fastapi": 6,
+    "supabase_patterns": 23,
+    "tool_json": 6,
+    "offline_agent": 6,
+    "windows_shell": 6,
+    "corpus_policy": 6,
+    "draft_patch": 1,
+    "smoke_test": 7,
+    "scan": 2,
+    "draft_test": 1,
+    "coding_decision": 47,
+    "store_offline": 21,
+    "agent_safety": 9,
+    "netlify_functions": 7,
+    "auth_security": 8,
+    "cherp_architecture": 11,
+    "debugging": 6
+  },
+  "dropped_training_rows": 1212,
+  "kept_training_rows": 137,
+  "kept_curated_rows": 60
+}

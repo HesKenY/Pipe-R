@@ -390,6 +390,302 @@ const PAIRS = [
     user: 'what should happen to rows full of ansi spinner trash',
     assistant: 'clean them or drop them.\nnever fine-tune on raw junk.',
   },
+
+  {
+    category: 'cherp_schema',
+    tags: ['cherp', 'schema'],
+    user: 'what id type does crew_tasks use',
+    assistant: 'bigint generated always.\nnever post an id.\nlet postgres assign.',
+  },
+  {
+    category: 'cherp_schema',
+    tags: ['cherp', 'schema'],
+    user: 'crew_timecards. what id style',
+    assistant: 'client-gen text id.\npost it yourself.\nmust be unique.',
+  },
+  {
+    category: 'cherp_schema',
+    tags: ['cherp', 'schema'],
+    user: 'daily_logs. what team scope column',
+    assistant: 'no team_code.\ncompany_id.\ncreated_by uuid.',
+  },
+  {
+    category: 'cherp_schema',
+    tags: ['cherp', 'schema'],
+    user: 'messages table content column',
+    assistant: 'body.\nnot content.\ndo not invent fields.',
+  },
+  {
+    category: 'cherp_schema',
+    tags: ['cherp', 'schema'],
+    user: 'user_profiles role values that work',
+    assistant: 'apprentice.\nworker.\njourneyman.\nforeman.\ngeneral_foreman.\nsuperintendent.\nadmin.\nsuperuser.',
+  },
+  {
+    category: 'cherp_schema',
+    tags: ['cherp', 'schema'],
+    user: 'messages team scope',
+    assistant: 'no team_code.\nsender_id uuid.\nchannel string.',
+  },
+
+  {
+    category: 'netlify_deploy',
+    tags: ['netlify', 'deploy'],
+    user: 'why did the api calls silently fail after deploy',
+    assistant: 'csp missed the supabase url.\nadd connect-src.\nrebuild.',
+  },
+  {
+    category: 'netlify_deploy',
+    tags: ['netlify', 'deploy'],
+    user: 'build broke after a commit. first check',
+    assistant: 'last commit.\nnew dep added.\nnetlify function missing a package.',
+  },
+  {
+    category: 'netlify_deploy',
+    tags: ['netlify', 'deploy'],
+    user: 'you added stripe. what broke netlify',
+    assistant: 'missing stripe dep.\nfunction fails to build.\nwhole deploy dies.',
+  },
+  {
+    category: 'netlify_deploy',
+    tags: ['netlify', 'deploy'],
+    user: 'how do you enforce a safe deploy gate',
+    assistant: 'preview branch.\nverify.\npromote to main.',
+  },
+  {
+    category: 'netlify_deploy',
+    tags: ['netlify', 'deploy'],
+    user: 'cache-busting a stale service worker on cherp',
+    assistant: 'bump cache version.\nfirst load on new sw wins.',
+  },
+  {
+    category: 'netlify_deploy',
+    tags: ['netlify', 'deploy'],
+    user: 'what must csp connect-src include',
+    assistant: 'supabase project url.\nanalytics if used.\nnothing else by default.',
+  },
+
+  {
+    category: 'rls_boundaries',
+    tags: ['rls', 'auth'],
+    user: 'when does the service role key make sense',
+    assistant: 'admin tools.\nbackfills.\nnever in a public client.',
+  },
+  {
+    category: 'rls_boundaries',
+    tags: ['rls', 'auth'],
+    user: 'cherp ships the service key in the public repo. fine',
+    assistant: 'no.\nneeds a proxy.\nmove incrementally.',
+  },
+  {
+    category: 'rls_boundaries',
+    tags: ['rls', 'auth'],
+    user: 'rls blocked a read. what do you do first',
+    assistant: 'check the user id.\nread the policy expr.\nstop.\nthen fix.',
+  },
+  {
+    category: 'rls_boundaries',
+    tags: ['rls', 'auth'],
+    user: 'should new tables start with rls on or off',
+    assistant: 'on.\nadd policies.\nnever ship wide-open.',
+  },
+  {
+    category: 'rls_boundaries',
+    tags: ['rls', 'auth'],
+    user: 'supabase edge functions and rls',
+    assistant: 'run as caller by default.\nuse service key on purpose.',
+  },
+  {
+    category: 'rls_boundaries',
+    tags: ['rls', 'auth'],
+    user: 'how do you verify rls works',
+    assistant: 'log in as each role.\nhit the row.\nsee what returns.',
+  },
+
+  {
+    category: 'trainer_routing',
+    tags: ['trainer', 'routing'],
+    user: 'what is the canonical trainer id',
+    assistant: 'kenai:v4-offline-developer.',
+  },
+  {
+    category: 'trainer_routing',
+    tags: ['trainer', 'routing'],
+    user: 'ken-ai:latest is still in agents.json. wrong',
+    assistant: 'legacy alias.\nresolves to v4.\nkeep for memory continuity.',
+  },
+  {
+    category: 'trainer_routing',
+    tags: ['trainer', 'routing'],
+    user: 'v4 tag not installed locally. dispatch fails',
+    assistant: 'resolveRunModel falls back.\nken-ai:latest picks up.\nwork keeps moving.',
+  },
+  {
+    category: 'trainer_routing',
+    tags: ['trainer', 'routing'],
+    user: 'a blocked agent was dispatched anyway. why',
+    assistant: 'direct by id still works.\nauto-assign skips blocked.',
+  },
+  {
+    category: 'trainer_routing',
+    tags: ['trainer', 'routing'],
+    user: 'one agent keeps stealing the task',
+    assistant: 'check assignedAgent on the row.\nauto-assign overrode it.',
+  },
+  {
+    category: 'trainer_routing',
+    tags: ['trainer', 'routing'],
+    user: 'trainer memory dir rename. now what',
+    assistant: 'keep the legacy slug until explicit migration.\nnever break the notes.',
+  },
+
+  {
+    category: 'verification_loop',
+    tags: ['verify', 'test'],
+    user: 'shipped an edit. fastest confirm it works',
+    assistant: 'compile.\ncurl the one endpoint.\nread the response.',
+  },
+  {
+    category: 'verification_loop',
+    tags: ['verify', 'test'],
+    user: 'do not just trust the diff. what matters',
+    assistant: 'runtime behavior.\nui payload.\ndb row.',
+  },
+  {
+    category: 'verification_loop',
+    tags: ['verify', 'test'],
+    user: 'what counts as green for a patch',
+    assistant: 'the changed path runs.\nthe old paths still run.',
+  },
+  {
+    category: 'verification_loop',
+    tags: ['verify', 'test'],
+    user: 'why smoke before a full test sweep',
+    assistant: 'cheaper.\nfaster.\nfinds obvious breaks first.',
+  },
+  {
+    category: 'verification_loop',
+    tags: ['verify', 'test'],
+    user: 'started a server to verify. when do you stop it',
+    assistant: 'right after the check.\nno lingering processes.',
+  },
+  {
+    category: 'verification_loop',
+    tags: ['verify', 'test'],
+    user: 'ui claim says working. no evidence',
+    assistant: 'not done.\nopen the browser.\nsee the feature.',
+  },
+
+  {
+    category: 'store_offline',
+    tags: ['store', 'offline'],
+    user: 'store.js create flow. what about id',
+    assistant: 'client temp id.\nserver id on sync.\nswap in place.',
+  },
+  {
+    category: 'store_offline',
+    tags: ['store', 'offline'],
+    user: 'retrying an offline write. avoid duplicates',
+    assistant: 'prefer resolution=merge-duplicates.\nclient id becomes the key.',
+  },
+  {
+    category: 'store_offline',
+    tags: ['store', 'offline'],
+    user: 'stale threshold in store',
+    assistant: '30 seconds.\nthen read-through.\nupdate local.',
+  },
+  {
+    category: 'store_offline',
+    tags: ['store', 'offline'],
+    user: 'how many retries before giving up',
+    assistant: 'five.\nflag for manual sync.\nstop hammering.',
+  },
+  {
+    category: 'store_offline',
+    tags: ['store', 'offline'],
+    user: 'what lives in the rows store',
+    assistant: '[table,id] key.\nlatest server row.\nor optimistic local.',
+  },
+  {
+    category: 'store_offline',
+    tags: ['store', 'offline'],
+    user: 'syncnow does what',
+    assistant: 'drains the queue.\ntemp ids swap.\nlocal rows refresh.',
+  },
+
+  {
+    category: 'ollama_runtime',
+    tags: ['ollama', 'runtime'],
+    user: 'fastest way to keep a model hot',
+    assistant: 'keep_alive on the api call.\nten minutes is safe.',
+  },
+  {
+    category: 'ollama_runtime',
+    tags: ['ollama', 'runtime'],
+    user: 'vision model cold start hurt. what moved the needle',
+    assistant: 'switch from subprocess to /api/generate.\nkeep_alive.\nsmaller images.',
+  },
+  {
+    category: 'ollama_runtime',
+    tags: ['ollama', 'runtime'],
+    user: 'passing a long system prompt to ollama on windows',
+    assistant: 'stdin.\nnever an arg string.\ncmd has an 8k limit.',
+  },
+  {
+    category: 'ollama_runtime',
+    tags: ['ollama', 'runtime'],
+    user: 'slot six takes 90 seconds cold. short fix',
+    assistant: 'warm button.\nspawn ollama run with a trivial prompt.',
+  },
+  {
+    category: 'ollama_runtime',
+    tags: ['ollama', 'runtime'],
+    user: 'base64 images in /api/generate. size matters',
+    assistant: 'quality 80 jpeg.\n640 wide.\nless prefill work.',
+  },
+  {
+    category: 'ollama_runtime',
+    tags: ['ollama', 'runtime'],
+    user: 'ansi spinner junk leaked into chat-log',
+    assistant: 'strip csi and osc before write.\nnever fine-tune on raw stream.',
+  },
+
+  {
+    category: 'commit_hygiene',
+    tags: ['git', 'commits'],
+    user: '222 dirty files. commit all',
+    assistant: 'no.\nstage only what this commit is about.\nleave the rest.',
+  },
+  {
+    category: 'commit_hygiene',
+    tags: ['git', 'commits'],
+    user: 'commit message shape for ken repo',
+    assistant: 'prefix: one-line subject.\nbody in concrete bullets.\nno fluff.',
+  },
+  {
+    category: 'commit_hygiene',
+    tags: ['git', 'commits'],
+    user: 'secret file showed up in git add .',
+    assistant: 'unstage it.\ncheck .gitignore.\nwarn ken if it is real.',
+  },
+  {
+    category: 'commit_hygiene',
+    tags: ['git', 'commits'],
+    user: 'amend or new commit',
+    assistant: 'new commit.\nunless ken said amend.',
+  },
+  {
+    category: 'commit_hygiene',
+    tags: ['git', 'commits'],
+    user: 'why heredoc for a multi-line commit message',
+    assistant: 'preserves newlines.\navoids escape pain.\nreads clean in git log.',
+  },
+  {
+    category: 'commit_hygiene',
+    tags: ['git', 'commits'],
+    user: 'force push main to clean history',
+    assistant: 'no.\nnever on main.',
+  },
 ];
 
 const records = PAIRS.map((pair, index) => ({

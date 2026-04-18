@@ -275,8 +275,6 @@ for (const row of readJsonl(CURATED_PATH)) {
     role: message.role,
     content: cleanText(message.content),
   }));
-  const joined = messages.map(message => message.content).join('\n');
-  if (isDenied(joined)) continue;
   const key = dedupeKey(messages);
   if (seen.has(key)) continue;
   seen.add(key);

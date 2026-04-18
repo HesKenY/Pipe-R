@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-04-17T20:40:58.168Z",
-  "total": 197,
+  "generated_at": "2026-04-18T15:25:12.198Z",
+  "total": 245,
   "by_source": {
-    "curated_v4": 60,
+    "curated_v4": 108,
     "training_log": 137
   },
   "by_category": {
@@ -16,12 +16,19 @@
     "offline_agent": 6,
     "windows_shell": 6,
     "corpus_policy": 6,
+    "cherp_schema": 6,
+    "netlify_deploy": 6,
+    "rls_boundaries": 6,
+    "trainer_routing": 6,
+    "verification_loop": 6,
+    "store_offline": 27,
+    "ollama_runtime": 6,
+    "commit_hygiene": 6,
     "draft_patch": 1,
     "smoke_test": 7,
     "scan": 2,
     "draft_test": 1,
     "coding_decision": 47,
-    "store_offline": 21,
     "agent_safety": 9,
     "netlify_functions": 7,
     "auth_security": 8,
@@ -30,5 +37,5 @@
   },
   "dropped_training_rows": 1212,
   "kept_training_rows": 137,
-  "kept_curated_rows": 60
+  "kept_curated_rows": 108
 }

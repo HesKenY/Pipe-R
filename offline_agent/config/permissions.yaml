@@ -1,111 +1,217 @@
 modes:
   0:
     name: "Read Only"
-    description: "Inspect, plan, and propose. Zero writes."
-    color: "#4ade80"
+    description: "Inspect repos, read the brain, and draft plans. No writes."
+    color: "#22c55e"
     allow:
       read_file: true
       list_tree: true
-      search_repo: true
-      git_status: true
-      git_diff: true
-      read_brain: true
-      write_brain: false
+      file_info: true
+      preview_patch: true
+      list_pending_patches: true
+      patch_history: true
       write_file: false
       apply_patch: false
+      apply_multi_patch: false
+      propose_patch: false
+      approve_patch: false
+      reject_patch: false
+      revert_last_patch: false
+      delete_file: false
+      search_repo: true
+      find_files: true
+      grep_file: true
+      count_lines: true
+      git_status: true
+      git_diff: true
+      git_log: true
+      git_add: false
+      git_commit: false
+      git_branch: false
+      git_stash: false
       run_command: false
       run_tests: false
-      install_packages: false
-      desktop_control: false
-      screenshot: false
+      run_formatter: false
+      run_linter: false
+      install_package: false
+      capture_screen: false
+      get_active_window: false
+      move_mouse: false
+      click: false
+      type_text: false
+      hotkey: false
+      scroll: false
+      search_brain: true
+      read_brain_file: true
+      list_brain_files: true
+      brain_stats: true
+      list_open_tasks: true
+      read_task: true
+      write_brain_file: false
+      append_session_entry: false
+      open_task: false
+      close_task: false
     restricted_paths: []
+    blocked_paths: []
     allowed_commands: []
 
   1:
     name: "Workspace Write"
-    description: "Edit files in approved folders. Safe commands only."
+    description: "Edit code in the Codex clone, update brain notes, and run safe dev commands."
     color: "#facc15"
     allow:
       read_file: true
       list_tree: true
-      search_repo: true
-      git_status: true
-      git_diff: true
-      read_brain: true
-      write_brain: true
+      file_info: true
+      preview_patch: true
+      list_pending_patches: true
+      patch_history: true
       write_file: true
       apply_patch: true
+      apply_multi_patch: true
+      propose_patch: true
+      approve_patch: true
+      reject_patch: true
+      revert_last_patch: true
+      delete_file: false
+      search_repo: true
+      find_files: true
+      grep_file: true
+      count_lines: true
+      git_status: true
+      git_diff: true
+      git_log: true
+      git_add: true
+      git_commit: true
+      git_branch: true
+      git_stash: true
       run_command: true
       run_tests: true
-      install_packages: false
-      desktop_control: false
-      screenshot: false
+      run_formatter: true
+      run_linter: true
+      install_package: false
+      capture_screen: false
+      get_active_window: false
+      move_mouse: false
+      click: false
+      type_text: false
+      hotkey: false
+      scroll: false
+      search_brain: true
+      read_brain_file: true
+      list_brain_files: true
+      brain_stats: true
+      list_open_tasks: true
+      read_task: true
+      write_brain_file: true
+      append_session_entry: true
+      open_task: true
+      close_task: true
     restricted_paths:
-      - "workspace/"
+      - "C:/Users/Ken/Desktop/Codex"
       - "brain/"
       - "logs/"
+      - "workspace/"
     blocked_paths:
       - "C:/Windows"
       - "C:/System32"
       - "C:/Program Files"
+      - "C:/Program Files (x86)"
       - "~/.ssh"
       - "~/.aws"
+      - "~/.config"
     allowed_commands:
+      - "python"
       - "pytest"
       - "python -m pytest"
-      - "grep"
+      - "python -m compileall"
+      - "node"
+      - "npm test"
+      - "npm run"
+      - "git"
       - "rg"
-      - "git status"
-      - "git diff"
-      - "git log"
-      - "git add"
-      - "git commit"
-      - "git branch"
+      - "find"
       - "dir"
       - "ls"
       - "echo"
       - "type"
       - "cat"
+      - "Get-ChildItem"
+      - "Select-String"
       - "black"
+      - "ruff"
       - "flake8"
       - "mypy"
-      - "npm test"
-      - "npm run lint"
 
   2:
     name: "Elevated Dev"
-    description: "Package installs, Docker, browser devtools. Allowlisted paths only."
+    description: "Package installs and richer local inspection. Still limited to the Codex clone."
     color: "#fb923c"
     allow:
       read_file: true
       list_tree: true
-      search_repo: true
-      git_status: true
-      git_diff: true
-      read_brain: true
-      write_brain: true
+      file_info: true
+      preview_patch: true
+      list_pending_patches: true
+      patch_history: true
       write_file: true
       apply_patch: true
+      apply_multi_patch: true
+      propose_patch: true
+      approve_patch: true
+      reject_patch: true
+      revert_last_patch: true
+      delete_file: true
+      search_repo: true
+      find_files: true
+      grep_file: true
+      count_lines: true
+      git_status: true
+      git_diff: true
+      git_log: true
+      git_add: true
+      git_commit: true
+      git_branch: true
+      git_stash: true
       run_command: true
       run_tests: true
-      install_packages: true
-      desktop_control: false
-      screenshot: true
+      run_formatter: true
+      run_linter: true
+      install_package: true
+      capture_screen: true
+      get_active_window: true
+      move_mouse: false
+      click: false
+      type_text: false
+      hotkey: false
+      scroll: false
+      search_brain: true
+      read_brain_file: true
+      list_brain_files: true
+      brain_stats: true
+      list_open_tasks: true
+      read_task: true
+      write_brain_file: true
+      append_session_entry: true
+      open_task: true
+      close_task: true
     restricted_paths:
-      - "workspace/"
+      - "C:/Users/Ken/Desktop/Codex"
       - "brain/"
       - "logs/"
+      - "workspace/"
     blocked_paths:
       - "C:/Windows"
       - "C:/System32"
       - "~/.ssh"
       - "~/.aws"
+      - "~/.config"
     allowed_commands:
-      - "*"  # All commands allowed, but blocked_paths still enforced
+      - "*"
 
   3:
     name: "Operator Mode"
-    description: "Full desktop automation. Requires confirmation. Kill switch active."
+    description: "Desktop automation and screenshots. Confirm before using it."
     color: "#f87171"
     require_confirmation: true
     log_all_actions: true
@@ -113,22 +219,60 @@ modes:
     allow:
       read_file: true
       list_tree: true
-      search_repo: true
-      git_status: true
-      git_diff: true
-      read_brain: true
-      write_brain: true
+      file_info: true
+      preview_patch: true
+      list_pending_patches: true
+      patch_history: true
       write_file: true
       apply_patch: true
+      apply_multi_patch: true
+      propose_patch: true
+      approve_patch: true
+      reject_patch: true
+      revert_last_patch: true
+      delete_file: true
+      search_repo: true
+      find_files: true
+      grep_file: true
+      count_lines: true
+      git_status: true
+      git_diff: true
+      git_log: true
+      git_add: true
+      git_commit: true
+      git_branch: true
+      git_stash: true
       run_command: true
       run_tests: true
-      install_packages: true
-      desktop_control: true
-      screenshot: true
-    restricted_paths: []
+      run_formatter: true
+      run_linter: true
+      install_package: true
+      capture_screen: true
+      get_active_window: true
+      move_mouse: true
+      click: true
+      type_text: true
+      hotkey: true
+      scroll: true
+      search_brain: true
+      read_brain_file: true
+      list_brain_files: true
+      brain_stats: true
+      list_open_tasks: true
+      read_task: true
+      write_brain_file: true
+      append_session_entry: true
+      open_task: true
+      close_task: true
+    restricted_paths:
+      - "C:/Users/Ken/Desktop/Codex"
+      - "brain/"
+      - "logs/"
+      - "workspace/"
     blocked_paths:
       - "C:/Windows/System32"
       - "~/.ssh"
+      - "~/.aws"
     allowed_commands:
       - "*"
 
@@ -139,3 +283,60 @@ safety:
   action_log_path: "logs/actions.jsonl"
   kill_switch_file: "config/.kill_switch"
   snapshot_path: "logs/snapshots/"
+
+  blocked_commands:
+    - "rm "
+    - "rm -"
+    - "rmdir"
+    - "del "
+    - "del /"
+    - "rd "
+    - "rd /"
+    - "shutil.rmtree"
+    - "os.remove"
+    - "os.unlink"
+    - "unlink("
+    - "fs.unlinkSync"
+    - "fs.rmdirSync"
+    - "fs.rmSync"
+    - "git push --force"
+    - "git push -f"
+    - "git reset --hard"
+    - "git clean -f"
+    - "git checkout -- ."
+    - "git branch -D"
+    - "git branch --delete --force"
+    - "DROP TABLE"
+    - "DROP DATABASE"
+    - "TRUNCATE"
+    - "DELETE FROM"
+    - "reg add"
+    - "reg delete"
+    - "regedit"
+    - "netsh"
+    - "sc delete"
+    - "sc stop"
+    - "taskkill"
+    - "shutdown"
+    - "format "
+    - "pip install"
+    - "npm install"
+    - "curl -X POST"
+    - "curl -d"
+    - "wget --post"
+    - "Invoke-WebRequest -Method POST"
+
+  always_blocked_write_paths:
+    - "C:/Windows"
+    - "C:/System32"
+    - "C:/Program Files"
+    - "C:/Program Files (x86)"
+    - "C:/Users/Ken/Desktop/Claude"
+    - "~/.ssh"
+    - "~/.aws"
+    - "~/.config/git/credentials"
+    - ".env"
+    - "credentials.json"
+    - "token.json"
+    - "*.pem"
+    - "*.key"

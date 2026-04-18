@@ -88,7 +88,7 @@ export function runPostMortem(model, deathEvent) {
         return;
       }
       const prompt = buildPrompt(deathEvent, ticks);
-      const res = spawnSync('ollama', ['run', model || 'ken-ai:latest'], {
+      const res = spawnSync('ollama', ['run', model || 'kenai:v1'], {
         input: prompt,
         encoding: 'utf8',
         timeout: 60000,

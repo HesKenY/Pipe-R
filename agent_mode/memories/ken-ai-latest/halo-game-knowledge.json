@@ -1,0 +1,143 @@
+{
+  "scannedAt": "2026-04-17T09:08:55.476Z",
+  "haloRoot": "E:/SteamLibrary/steamapps/common/Halo The Master Chief Collection",
+  "maps": {
+    "total": 43,
+    "campaign": [
+      {
+        "file": "00a_introduction.map",
+        "name": "The Heretic",
+        "desc": "Opening cutscene, Covenant civil war begins"
+      },
+      {
+        "file": "01a_tutorial.map",
+        "name": "The Armory",
+        "desc": "Tutorial, Master Chief gets new armor on Cairo Station"
+      },
+      {
+        "file": "01b_spacestation.map",
+        "name": "Cairo Station",
+        "desc": "Defend the station from Covenant boarding party"
+      },
+      {
+        "file": "03a_oldmombasa.map",
+        "name": "Outskirts",
+        "desc": "Streets of Old Mombasa, Covenant invasion, Jackal snipers"
+      },
+      {
+        "file": "03b_newmombasa.map",
+        "name": "Metropolis",
+        "desc": "New Mombasa highway, Scarab tank battle, bridge assault"
+      },
+      {
+        "file": "04a_gasgiant.map",
+        "name": "The Arbiter",
+        "desc": "Play as the Arbiter, gas mine facility, heretic leader"
+      },
+      {
+        "file": "04b_floodlab.map",
+        "name": "The Oracle",
+        "desc": "Flood outbreak in the gas mine, fight to the bottom"
+      },
+      {
+        "file": "05a_deltaapproach.map",
+        "name": "Delta Halo",
+        "desc": "Landing on Delta Halo, ruins + Covenant forces, lake crossing"
+      },
+      {
+        "file": "05b_deltatowers.map",
+        "name": "Regret",
+        "desc": "Underwater temple, kill Prophet of Regret, Covenant honor guard"
+      },
+      {
+        "file": "06a_sentinelwalls.map",
+        "name": "Sacred Icon",
+        "desc": "Arbiter level, Sentinel Wall, fight through Sentinels to the Library"
+      },
+      {
+        "file": "06b_floodzone.map",
+        "name": "Quarantine Zone",
+        "desc": "Flood-infested zone, Scorpion tank, race to the Index"
+      },
+      {
+        "file": "07a_highcharity.map",
+        "name": "Gravemind",
+        "desc": "Master Chief in High Charity, Covenant civil war, prison break"
+      },
+      {
+        "file": "07b_forerunnership.map",
+        "name": "Uprising",
+        "desc": "Arbiter fights Brutes, Covenant civil war in full swing"
+      },
+      {
+        "file": "08a_deltacliffs.map",
+        "name": "High Charity",
+        "desc": "Flood invades High Charity, Master Chief pursues Truth"
+      },
+      {
+        "file": "08b_deltacontrol.map",
+        "name": "The Great Journey",
+        "desc": "Final level, Arbiter + Johnson, stop Tartarus from activating Halo"
+      }
+    ],
+    "multiplayer": [
+      "mainmenu",
+      "shared",
+      "single_player_shared",
+      "ascension",
+      "backwash",
+      "beavercreek",
+      "burial_mounds",
+      "coagulation",
+      "colossus",
+      "containment",
+      "cyclotron",
+      "deltatap",
+      "derelict",
+      "dune",
+      "elongation",
+      "foundation",
+      "gemini",
+      "headlong",
+      "highplains",
+      "lockout",
+      "midship",
+      "needle",
+      "street_sweeper",
+      "triplicate",
+      "turf",
+      "warlock",
+      "waterworks",
+      "zanzibar"
+    ]
+  },
+  "currentMission": {
+    "mission": "The Heretic",
+    "file": "00a_introduction.map",
+    "desc": "Opening cutscene, Covenant civil war begins",
+    "lastAccessed": "2025-09-28T21:05:26.000Z"
+  },
+  "config": {
+    "mouseSensitivity": 1.6,
+    "resolution": "1366x768",
+    "fullscreen": false
+  },
+  "subtitleFiles": 0,
+  "campaignOrder": [
+    "The Heretic: Opening cutscene, Covenant civil war begins",
+    "The Armory: Tutorial, Master Chief gets new armor on Cairo Station",
+    "Cairo Station: Defend the station from Covenant boarding party",
+    "Outskirts: Streets of Old Mombasa, Covenant invasion, Jackal snipers",
+    "Metropolis: New Mombasa highway, Scarab tank battle, bridge assault",
+    "The Arbiter: Play as the Arbiter, gas mine facility, heretic leader",
+    "The Oracle: Flood outbreak in the gas mine, fight to the bottom",
+    "Delta Halo: Landing on Delta Halo, ruins + Covenant forces, lake crossing",
+    "Regret: Underwater temple, kill Prophet of Regret, Covenant honor guard",
+    "Sacred Icon: Arbiter level, Sentinel Wall, fight through Sentinels to the Library",
+    "Quarantine Zone: Flood-infested zone, Scorpion tank, race to the Index",
+    "Gravemind: Master Chief in High Charity, Covenant civil war, prison break",
+    "Uprising: Arbiter fights Brutes, Covenant civil war in full swing",
+    "High Charity: Flood invades High Charity, Master Chief pursues Truth",
+    "The Great Journey: Final level, Arbiter + Johnson, stop Tartarus from activating Halo"
+  ]
+}

@@ -56,9 +56,15 @@ TASKS_DONE   = BRAIN_DIR / "tasks" / "done"
 DB_PATH      = ROOT / "logs" / "memory.db"
 
 # Files that ALWAYS appear in the context regardless of query.
-# Identity + rules are small and load-bearing — they define
+# Identity + rules are small and load-bearing - they define
 # who the agent is and what it must not do. Never skip them.
 BASELINE_FILES = ["identity.md", "rules.md"]
+
+# Old game-era files can stay on disk for historical reasons,
+# but they should not bleed into routine coding turns unless the
+# query explicitly asks for that domain.
+SUPPRESSED_BY_DEFAULT = {"halo_missions.md"}
+OFF_TARGET_QUERY_TERMS = ("halo", "pokemon", "factorio", "aimbot", "mission")
 
 # Chunk size limits so a single huge file can't blow the prompt.
 MAX_CHUNK_BYTES      = 2800
@@ -228,7 +234,13 @@ class MemoryRetriever:
             "FROM brain_fts WHERE brain_fts MATCH ? ORDER BY rank LIMIT ?",
             (query, k),
         ).fetchall()
-        return [{"source": r[0], "snippet": r[1]} for r in rows]
+        allow_suppressed = any(term in query.lower() for term in OFF_TARGET_QUERY_TERMS)
+        out = []
+        for filename, snippet in rows:
+            if not allow_suppressed and filename in SUPPRESSED_BY_DEFAULT:
+                continue
+            out.append({"source": filename, "snippet": snippet})
+        return out[:k]
 
     def search_sessions(self, query: str, limit: int = 3) -> list[dict]:
         rows = self.conn.execute(

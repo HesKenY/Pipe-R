@@ -4,7 +4,7 @@
   "student": "cherp-piper:latest",
   "curriculum": "recon",
   "contextFiles": [
-    "../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"
+    "../agent_mode/memories/ken-ai-latest/halo-game-dump.md"
   ],
   "prompt": "Using the process memory summary in the dump above, write '# First-pass scan budget':\n\n1. From the dump: how many RW regions does MCC have? What's the total RW size in MB/GB? What's the largest single region?\n2. At 4 bytes per float and a 16GB total RW footprint, how many float candidates are there worst-case?\n3. Why scanning ALL regions is a bad idea: (a) giant regions are almost never game state, (b) kernel-reserved regions waste time, (c) libcef.dll heap is noise.\n4. Propose a region-size filter: skip regions < N KB (too small for struct arrays) and > M MB (too big for game state).\n5. Estimate scan time: reading at 500MB/s sequential + 4ns/float compare, what's the first-pass time for (a) no filter, (b) filter at 4KB..256MB?\n6. Memory footprint of the candidates dict at 2M candidates × 16 bytes/entry overhead?\n\nDense bullets. No prose intro. Show arithmetic.",
   "rubric": [

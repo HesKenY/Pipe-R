@@ -131,7 +131,7 @@ Start with "# MCC module queries". No prose intro. No fenced code blocks around 
   },
   {
     title: 'Halo 2 .map format',
-    model: 'ken-ai:latest',
+    model: 'kenai:v1',
     outputPath: 'halo-map-format.md',
     contextFiles: ['halo-game-dump.md'],
     prompt: `The install tree above has .map files — those are Halo 2 mission containers. Write a markdown doc:

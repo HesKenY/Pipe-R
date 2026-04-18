@@ -1,0 +1,168 @@
+{
+  "scannedAt": "2026-04-16T04:05:24.855Z",
+  "factorioRoot": "C:/Program Files (x86)/Steam/steamapps/common/Factorio",
+  "exe": "C:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/Factorio.exe",
+  "installed": true,
+  "gameLog": {
+    "version": "2025-11-02 19:03:21; Factorio 2.0.72 (build 84292, win64, steam)",
+    "os": "Operating system: Windows 11 (build 26100)",
+    "logLines": 20
+  },
+  "config": {
+    "error": "config.ini not found"
+  },
+  "mods": [
+    "base"
+  ],
+  "playerData": {
+    "campaignProgress": {
+      "demo": {
+        "level-01": "hard"
+      },
+      "tight-spot": {
+        "level-01": "hard"
+      },
+      "transport-belt-madness": {
+        "level-01": "hard"
+      },
+      "tutorial": {
+        "level-01": "hard"
+      }
+    },
+    "serviceUsername": "heskeny"
+  },
+  "saves": [
+    {
+      "name": "New",
+      "size": "2693KB",
+      "modified": "2025-11-03T01:40:24.911Z",
+      "isAutosave": false
+    },
+    {
+      "name": "_autosave3",
+      "size": "2848KB",
+      "modified": "2025-11-03T01:35:21.978Z",
+      "isAutosave": true
+    },
+    {
+      "name": "_autosave2",
+      "size": "2672KB",
+      "modified": "2025-11-03T01:30:21.849Z",
+      "isAutosave": true
+    },
+    {
+      "name": "_autosave1",
+      "size": "2237KB",
+      "modified": "2025-11-03T01:25:21.730Z",
+      "isAutosave": true
+    },
+    {
+      "name": "deweq",
+      "size": "6170KB",
+      "modified": "2023-12-20T04:23:46.000Z",
+      "isAutosave": false
+    },
+    {
+      "name": "qaahahahahaha",
+      "size": "3416KB",
+      "modified": "2022-06-20T02:35:37.000Z",
+      "isAutosave": false
+    },
+    {
+      "name": "Made  a new one",
+      "size": "5581KB",
+      "modified": "2019-08-01T09:50:51.000Z",
+      "isAutosave": false
+    },
+    {
+      "name": "Demo",
+      "size": "7939KB",
+      "modified": "2019-07-31T00:58:14.000Z",
+      "isAutosave": false
+    },
+    {
+      "name": "Newb",
+      "size": "4467KB",
+      "modified": "2017-08-19T05:46:21.000Z",
+      "isAutosave": false
+    }
+  ],
+  "activeSave": {
+    "name": "New",
+    "size": "2693KB",
+    "modified": "2025-11-03T01:40:24.911Z",
+    "isAutosave": false
+  },
+  "recipeKnowledge": {
+    "iron plate": {
+      "input": "1 iron ore",
+      "time": 3.2,
+      "building": "stone furnace"
+    },
+    "copper plate": {
+      "input": "1 copper ore",
+      "time": 3.2,
+      "building": "stone furnace"
+    },
+    "steel plate": {
+      "input": "5 iron plates",
+      "time": 16,
+      "building": "stone furnace"
+    },
+    "iron gear": {
+      "input": "2 iron plates",
+      "time": 0.5,
+      "building": "assembler"
+    },
+    "copper cable": {
+      "input": "1 copper plate",
+      "output": 2,
+      "time": 0.5,
+      "building": "assembler"
+    },
+    "green circuit": {
+      "input": "1 iron plate + 3 copper cable",
+      "time": 0.5,
+      "building": "assembler"
+    },
+    "red circuit": {
+      "input": "2 green circuits + 2 plastic + 4 copper cable",
+      "time": 6,
+      "building": "assembler 2"
+    },
+    "blue circuit": {
+      "input": "2 red circuits + 20 green circuits + 5 sulfuric acid",
+      "time": 10,
+      "building": "assembler 2"
+    },
+    "red science": {
+      "input": "1 copper plate + 1 iron gear",
+      "time": 5,
+      "building": "assembler"
+    },
+    "green science": {
+      "input": "1 transport belt + 1 inserter",
+      "time": 6,
+      "building": "assembler"
+    },
+    "transport belt": {
+      "input": "1 iron plate + 1 iron gear",
+      "output": 2,
+      "time": 0.5,
+      "building": "assembler"
+    },
+    "inserter": {
+      "input": "1 iron gear + 1 iron plate + 1 green circuit",
+      "time": 0.5,
+      "building": "assembler"
+    }
+  },
+  "ratioGuide": {
+    "copper cable to green circuit": "3 cable assemblers : 2 green circuit assemblers (perfect ratio)",
+    "iron smelters per yellow belt": "48 stone furnaces fill 1 yellow belt (15/s)",
+    "red science": "1 assembler every 5 seconds = 12/min",
+    "green science": "1 assembler every 6 seconds = 10/min. match with 1.2 belt + 1.2 inserter assemblers",
+    "steel": "1 steel furnace per 5 iron furnaces (5:1 ratio)",
+    "power": "1 steam engine needs 1 boiler. 1 boiler needs ~0.6 offshore pumps"
+  }
+}

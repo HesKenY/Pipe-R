@@ -23,7 +23,7 @@ const EVT_LOG = join(MEM_DIR, 'halo-events.jsonl');
 let _timer = null;
 let _running = false;
 let _intervalMs = 90000;
-let _model = 'ken-ai:latest';
+let _model = 'kenai:v1';
 let _passInFlight = false;
 let _stats = { passes: 0, lastRunAt: null, lastEntries: 0 };
 
@@ -171,7 +171,7 @@ async function runPass() {
 export function startTrainer(opts = {}) {
   if (_running) return { ok: false, reason: 'trainer already running' };
   _intervalMs = Math.max(30000, Math.min(600000, opts.intervalMs || 90000));
-  _model = opts.model || 'ken-ai:latest';
+  _model = opts.model || 'kenai:v1';
   _running = true;
 
   const tick = () => {

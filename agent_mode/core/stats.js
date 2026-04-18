@@ -35,6 +35,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { PRIMARY_TRAINER_ID, LEGACY_TRAINER_ID, isTrainerId, normalizeTrainerId } from './trainer_identity.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TRAINING_LOG = join(__dirname, '..', 'training', 'training-log.jsonl');
@@ -161,14 +162,20 @@ function rate(ok, total, fallback = 0) {
 export function computeAgentStats(agentId, opts = {}) {
   const rows = opts._rows || readTrainingRows();
   const agents = opts._agents || readAgents();
-  const agent = agents.find(a => a.id === agentId);
+  const normalizedId = normalizeTrainerId(agentId);
+  const agent = agents.find(a => normalizeTrainerId(a.id) === normalizedId);
   if (!agent) {
-    return emptyStats(agentId);
+    return emptyStats(normalizedId);
   }
   // Match on base model name — training-log stores `model`,
   // which is the base, not the composed agent id.
-  const base = agent.base || agent.id;
-  const mine = rows.filter(r => r.model === base);
+  const base = isTrainerId(agent.id) ? PRIMARY_TRAINER_ID : (agent.base || agent.id);
+  const trainerModels = new Set([PRIMARY_TRAINER_ID, LEGACY_TRAINER_ID]);
+  const mine = rows.filter(r => {
+    if (r.agentId && normalizeTrainerId(r.agentId) === normalizedId) return true;
+    if (normalizedId === PRIMARY_TRAINER_ID && trainerModels.has(r.model)) return true;
+    return r.model === base;
+  });
 
   const all   = bucketStats(mine);
   const code  = bucketStats(mine.filter(r => CODE_TYPES.has(r.taskType)));

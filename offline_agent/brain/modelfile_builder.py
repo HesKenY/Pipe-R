@@ -75,6 +75,43 @@ def read_baseline() -> tuple[str, str]:
     return ident, rules
 
 
+def condense_brain_text(text: str, *, max_lines: int = 18, max_chars: int = 2200) -> str:
+    """
+    Turn a markdown brain file into a compact plain-text block
+    suitable for the SYSTEM prompt without dragging in full-file
+    noise or giant paragraphs.
+    """
+    if not text:
+        return ""
+
+    lines: list[str] = []
+    total = 0
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("<!--"):
+            continue
+        if line.startswith("#"):
+            line = line.lstrip("#").strip()
+        if line.startswith("- "):
+            line = line[2:].strip()
+        if not line:
+            continue
+        if len(line) > 180:
+            line = line[:177].rstrip() + "..."
+        projected = total + len(line) + 3
+        if projected > max_chars:
+            break
+        lines.append(f"- {line}")
+        total = projected
+        if len(lines) >= max_lines:
+            break
+
+    return "\n".join(lines)
+
+
 # ─── row shaping ──────────────────────────────────────────
 
 def extract_qa_pair(row: dict) -> Optional[tuple[str, str]]:
@@ -93,6 +130,8 @@ def extract_qa_pair(row: dict) -> Optional[tuple[str, str]]:
 
     if kind in ("drill_passing_rows", "dispatch_rows"):
         prompt = data.get("prompt") or data.get("task") or data.get("input")
+        if not prompt and data.get("drillId"):
+            prompt = f"complete drill {data['drillId']}"
         response = (
             data.get("response")
             or data.get("output")
@@ -125,6 +164,8 @@ def score_row(row: dict) -> float:
         pct = grade.get("percent")
         if isinstance(pct, (int, float)):
             score += float(pct)
+    elif isinstance(data.get("percent"), (int, float)):
+        score += float(data["percent"])
 
     if data.get("approved") is True:
         score += 0.2
@@ -132,6 +173,10 @@ def score_row(row: dict) -> float:
         score += 0.1
     if data.get("model") == "ken-ai:latest":
         score += 0.2
+    if data.get("student") in ("ken-ai:latest", "kenai:v1"):
+        score += 0.2
+    if data.get("student") in ("qwen2.5-coder:14b", "forgeagent:latest", "cherp-piper:latest"):
+        score += 0.05
 
     response = str(
         data.get("response") or data.get("output") or data.get("answer") or ""
@@ -152,6 +197,71 @@ def score_row(row: dict) -> float:
             pass
 
     return score
+
+
+def build_brain_primers() -> list[tuple[str, str]]:
+    """
+    Deterministic few-shot rows derived from the brain contract.
+    These keep core repo facts and permission behavior stable
+    even while the live training corpus is still small.
+    """
+    return [
+        (
+            "list the six core files that live in brain/brain_index/ and what each one is for. one short line per file. lowercase.",
+            "\n".join([
+                "- identity.md: who the agent is and how it should speak.",
+                "- rules.md: operating rules, safety limits, and repo guardrails.",
+                "- tech_stack.md: ports, runtimes, models, and stack notes.",
+                "- project_map.md: ken's projects and how they connect.",
+                "- repo_map.md: clone layout, remotes, and branch context.",
+                "- known_fixes.md: recurring bugs, fixes, and lessons learned.",
+            ]),
+        ),
+        (
+            "using the context above, list the six core files that live in brain/brain_index/ and what each one is for. one short lowercase bullet per file. do not invent filenames that are not in the context.",
+            "\n".join([
+                "- identity.md: agent identity and voice rules.",
+                "- rules.md: operating rules and safety limits.",
+                "- project_map.md: projects and how they connect.",
+                "- repo_map.md: clone layout and git context.",
+                "- known_fixes.md: recurring bugs and fixes.",
+                "- tech_stack.md: models, runtimes, and ports.",
+            ]),
+        ),
+        (
+            "what do you do when your current permission mode is 0 (read only) and the task asks you to edit a file in workspace/? answer in 3-5 short lowercase lines.",
+            "\n".join([
+                "- mode 0 is read only.",
+                "- propose the patch first.",
+                "- ask to escalate before editing.",
+                "- write only after confirmation.",
+            ]),
+        ),
+        (
+            "you're running inside Codex/offline_agent/. there's a parallel clone at C:/Users/Ken/Desktop/Claude. should you edit files in the Claude clone? answer yes or no with one-line reasoning in lowercase.",
+            "no. edit the codex clone only. use git to sync shared state.",
+        ),
+        (
+            "you're running inside codex/offline_agent/. there's a parallel clone at c:/users/ken/desktop/claude. answer in exactly two lowercase lines:\n\nANSWER: <yes or no>\nWHY: <6-14 words>\n\nsay no unless the context explicitly says to edit the other clone directly.",
+            "ANSWER: no\nWHY: stay in codex; use git to sync shared state.",
+        ),
+        (
+            "what do you do if a task asks you to write to c:/windows/system32? answer in 3 short lowercase lines.",
+            "\n".join([
+                "- refuse the write.",
+                "- system paths stay blocked in every mode.",
+                "- surface the risk and stop.",
+            ]),
+        ),
+        (
+            "you need to read the file brain/brain_index/identity.md. respond with exactly one json object in this shape and nothing else: {\"tool\":\"read_file\",\"params\":{\"path\":\"brain/brain_index/identity.md\"}}",
+            "{\"tool\":\"read_file\",\"params\":{\"path\":\"brain/brain_index/identity.md\"}}",
+        ),
+        (
+            "you finished the task 'add health pin thread to halo hunt'. respond with exactly one json object in this shape and nothing else: {\"done\":true,\"summary\":\"...\"}. summary must be 5-15 lowercase words.",
+            "{\"done\":true,\"summary\":\"added health pin thread to halo hunt\"}",
+        ),
+    ]
 
 
 # ─── builders ─────────────────────────────────────────────
@@ -187,6 +297,8 @@ SYSTEM \"\"\"
 
 def build_system_block(design: dict, identity: str, rules: str) -> str:
     """Compress identity + rules + mission into a tight SYSTEM block."""
+    identity_excerpt = condense_brain_text(identity, max_lines=14, max_chars=1400)
+    rules_excerpt = condense_brain_text(rules, max_lines=16, max_chars=1600)
     parts = []
     parts.append(f"you are {design['name']}, running offline on ken's windows box.")
     parts.append("")
@@ -211,6 +323,14 @@ def build_system_block(design: dict, identity: str, rules: str) -> str:
     parts.append("identity.md and rules.md are injected into every turn. everything")
     parts.append("else is pulled via FTS top-K per query.")
     parts.append("")
+    if identity_excerpt:
+        parts.append("brain baseline: identity.md")
+        parts.append(identity_excerpt)
+        parts.append("")
+    if rules_excerpt:
+        parts.append("brain baseline: rules.md")
+        parts.append(rules_excerpt)
+        parts.append("")
     parts.append("when you emit a tool call, respond with EXACTLY one JSON object:")
     parts.append('  {"tool": "tool_name", "params": {"k": "v"}}')
     parts.append("when a task is done:")
@@ -243,6 +363,16 @@ def build_message_block(rows: list[dict], limit: int, min_score: float) -> tuple
     ranked = ranked[:limit]
 
     lines = []
+    prime_count = 0
+
+    for prompt, response in build_brain_primers():
+        p_clean = prompt.replace("\r", "").replace("\n", "\\n")
+        r_clean = response.replace("\r", "").replace("\n", "\\n")
+        lines.append(f"MESSAGE user {p_clean}")
+        lines.append(f"MESSAGE assistant {r_clean}")
+        lines.append("")
+        prime_count += 1
+
     for score, (prompt, response) in ranked:
         # Collapse newlines so Modelfile parsing is happy — we
         # keep paragraph breaks as `\n` literal escapes.
@@ -256,8 +386,9 @@ def build_message_block(rows: list[dict], limit: int, min_score: float) -> tuple
         lines.append(f"MESSAGE user {p_clean}")
         lines.append(f"MESSAGE assistant {r_clean}")
         lines.append("")
+        prime_count += 1
 
-    return "\n".join(lines), len(ranked)
+    return "\n".join(lines), prime_count
 
 
 def build_modelfile(

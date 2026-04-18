@@ -18,6 +18,14 @@ const KEN_PROFILE = join(process.cwd(), 'agent_mode', 'ken', 'profile.md');
 let _kenProfileCache = null;
 const _charterCache = new Map();
 
+function stripAnsiNoise(value) {
+  return String(value || '')
+    .replace(/\u001b\[\??[0-9;]*[a-zA-Z]/g, '')
+    .replace(/\u001b\][^\u0007]*\u0007/g, '')
+    .replace(/\r/g, '')
+    .trim();
+}
+
 function loadKenProfile() {
   if (_kenProfileCache !== null) return _kenProfileCache;
   try { _kenProfileCache = readFileSync(KEN_PROFILE, 'utf8'); }
@@ -48,6 +56,7 @@ export class Executor {
   async run(task) {
     const agent = this.registry.getById(task.assignedAgent);
     if (!agent) throw new Error('No agent assigned to task ' + task.id);
+    const runModel = this.registry.resolveRunModel(agent) || agent.base;
 
     const prompt = await this._buildPrompt(task, agent);
     const startTime = Date.now();
@@ -59,7 +68,7 @@ export class Executor {
       // multi-line SYSTEM prompts (Ken's 6 KB profile + charter + file
       // context) cleanly. This is the Pipe-R dispatch fix from 02d0d6f.
       const timeout = this._getTimeout(task.type);
-      const result = spawnSync('ollama', ['run', agent.base], {
+      const result = spawnSync('ollama', ['run', runModel], {
         input: prompt,
         encoding: 'utf8',
         timeout,
@@ -67,18 +76,18 @@ export class Executor {
       });
       if (result.error) throw result.error;
       if (result.status !== 0) {
-        throw new Error(`ollama exited ${result.status}: ${(result.stderr || '').trim() || 'no stderr'}`);
+        throw new Error(`ollama exited ${result.status}: ${stripAnsiNoise(result.stderr) || 'no stderr'}`);
       }
-      const output = (result.stdout || '').trim();
+      const output = stripAnsiNoise(result.stdout);
 
       const elapsed = Date.now() - startTime;
-      this._recordTraining(task, agent, prompt, output, true, elapsed);
+      this._recordTraining(task, agent, runModel, prompt, output, true, elapsed);
       this.registry.recordResult(agent.id, true);
 
-      return { output, elapsed, agent: agent.id };
+      return { output, elapsed, agent: agent.id, model: runModel, fallbackUsed: runModel !== agent.base };
     } catch (err) {
       const elapsed = Date.now() - startTime;
-      this._recordTraining(task, agent, prompt, err.message, false, elapsed);
+      this._recordTraining(task, agent, runModel, prompt, err.message, false, elapsed);
       this.registry.recordResult(agent.id, false);
       throw err;
     }
@@ -215,13 +224,14 @@ export class Executor {
   }
 
   /** Save prompt/response pairs as training data for future model improvement */
-  _recordTraining(task, agent, prompt, output, success, elapsed) {
+  _recordTraining(task, agent, modelUsed, prompt, output, success, elapsed) {
     if (!existsSync(TRAINING_DIR)) mkdirSync(TRAINING_DIR, { recursive: true });
 
     const entry = {
       timestamp: new Date().toISOString(),
       taskId: task.id,
-      model: agent.base,
+      agentId: agent.id,
+      model: modelUsed || agent.base,
       taskType: task.type,
       attempt: (task.retries || 0) + 1,
       objective: (task.objective || '').substring(0, 500),

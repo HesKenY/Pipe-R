@@ -101,8 +101,8 @@ export function detectTrainers() {
     const res = spawnSync('tasklist', ['/FO', 'CSV', '/NH'], {
       encoding: 'utf8',
       timeout: 5000,
-      maxBuffer: 4 * 1024 * 1024,,
-    windowsHide: true
+      maxBuffer: 4 * 1024 * 1024,
+      windowsHide: true
     });
     if (res.status !== 0) {
       state.detected_trainer = null;

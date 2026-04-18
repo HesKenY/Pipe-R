@@ -1,100 +1,94 @@
 {
   "slug": "ken-ai-offline-v0",
-  "name": "Ken AI offline — v0",
-  "version": "0.1.0",
+  "name": "Ken AI offline developer target",
+  "version": "0.4.1",
   "created": "2026-04-14T14:00:00",
-  "updated": "2026-04-14T14:00:00",
+  "updated": "2026-04-17T18:20:00+00:00",
   "operator": "Ken",
   "source": "offline_agent",
-
-  "mission": "Ken's personal offline coding assistant. Runs fully local on his Windows box via Ollama. Reads his brain index before acting, speaks in his voice, works the Pipe-R squad, the CHERP codebase, the halo-trainer classroom, and the offline_agent project itself. No cloud, no telemetry, no hosted wrapper. Helps Ken ship by doing the mechanical work (read, patch, test, commit, log) so he stays in operator mode.",
-
+  "mission": "Ken's personal offline developer agent and coding-first squad lead. Runs fully local on his Windows box via Ollama. Reads the brain before acting, works inside the Codex clone, understands the Claude peer-clone boundary, sees the local squad state, and helps Ken ship by doing the mechanical code work: read, patch, test, git, log, summarize, and keep the team pointed at the next useful move. No cloud, no telemetry, no game-first runtime.",
   "capabilities": [
     "local-first execution",
-    "full workstation file visibility",
-    "tool execution",
+    "repo-aware reasoning",
+    "safe tool execution",
     "shell execution",
     "source control awareness",
     "project planning",
     "memory logging",
-    "dream synthesis",
     "branch-aware reasoning",
     "visual perception",
-    "UI control scaffolding"
+    "ui control scaffolding",
+    "squad situational awareness"
   ],
-
   "permissions": {
-    "profile": "full-trust local mode",
+    "profile": "full-trust local developer mode",
     "modes_allowed": [0, 1, 2, 3],
     "kill_switch": true,
     "audit": true,
     "read": [
-      "approved project files under Codex/ and Claude/",
+      "approved project files under Codex/",
       "brain/ (full)",
       "logs/ (full)",
       "workspace/ (full)"
     ],
     "write": [
-      "workspace/ (Mode 1+)",
-      "brain/ (Mode 1+, no master_index deletes without Ken's go)",
-      "logs/ (append only)"
+      "Codex repo files in Mode 1+",
+      "brain/ in Mode 1+",
+      "logs/ append-only"
     ],
     "execute": [
       "local ollama via http api",
-      "git (read always, write in Mode 1+)",
-      "ripgrep, black, flake8, pytest, node --check",
-      "shell commands in Mode 1+ (allowlisted)",
-      "pip install in Mode 2+"
+      "git read always, git write in Mode 1+",
+      "ripgrep, pytest, node, python, formatters, linters",
+      "shell commands in Mode 1+ allowlist",
+      "package install in Mode 2+"
     ],
-    "vision": ["screenshot full", "window capture", "halo HUD read via llama3.2-vision"],
-    "desktop": ["mouse + keyboard + hotkeys in Mode 3 only"],
+    "vision": [
+      "screenshot full",
+      "window capture",
+      "ui inspection when a local workflow needs it"
+    ],
+    "desktop": [
+      "mouse, keyboard, and hotkeys in Mode 3 only"
+    ],
     "never": [
       "C:/Windows",
       "C:/System32",
+      "C:/Users/Ken/Desktop/Claude writes",
       "~/.ssh",
       "~/.aws",
       "any .env or credentials.json or token.json",
       "force push on any repo",
-      "main branch commits on CHERP without Ken's explicit go"
+      "game-first training loops as the default runtime"
     ]
   },
-
   "memory_strategy": {
-    "index_layout": "brain_index/ + sessions/YYYY-MM-DD/ + tasks/{open,done}/ + corpus/ + training/",
-    "retrieval": "sqlite fts5 over three tables — brain_fts, session_fts, task_fts. baseline identity+rules always injected. top-5 brain chunks + top-3 session chunks + top-3 task chunks per turn. open task roster always appended (cheap).",
+    "index_layout": "brain_index/ + sessions/YYYY-MM-DD/ + tasks/{open,done}/ + training/",
+    "retrieval": "sqlite fts5 over brain, sessions, and tasks. identity.md and rules.md are always injected. top-k retrieved chunks plus open-task roster are appended per turn.",
     "baseline": ["identity.md", "rules.md"],
     "max_context_bytes": 12000,
-    "session_rollup": "daily session_log.md, auto-append per planner turn via memory_tools.append_session_entry",
-    "task_tracking": "tasks/open/*.md and tasks/done/*.md, fts indexed, planner can open/close via memory_tools",
-    "external_imports": "brain_build.py reads import_manifest.yaml to pull Claude brief, AGENTS.md, CHERP schema, training log tail, halo-trainer corpus into brain on cadence"
+    "session_rollup": "daily session_log.md, appended per planner turn",
+    "task_tracking": "tasks/open/*.md and tasks/done/*.md, FTS indexed, planner can open and close through memory tools",
+    "external_imports": "brain_build.py imports CLAUDE.md, AGENTS.md, CODEX_BRIEF, WORKLIST, training-log.jsonl, and selected repo references into the brain on cadence."
   },
-
   "dream_strategy": {
     "enabled": true,
     "cadence": "end of session + nightly",
     "inputs": [
-      "brain/sessions/<date>/session_log.md (today)",
-      "brain/training/training-log-recent.jsonl (last 500 rows)",
-      "halo-trainer runs from the day"
+      "brain/sessions/<date>/session_log.md",
+      "brain/training/training-log-recent.jsonl",
+      "brain/tasks/open/*.md"
     ],
     "outputs": "brain/sessions/<date>/dream_<n>.md",
-    "stamping": "top 3 insights get appended to brain_index/known_fixes.md under a `## Dreamed YYYY-MM-DD` section"
+    "stamping": "top insights can be folded into brain_index/known_fixes.md or worklist notes"
   },
-
   "training_sources": [
     {
-      "name": "halo-trainer passing rows",
-      "path": "brain/corpus/halo-trainer-*.jsonl",
-      "kind": "drill_passing_rows",
-      "filter": "grade.passed == true",
-      "expected_rows": 20
-    },
-    {
-      "name": "pipe-r approved dispatches",
+      "name": "approved dispatch rows",
       "path": "brain/training/training-log-recent.jsonl",
       "kind": "dispatch_rows",
-      "filter": "success == true AND model == 'ken-ai:latest'",
-      "expected_rows": 80
+      "filter": "success == true",
+      "expected_rows": 120
     },
     {
       "name": "session logs last 30 days",
@@ -104,47 +98,51 @@
       "expected_rows": 30
     },
     {
-      "name": "brain_index reference",
+      "name": "brain index reference",
       "path": "brain/brain_index/*.md",
       "kind": "reference_context",
       "filter": "always include",
-      "expected_rows": 10
+      "expected_rows": 100
+    },
+    {
+      "name": "open tasks",
+      "path": "brain/tasks/open/*.md",
+      "kind": "narrative_context",
+      "filter": "always include",
+      "expected_rows": 20
     }
   ],
-
   "evaluation_goals": [
-    "reason across indexed project memory without pulling free-form chat",
-    "use tool and shell workflows safely in local mode (Mode 0 default, Mode 1 for edits, Mode 2 gated)",
-    "retain branch-aware and repo-aware context across Claude/Codex clones",
-    "match Ken's voice on all non-code responses (lowercase, no analogies, no 'as an AI')",
-    "emit valid JSON for structured tool calls without markdown fences",
+    "reason across indexed project memory without relying on free-form chat history",
+    "use tool and shell workflows safely in local mode",
+    "retain branch-aware and repo-aware context across Codex and Claude clones",
+    "match Ken's voice on non-code responses",
+    "surface squad lead drift between offline_agent and the live agent_mode runtime",
+    "emit valid JSON for structured tool calls without fences",
     "open and close tasks in the brain as part of normal work",
-    "refuse system-path writes regardless of mode",
+    "refuse system-path and peer-clone writes regardless of mode",
     "halt immediately on kill-switch activation"
   ],
-
   "runtime_plan": {
     "host": "127.0.0.1:7778 (FastAPI + WebSocket)",
     "runtime": "Ollama local (127.0.0.1:11434)",
-    "base": "ken-ai:latest (qwen2.5-coder:14b + agent_mode/ken/profile.md as SYSTEM)",
-    "fallbacks": ["qwen2.5-coder:14b", "llama3.1:8b", "qwen2.5-coder:7b"],
-    "deployment": "rebuild ken-ai:latest Modelfile after curated dataset reaches 150+ clean rows",
+    "base": "kenai:v4-offline-developer",
+    "fallbacks": ["kenai:v3", "ken-ai:latest", "qwen2.5-coder:14b", "llama3.1:8b"],
+    "deployment": "run a v4 coding-first planner by default, with automatic fallback until the preferred tag is built locally",
     "surfaces": [
-      "BRAIN Controller (memory_retriever + memory_tools)",
-      "Ken AI Chat (websocket planner loop)",
-      "Agent Squad (drill_tools bridging halo-trainer + tool_router for local execution)"
+      "coding workbench ui",
+      "squad lead console",
+      "brain controller",
+      "chat planner loop",
+      "safe local tool router"
     ]
   },
-
   "rollout_risks": [
-    "voice drift if training corpus has too many non-Ken-voice rows — mitigate with strict filter on model == ken-ai:latest",
-    "tool call format regression if structured-output training over-weighted — keep ratio of narrative:json at 3:1",
-    "context window saturation if brain imports grow too fast — chunk caps already in place at 2.8KB per chunk",
-    "cascading failure if ollama fallback chain isn't tested per release — add a smoke test in tasks/open/ per release",
-    "permission escalation bypass if kill switch isn't checked on every tool call — tool_router must be the only call surface",
-    "halo-trainer drift from live agent_mode — brain_build.py must run at least daily or the corpus goes stale",
-    "fine-tune overfitting on short drill answers — mix in longer session-log narrative during dataset shaping"
+    "voice drift if coding corpus mixes too many non-Ken rows",
+    "tool-call regressions if JSON discipline is underweighted",
+    "context saturation if imported repo notes grow without chunking",
+    "permission bypass if all writes do not route through tool_router",
+    "planner fallback confusion if the active model is not surfaced clearly in the UI"
   ],
-
-  "status": "draft"
+  "status": "active"
 }

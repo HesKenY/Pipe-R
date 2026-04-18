@@ -4,7 +4,7 @@
   "student": "cherp-piper:latest",
   "curriculum": "recon",
   "contextFiles": [
-    "../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"
+    "../agent_mode/memories/ken-ai-latest/halo-game-dump.md"
   ],
   "prompt": "Using the MCC dump above, write '# MCC install tree recon' with these sections:\n\n## top 5 largest files\nList the 5 biggest files by size with their extensions.\n\n## extension breakdown\nTable-style bullet list: extension → count → total bytes.\n\n## campaign map files\nWhich files look like Halo 2 campaign missions? (hint: .map files in the halo2 subdir).\n\n## binary targets\nWhich files are the actual reverse-engineering targets? (dll + exe).\n\n## ignored files\nWhich files should the reverse-engineer ignore for in-memory AI research? (videos, audio banks, textures).\n\nNo prose intro. Dense bullets. Numbers where possible.",
   "rubric": [

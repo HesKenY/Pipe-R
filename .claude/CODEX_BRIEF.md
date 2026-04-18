@@ -307,6 +307,23 @@ The same `notes.md` loader runs in both the chat endpoint
 there is ONE source of truth per agent. Write it once, it applies
 everywhere.
 
+### 5.1a 2026-04-17 trainer direction update
+
+- Canonical lead trainer / orchestrator identity is now
+  **`kenai:v4-offline-developer`**.
+- **`ken-ai:latest` stays as a legacy compatibility alias**, mainly
+  for old memory continuity and fallback routing, but it is no longer
+  the naming target for new corpus work.
+- Default corpus direction is now **coding-first local developer**:
+  repo safety, patching, tool JSON, verification, offline_agent,
+  Windows-local workflows, agent coordination.
+- Default corpus should **de-weight or exclude** older game-first
+  loops and construction-role drift when building new fine-tune sets.
+- Current V4 corpus pipeline lives in:
+  - `agent_mode/training/corpus_builder_v4.mjs`
+  - `agent_mode/training/export_kenai_v4_dataset.mjs`
+  - `agent_mode/training/kenai-v4-finetune.jsonl`
+
 ### 5.2 Key executor / dispatch rules
 
 - **Always pass the prompt via stdin**, not as a shell argument.

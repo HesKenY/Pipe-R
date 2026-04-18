@@ -1,0 +1,43 @@
+{
+  "_notes": "Crystal starters from Prof. Elm in New Bark Town.",
+  "starters": [
+    {
+      "name": "Cyndaquil",
+      "dex": 155,
+      "type": "Fire",
+      "evolves_to": [
+        { "species": "Quilava", "level": 14 },
+        { "species": "Typhlosion", "level": 36 }
+      ],
+      "stat_bias": "Special Attack + Speed",
+      "early_movepool": ["Tackle", "Leer", "SmokeScreen (L6)", "Ember (L12)", "Quick Attack (L19)", "Flame Wheel (L27)", "Swift (L31)", "Flamethrower (L42)"],
+      "advantage": "Trivializes Bugsy (Bug). Decent into Jasmine (Steel). Struggles vs Whitney (Normal) and Pryce (Ice via Piloswine ground)."
+    },
+    {
+      "name": "Totodile",
+      "dex": 158,
+      "type": "Water",
+      "evolves_to": [
+        { "species": "Croconaw", "level": 18 },
+        { "species": "Feraligatr", "level": 30 }
+      ],
+      "stat_bias": "Attack + Defense",
+      "early_movepool": ["Scratch", "Leer", "Rage (L7)", "Water Gun (L13)", "Bite (L20)", "Scary Face (L21)", "Slash (L37)"],
+      "advantage": "Crushes Falkner with Water Gun (no, wait — neutral; use Mud-Slap from a Geodude instead). Wrecks Jasmine, Pryce, Brock. Bite + Scary Face is strong vs Morty."
+    },
+    {
+      "name": "Chikorita",
+      "dex": 152,
+      "type": "Grass",
+      "evolves_to": [
+        { "species": "Bayleef", "level": 16 },
+        { "species": "Meganium", "level": 32 }
+      ],
+      "stat_bias": "Defense + Special Defense",
+      "early_movepool": ["Tackle", "Growl", "Razor Leaf (L8)", "PoisonPowder (L12)", "Synthesis (L15)", "Reflect (L22)", "Body Slam (L29)"],
+      "advantage": "Hard mode. Loses to Falkner, Bugsy, Morty, Chuck (sort of), Jasmine. Wins vs Pryce, second half of Kanto rock/water."
+    }
+  ],
+  "starter_ranking_for_first_run": ["Cyndaquil", "Totodile", "Chikorita"],
+  "rival_starter_logic": "Rival picks the type-disadvantaged starter against yours: pick Cyndaquil → rival picks Totodile (water beats fire); pick Totodile → rival picks Chikorita; pick Chikorita → rival picks Cyndaquil."
+}

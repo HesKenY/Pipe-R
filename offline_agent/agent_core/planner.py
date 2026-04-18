@@ -1,44 +1,102 @@
 """
 agent_core/planner.py
-The main agent loop. Reads task, searches memory, plans, calls tools, summarizes.
+Main agent loop for the offline developer runtime.
 """
 
-import json
-import asyncio
-from typing import AsyncGenerator, Optional, Callable
-import logging
+from __future__ import annotations
 
-from models.ollama_client import OllamaClient
-from agent_core.permissions import PermissionsEngine
+import json
+import logging
+from pathlib import Path
+from typing import Callable, Optional
+
 from agent_core.memory_retriever import MemoryRetriever
+from agent_core.permissions import PermissionsEngine
 from agent_core.session_manager import SessionManager
+from agent_core.squad_state import build_squad_snapshot
 from agent_core.tool_router import ToolRouter
+from models.ollama_client import OllamaClient
 
 logger = logging.getLogger("planner")
 
-SYSTEM_PROMPT = """You are OfflineAgent, a disciplined local coding assistant.
+ROOT = Path(__file__).parent.parent
+CONFIG_DIR = ROOT / "config"
+SAFETY_RULES_PATH = Path(__file__).parent.parent.parent / "agent_mode" / "AGENT_SAFETY_RULES.md"
+SAFETY_RULES = ""
+try:
+    if SAFETY_RULES_PATH.exists():
+        SAFETY_RULES = SAFETY_RULES_PATH.read_text(encoding="utf-8").strip()
+except Exception:
+    pass
 
-You operate in a layered permission system. Only call tools that are available to you.
-Think step by step. Always read before writing. Always test after patching.
+SYSTEM_PROMPT = f"""{SAFETY_RULES}
 
-Your response format for tool calls must be valid JSON:
-{"tool": "tool_name", "params": {"key": "value"}}
+you are kenai - ken's offline developer lead.
+you are the coding-first lead of ken's local agent squad.
+focus on code, repos, tasks, tests, git, brain updates, and keeping the squad pointed at shipping work.
 
-When you are done with a task, respond with:
-{"done": true, "summary": "what was accomplished"}
+## voice
+- lowercase only
+- short direct lines for actions
+- no "as an ai"
+- no analogies
+- no pleasantries
+- typos ok
 
-If you need more information, respond with:
-{"clarify": "your question"}
+## operating rules
+- read before writing
+- test after patching when a test path exists
+- only call tools that are available to you
+- do not touch the parallel claude clone directly
+- prefer the smallest patch that solves the task
+- use squad context to pick the next useful coding move, not to roleplay
+- do not mutate live `agent_mode/config/*.json` squad files unless ken explicitly asks for a live promotion
+- do not drift into game, trainer theatrics, or gameplay work unless ken explicitly asks
 
-Otherwise for normal responses, respond in plain text.
+## safety
+- never delete files or rows unless explicitly told
+- never run destructive shell commands
+- never modify system files, keys, or credentials
+- never exceed the current task scope
+- if a command or path is blocked, stop
+
+## codex / brain
+- codex = c:/users/ken/desktop/codex
+- brain = offline_agent/brain plus session and task logs
+- agent_mode = live squad roster + queue state. read context by default.
+- before condensing or deleting repo context, snapshot it into brain
+
+## tool call format
+{{"tool": "tool_name", "params": {{"key": "value"}}}}
+
+when done: {{"done": true, "summary": "what was accomplished"}}
+need info: {{"clarify": "your question"}}
+otherwise plain text only.
 """
 
 
+def _format_squad_context(snapshot: dict) -> str:
+    intended = snapshot.get("intended_lead", {})
+    runtime = snapshot.get("runtime_lead", {})
+    counts = snapshot.get("counts", {})
+    alerts = snapshot.get("alerts", [])
+    lines = [
+        "Squad context:",
+        f"- intended lead: {intended.get('id')} ({intended.get('display_name')})",
+        f"- runtime lead: {runtime.get('id')} ({runtime.get('display_name')})",
+        f"- sync state: {snapshot.get('sync_state')}",
+        f"- agents total: {counts.get('agents_total', 0)}",
+        f"- blocked agents: {counts.get('agents_blocked', 0)}",
+        f"- pending squad tasks: {counts.get('tasks_pending', 0)}",
+        f"- waiting for claude review: {counts.get('tasks_waiting_review', 0)}",
+    ]
+    for alert in alerts[:2]:
+        lines.append(f"- alert: {alert}")
+    return "\n".join(lines)
+
+
 class Planner:
-    """
-    Main agent loop. One task at a time.
-    Reads memory → plans → calls tools → summarizes → logs.
-    """
+    """Single-task planner loop."""
 
     def __init__(
         self,
@@ -52,32 +110,30 @@ class Planner:
         self.memory = memory
         self.session = session
         self.router = router
-        self.on_event = on_event  # WebSocket broadcast callback
+        self.on_event = on_event
         self.client = OllamaClient(profile="planner")
         self.running = False
         self.max_steps = 50
 
     async def emit(self, event_type: str, data: dict):
-        """Broadcast an event to the UI."""
         if self.on_event:
             await self.on_event({"type": event_type, "data": data})
 
-    async def run_task(self, task: str) -> AsyncGenerator[dict, None]:
-        """
-        Execute a full task loop. Yields events for the UI to consume.
-        """
+    async def run_task(self, task: str) -> None:
         self.running = True
         self.session.set_task(task)
-
         await self.emit("task_start", {"task": task})
 
-        # Build context
         context = self.memory.get_relevant_context(task)
         recent = self.session.get_recent_conversation(turns=10)
+        resolution = await self.client.describe_resolution()
+        squad_context = _format_squad_context(build_squad_snapshot(ROOT, CONFIG_DIR))
 
         system = SYSTEM_PROMPT + f"\n\n{context}"
+        system += f"\n\n{squad_context}"
         system += f"\n\nAvailable tools: {', '.join(self.router.available_tools())}"
-        system += f"\nCurrent permission mode: {self.permissions.mode} — {self.permissions.mode_name}"
+        system += f"\nCurrent permission mode: {self.permissions.mode} - {self.permissions.mode_name}"
+        system += f"\nPlanner model: {resolution['active_model']}"
 
         messages = recent + [{"role": "user", "content": task}]
         self.session.add_user_message(task)
@@ -91,10 +147,6 @@ class Planner:
             await self.emit("thinking", {"step": steps})
 
             try:
-                # Stream tokens to the UI as they arrive. Big
-                # perceptual speedup — first token typically lands
-                # in 200-600ms instead of waiting 3-15s for the
-                # full completion.
                 stream = await self.client.chat(messages, system=system, stream=True)
                 content_parts: list[str] = []
                 first_token_emitted = False
@@ -110,26 +162,23 @@ class Planner:
                     if chunk.get("done"):
                         break
                 content = "".join(content_parts).strip()
-            except Exception as e:
-                # The ollama client retries transient 500/502/503
-                # internally. If we still landed here, it's a real
-                # error worth surfacing to the user + session log.
-                err = f"{type(e).__name__}: {e}"[:400]
-                await self.emit("error", {
-                    "msg": f"model error after retries: {err}",
-                    "hint": "check that ollama is running and the planner model is pulled. try the same task again in 5-10s.",
-                })
+            except Exception as exc:
+                err = f"{type(exc).__name__}: {exc}"[:400]
+                await self.emit(
+                    "error",
+                    {
+                        "msg": f"model error after retries: {err}",
+                        "hint": "check ollama and the local planner model list.",
+                    },
+                )
                 self.session.add_agent_message(f"[error] model call failed: {err}")
                 break
 
             self.session.add_agent_message(content)
             messages.append({"role": "assistant", "content": content})
 
-            # Try to parse as action
             action = _try_parse_action(content)
-
             if action is None:
-                # Plain text response — relay to user
                 await self.emit("agent_message", {"content": content})
                 break
 
@@ -146,21 +195,18 @@ class Planner:
             if "tool" in action:
                 tool_name = action["tool"]
                 params = action.get("params", {})
-
                 await self.emit("tool_call", {"tool": tool_name, "params": params})
-
                 result = await self.router.call(tool_name, params)
-
-                await self.emit("tool_result", {
-                    "tool": tool_name,
-                    "success": result["success"],
-                    "result": str(result.get("result", ""))[:1000],
-                    "error": result.get("error"),
-                })
-
-                # Feed result back to model
-                tool_msg = json.dumps(result)
-                messages.append({"role": "user", "content": f"Tool result: {tool_msg}"})
+                await self.emit(
+                    "tool_result",
+                    {
+                        "tool": tool_name,
+                        "success": result["success"],
+                        "result": str(result.get("result", ""))[:1000],
+                        "error": result.get("error"),
+                    },
+                )
+                messages.append({"role": "user", "content": f"Tool result: {json.dumps(result)}"})
 
             steps += 1
 
@@ -172,19 +218,10 @@ class Planner:
 
 
 def _try_parse_action(content: str) -> Optional[dict]:
-    """Try to parse content as a JSON action. Returns None if it's plain text."""
     stripped = content.strip()
     if not stripped.startswith("{"):
         return None
     try:
         return json.loads(stripped)
     except json.JSONDecodeError:
-        # Try to extract JSON from mixed content
-        import re
-        match = re.search(r'\{[^{}]+\}', stripped, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except Exception:
-                pass
-    return None
+        return None

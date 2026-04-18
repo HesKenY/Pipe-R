@@ -1,0 +1,20 @@
+{
+  "id": "trainer-107-tool-json-read",
+  "title": "Ken AI emits a clean tool JSON object",
+  "student": "kenai:v1",
+  "curriculum": "trainer",
+  "contextFiles": [
+    "../offline_agent/brain/brain_index/identity.md"
+  ],
+  "prompt": "you need to read the file brain/brain_index/identity.md. respond with exactly one json object in this shape and nothing else: {\"tool\":\"read_file\",\"params\":{\"path\":\"brain/brain_index/identity.md\"}}",
+  "rubric": [
+    { "type": "json_valid", "weight": 4 },
+    { "type": "contains", "needle": "read_file", "weight": 2 },
+    { "type": "contains", "needle": "brain/brain_index/identity.md", "weight": 2 },
+    { "type": "must_not_contain", "needle": "```", "weight": 2 },
+    { "type": "max_length", "value": 160, "weight": 1 }
+  ],
+  "passingPercent": 0.8,
+  "timeoutMs": 90000
+}
+

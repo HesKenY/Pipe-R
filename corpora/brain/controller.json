@@ -1,0 +1,104 @@
+{
+  "_notes": "BRAIN controller and task-lifecycle corpus for kenai v4. Focus: indexed memory, model designer, session logging, and task discipline.",
+  "_version": "v4-seed-2026-04-17",
+
+  "controller_basics": [
+    {
+      "instruction": "what are the six core files in brain/brain_index/? one short line per file.",
+      "output": "- identity.md: agent identity and voice rules.\n- rules.md: operating rules and safety limits.\n- project_map.md: projects and how they connect.\n- repo_map.md: clone layout, remotes, and branch context.\n- known_fixes.md: recurring bugs, fixes, and lessons learned.\n- tech_stack.md: models, runtimes, ports, and stack notes."
+    },
+    {
+      "instruction": "what is the BRAIN controller for?",
+      "output": "repository search, indexing, branch awareness, model-design retrieval, and auditable context packs."
+    },
+    {
+      "instruction": "what feeds BRAIN on every major build action?",
+      "output": "self logs, claude logs, shared logs, agent memory, dreams, learning events, branch state, model designs, and project briefs."
+    },
+    {
+      "instruction": "why use BRAIN instead of free-form chat memory?",
+      "output": "because BRAIN is indexed, auditable, reusable, and grounded in files instead of vibes."
+    },
+    {
+      "instruction": "should imported mirrors inside input/ be treated as primary execution roots?",
+      "output": "no. ingest sources only. query them, don't run the project from them."
+    },
+    {
+      "instruction": "where do BRAIN dataset exports land?",
+      "output": "brain/exports/. manifests and dataset slices land there."
+    }
+  ],
+
+  "task_lifecycle": [
+    {
+      "instruction": "how do i capture a new work item in brain?",
+      "output": "open a task file in tasks/open, then append the session log as the work moves."
+    },
+    {
+      "instruction": "what should a close_task summary look like?",
+      "output": "short, lowercase, outcome-first. say what changed, not how you felt."
+    },
+    {
+      "instruction": "when should i append a session entry?",
+      "output": "after every meaningful action or decision. if future-you would ask what happened, log it."
+    },
+    {
+      "instruction": "what belongs in a good session log entry?",
+      "output": "what changed, why it mattered, what is still open, and the next clean handoff point."
+    },
+    {
+      "instruction": "when do i snapshot to brain first?",
+      "output": "before deleting, condensing, moving, or replacing anything that would be painful to recover."
+    },
+    {
+      "instruction": "should the brain task list mirror reality or plans only?",
+      "output": "reality. open means open. done means done. no fake status."
+    }
+  ],
+
+  "model_designer": [
+    {
+      "instruction": "what outputs does every model design need?",
+      "output": "mission statement, capability list, permission profile, memory strategy, dream strategy, training sources, evaluation goals, runtime plan, and rollout risks."
+    },
+    {
+      "instruction": "what order does the proprietary model build follow?",
+      "output": "brain repository, ken ai chat capture, agent memory and dreams, design blueprints, dataset shaping, training and evaluation, then local runtime integration."
+    },
+    {
+      "instruction": "what does model_designer validate before a build can move forward?",
+      "output": "required fields present, mission has substance, permissions include kill switch and audit, sources exist, eval goals exist, runtime base exists, risks are listed."
+    },
+    {
+      "instruction": "what does build_dataset do in model_designer?",
+      "output": "reads training_sources, applies filters, dedupes repeated rows, and writes a jsonl dataset for the design."
+    },
+    {
+      "instruction": "what does build_training_spec do?",
+      "output": "turns the design plus dataset stats into a runnable training spec the rest of the workbench can consume."
+    },
+    {
+      "instruction": "what should runtime_plan capture in a design?",
+      "output": "host surface, runtime, base model, fallback chain, deployment path, and the places the model will live."
+    },
+    {
+      "instruction": "why are rollout risks part of the design instead of an afterthought?",
+      "output": "because the model is a product decision, not just weights. known failure modes belong in the plan."
+    }
+  ],
+
+  "retrieval_defaults": [
+    {
+      "instruction": "how many brain chunks does the offline agent pull into context by default?",
+      "output": "five brain chunks by default."
+    },
+    {
+      "instruction": "how much session history does the offline agent keep in live context?",
+      "output": "twenty turns."
+    },
+    {
+      "instruction": "what is the point of the brain auto-refresh loop in offline_agent/main.py?",
+      "output": "keep imports, fts, and project memory fresh while the server is up."
+    }
+  ]
+}

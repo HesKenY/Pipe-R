@@ -1,0 +1,130 @@
+{
+  "_notes": "Crystal gym leader teams. Levels and species are high-confidence; specific moves marked with confidence flags. Rocket exec teams not included here.",
+  "johto": [
+    {
+      "city": "Violet",
+      "leader": "Falkner",
+      "type": "Flying",
+      "badge": "Zephyr",
+      "team": [
+        { "species": "Pidgey", "level": 7, "key_move": "Tackle", "confidence": "high" },
+        { "species": "Pidgeotto", "level": 9, "key_move": "Gust", "warning": "Gust is super effective if you used a Bug type", "confidence": "high" }
+      ],
+      "tip": "Use Geodude/Onix from Dark Cave; rock moves wreck flyers. Avoid grass/bug starters here."
+    },
+    {
+      "city": "Azalea",
+      "leader": "Bugsy",
+      "type": "Bug",
+      "badge": "Hive",
+      "team": [
+        { "species": "Metapod", "level": 14 },
+        { "species": "Kakuna", "level": 14 },
+        { "species": "Scyther", "level": 16, "warning": "U-turn in later gens; in Crystal has Quick Attack + Fury Cutter ramping", "key_move": "Fury Cutter" }
+      ],
+      "tip": "Fire/Flying/Rock all 2x vs Bug. Cyndaquil cleans this gym easily. Caterpie evolutions are easy XP."
+    },
+    {
+      "city": "Goldenrod",
+      "leader": "Whitney",
+      "type": "Normal",
+      "badge": "Plain",
+      "team": [
+        { "species": "Clefairy", "level": 18, "key_move": "Doubleslap + Metronome" },
+        { "species": "Miltank", "level": 20, "key_move": "Rollout", "warning": "Rollout deals doubling damage 5 turns. Highest difficulty spike in Johto. Has Milk Drink heal." }
+      ],
+      "tip": "Bring a Fighting type (Machop from Goldenrod underground). Paralyze Miltank and use Attract (gender mismatch). Whitney CRIES after losing — mash B to skip."
+    },
+    {
+      "city": "Ecruteak",
+      "leader": "Morty",
+      "type": "Ghost",
+      "badge": "Fog",
+      "team": [
+        { "species": "Gastly", "level": 21 },
+        { "species": "Haunter", "level": 21 },
+        { "species": "Gengar", "level": 25, "key_move": "Hypnosis + Dream Eater + Shadow Ball" },
+        { "species": "Haunter", "level": 23 }
+      ],
+      "tip": "Dark and Ghost both 2x. Murkrow (Route 38 night) or your starter Bite. Watch for Hypnosis sleep — bring Awakening."
+    },
+    {
+      "city": "Cianwood",
+      "leader": "Chuck",
+      "type": "Fighting",
+      "badge": "Storm",
+      "team": [
+        { "species": "Primeape", "level": 29, "key_move": "Rage + Karate Chop" },
+        { "species": "Poliwrath", "level": 31, "key_move": "Surf + Hypnosis", "warning": "Mind Reader + Dynamicpunch combo guaranteed hit + confuse" }
+      ],
+      "tip": "Psychic and Flying both 2x. Drowzee/Hypno or any flyer. Pidgeot from your starter route works."
+    },
+    {
+      "city": "Olivine",
+      "leader": "Jasmine",
+      "type": "Steel",
+      "badge": "Mineral",
+      "team": [
+        { "species": "Magnemite", "level": 30 },
+        { "species": "Magnemite", "level": 30 },
+        { "species": "Steelix", "level": 35, "key_move": "Iron Tail + Sunny Day", "warning": "Steelix is huge — watch for Sandstorm chip." }
+      ],
+      "tip": "Fire/Fighting/Ground all 2x. Quilava/Typhlosion or HM Strength user. Steelix is 4x weak to Water + Ground."
+    },
+    {
+      "city": "Mahogany",
+      "leader": "Pryce",
+      "type": "Ice",
+      "badge": "Glacier",
+      "team": [
+        { "species": "Seel", "level": 27 },
+        { "species": "Dewgong", "level": 29, "key_move": "Aurora Beam + Rest" },
+        { "species": "Piloswine", "level": 31, "key_move": "Blizzard + Earthquake", "warning": "Piloswine is part Ground — Electric won't work" }
+      ],
+      "tip": "Fighting/Rock/Steel/Fire 2x. Watch for Rest (sleep self-heal). Magneton is decent."
+    },
+    {
+      "city": "Blackthorn",
+      "leader": "Clair",
+      "type": "Dragon",
+      "badge": "Rising",
+      "team": [
+        { "species": "Dragonair", "level": 37 },
+        { "species": "Dragonair", "level": 37 },
+        { "species": "Dragonair", "level": 37, "key_move": "Thunder Wave + Slam" },
+        { "species": "Kingdra", "level": 40, "key_move": "Smokescreen + Surf + Hyper Beam", "warning": "Kingdra (Water/Dragon) only weak to Dragon" }
+      ],
+      "tip": "Ice is 2x vs all of them. Lapras (Friday only, Union Cave) carries this fight. Clair refuses to give the badge until you complete Dragon's Den trial."
+    }
+  ],
+  "kanto": [
+    { "city": "Vermilion", "leader": "Lt. Surge",   "type": "Electric", "badge": "Thunder",  "headline_team": ["Raichu", "Magneton", "Electrode"], "tip": "Ground immunity; Donphan/Quagsire wreck him.", "confidence": "medium" },
+    { "city": "Saffron",   "leader": "Sabrina",     "type": "Psychic",  "badge": "Marsh",    "headline_team": ["Espeon", "Mr. Mime", "Alakazam"], "tip": "Bring Dark or Bug. Houndour/Houndoom is ideal.", "confidence": "medium" },
+    { "city": "Celadon",   "leader": "Erika",       "type": "Grass",    "badge": "Rainbow",  "headline_team": ["Tangela", "Jumpluff", "Victreebel", "Bellossom"], "tip": "Fire or Flying clean sweep.", "confidence": "medium" },
+    { "city": "Fuchsia",   "leader": "Janine",      "type": "Poison",   "badge": "Soul",     "headline_team": ["Crobat", "Weezing", "Ariados", "Venomoth"], "tip": "Psychic + Ground; lots of self-destruct so absorb.", "confidence": "medium" },
+    { "city": "Cerulean",  "leader": "Misty",       "type": "Water",    "badge": "Cascade",  "headline_team": ["Golduck", "Quagsire", "Lapras", "Starmie"], "tip": "Electric or strong Grass. Watch Quagsire — Electric immune.", "confidence": "medium" },
+    { "city": "Pewter",    "leader": "Brock",       "type": "Rock",     "badge": "Boulder",  "headline_team": ["Graveler", "Rhyhorn", "Omastar", "Onix", "Kabutops"], "tip": "Water/Grass/Fighting all 2x. Mostly part-Ground so Electric won't work.", "confidence": "medium" },
+    { "city": "Cinnabar",  "leader": "Blaine",      "type": "Fire",     "badge": "Volcano",  "headline_team": ["Magcargo", "Magmar", "Rapidash"], "tip": "Water clean sweep. Watch Magcargo's Rock typing.", "confidence": "medium" },
+    { "city": "Viridian",  "leader": "Blue",        "type": "Mixed",    "badge": "Earth",    "headline_team": ["Pidgeot", "Alakazam", "Rhydon", "Gyarados", "Exeggutor", "Arcanine"], "tip": "Final gym before Red. Bring counters for each — single-type sweep impossible.", "confidence": "medium" }
+  ],
+  "elite_four": [
+    { "name": "Will",   "type": "Psychic",          "headline_team": ["Xatu", "Exeggutor", "Slowbro", "Jynx", "Xatu"] },
+    { "name": "Koga",   "type": "Poison",           "headline_team": ["Ariados", "Venomoth", "Forretress", "Muk", "Crobat"] },
+    { "name": "Bruno",  "type": "Fighting",         "headline_team": ["Hitmontop", "Hitmonlee", "Hitmonchan", "Onix", "Machamp"] },
+    { "name": "Karen",  "type": "Dark",             "headline_team": ["Umbreon", "Vileplume", "Gengar", "Murkrow", "Houndoom"] },
+    { "name": "Lance",  "type": "Dragon (Champion)", "headline_team": ["Gyarados", "Dragonite x3", "Aerodactyl", "Charizard"], "tip": "Ice + Electric for Gyarados; Ice for Dragonite. Lapras / Cloyster / Jynx all viable." }
+  ],
+  "red_silver_top": {
+    "name": "Red",
+    "location": "Mt. Silver summit",
+    "team": [
+      { "species": "Pikachu", "level": 81, "key_move": "Thunder + Quick Attack" },
+      { "species": "Espeon", "level": 73 },
+      { "species": "Snorlax", "level": 75, "warning": "Body Slam paralysis + Rest" },
+      { "species": "Venusaur", "level": 77 },
+      { "species": "Charizard", "level": 77 },
+      { "species": "Blastoise", "level": 77 }
+    ],
+    "tip": "Final true endgame. Need 80+ team. Stock Hyper Potions and Full Restores."
+  }
+}

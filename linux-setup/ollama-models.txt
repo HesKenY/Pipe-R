@@ -1,0 +1,13 @@
+# Ollama base models to pull on fresh Linux install.
+# Comments and blank lines are ignored.
+# Custom models (ken-ai, m3w-learning, cherp-piper, etc) get rebuilt from
+# Modelfiles in agent_mode/*/Modelfile after these base models land.
+
+# Core coder — ken-ai base + 5c1z0r Patchsmith
+qwen2.5-coder:14b
+
+# V4 LoRA target — lighter variant used for fine-tune runs
+qwen2.5-coder:7b
+
+# Umbr30n Safeguard / P0ryg0n Logdex base
+llama3.1:8b

@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { LEGACY_TRAINER_ID, isTrainerId, normalizeTrainerId } from './trainer_identity.js';
 
 const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const MEM_ROOT = join(ROOT, 'agent_mode', 'memories');
@@ -21,6 +22,14 @@ function slug(agentId) {
 }
 
 export function memoryDir(agentId) {
+  const normalized = normalizeTrainerId(agentId);
+  const primaryDir = join(MEM_ROOT, slug(normalized));
+  if (isTrainerId(agentId)) {
+    const legacyDir = join(MEM_ROOT, slug(LEGACY_TRAINER_ID));
+    if (existsSync(primaryDir)) return primaryDir;
+    if (existsSync(legacyDir)) return legacyDir;
+    return primaryDir;
+  }
   return join(MEM_ROOT, slug(agentId));
 }
 

@@ -14,7 +14,7 @@
        "title": "Find halo2.dll base address",
        "student": "cherp-piper:latest",
        "curriculum": "reverse-engineering",
-       "contextFiles": ["../../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"],
+       "contextFiles": ["../agent_mode/memories/ken-ai-latest/halo-game-dump.md"],
        "prompt": "Read the game dump above. What is the base address of halo2.dll in the loaded MCC process?",
        "rubric": [
          { "type": "contains", "needle": "halo2.dll", "weight": 1 },

@@ -1,6 +1,6 @@
 @echo off
 REM ========================================================
-REM Ken AI offline — start the FastAPI server + chrome app
+REM KenAI Offline Developer - start the FastAPI server + chrome app
 REM ========================================================
 REM Double-click or fire from a desktop shortcut. Launches
 REM main.py in a background console, waits for 127.0.0.1:7778
@@ -15,11 +15,11 @@ setlocal enableextensions enabledelayedexpansion
 
 cd /d "%~dp0"
 
-title KenAI — launcher
+title KenAI Offline Developer - launcher
 
 echo.
 echo ============================================================
-echo   KenAI v0.1.0
+echo   KenAI Offline Developer v0.4.0
 echo   http://127.0.0.1:7778
 echo ============================================================
 echo.
@@ -69,7 +69,7 @@ if errorlevel 1 (
 
 REM ── Launch main.py in a new console ─────────────────────
 echo [boot ] starting main.py ...
-start "Ken AI offline — server" /MIN cmd /c "python main.py"
+start "KenAI Offline Developer - server" /MIN cmd /c "python main.py"
 
 REM ── Wait for port 7778 to bind (up to 12 seconds) ───────
 set /a tries=0
@@ -81,7 +81,7 @@ if not errorlevel 1 goto ready
 if %tries% lss 6 goto wait_loop
 
 echo [fail] server did not bind :7778 within 12s.
-echo        check the "Ken AI offline — server" window for errors.
+echo        check the "KenAI Offline Developer - server" window for errors.
 pause
 exit /b 1
 

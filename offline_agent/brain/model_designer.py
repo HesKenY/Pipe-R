@@ -269,6 +269,37 @@ def _read_narrative_sources(pattern: str, project_root: Path, last_days: int = 3
     return out
 
 
+def _dataset_signature(kind: str, data: dict) -> str:
+    """
+    Stable dedupe key so repeated drill reruns and repeated imports
+    don't balloon the dataset with identical rows.
+    """
+    if kind in ("drill_passing_rows", "dispatch_rows"):
+        prompt = (
+            data.get("prompt")
+            or data.get("task")
+            or data.get("input")
+            or data.get("drillId")
+            or ""
+        )
+        response = (
+            data.get("response")
+            or data.get("output")
+            or data.get("answer")
+            or data.get("content")
+            or ""
+        )
+        return json.dumps({"kind": kind, "prompt": prompt, "response": response}, sort_keys=True, default=str)
+
+    if kind == "narrative_context":
+        return json.dumps({"kind": kind, "source": data.get("source", ""), "content": data.get("content", "")}, sort_keys=True, default=str)
+
+    if kind == "reference_context":
+        return json.dumps({"kind": kind, "path": data.get("path", ""), "content": data.get("content", "")}, sort_keys=True, default=str)
+
+    return json.dumps({"kind": kind, "data": data}, sort_keys=True, default=str)
+
+
 def build_dataset(design: dict) -> tuple[Path, dict]:
     slug = design["slug"]
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
@@ -277,6 +308,8 @@ def build_dataset(design: dict) -> tuple[Path, dict]:
     total = 0
     by_source: dict[str, int] = {}
     by_kind: dict[str, int] = {}
+    seen: set[str] = set()
+    deduped = 0
 
     with out_path.open("w", encoding="utf-8") as out:
         for src in design.get("training_sources", []):
@@ -292,38 +325,60 @@ def build_dataset(design: dict) -> tuple[Path, dict]:
                 for p in matched_paths:
                     rows.extend(_load_jsonl_rows(p))
                 rows = _apply_filter(rows, filt)
+                kept = 0
                 for r in rows:
+                    sig = _dataset_signature(kind, r)
+                    if sig in seen:
+                        deduped += 1
+                        continue
+                    seen.add(sig)
                     row = {"source": name, "kind": kind, "data": r}
                     out.write(json.dumps(row, default=str) + "\n")
                     total += 1
-                by_source[name] = len(rows)
+                    kept += 1
+                by_source[name] = kept
 
             elif kind == "narrative_context":
                 rows = _read_narrative_sources(pattern, PROJECT_ROOT, last_days=30)
+                kept = 0
                 for r in rows:
+                    sig = _dataset_signature(kind, r)
+                    if sig in seen:
+                        deduped += 1
+                        continue
+                    seen.add(sig)
                     row = {"source": name, "kind": kind, "data": r}
                     out.write(json.dumps(row, default=str) + "\n")
                     total += 1
-                by_source[name] = len(rows)
+                    kept += 1
+                by_source[name] = kept
 
             elif kind == "reference_context":
                 matched_paths = list((PROJECT_ROOT).glob(pattern.replace("brain/", "brain/")))
+                kept = 0
                 for p in matched_paths:
                     try:
                         content = p.read_text(encoding="utf-8", errors="ignore")
                     except Exception:
                         continue
+                    data = {
+                        "path":    str(p.relative_to(PROJECT_ROOT)),
+                        "content": content,
+                    }
+                    sig = _dataset_signature(kind, data)
+                    if sig in seen:
+                        deduped += 1
+                        continue
+                    seen.add(sig)
                     row = {
                         "source": name,
                         "kind":   kind,
-                        "data":   {
-                            "path":    str(p.relative_to(PROJECT_ROOT)),
-                            "content": content,
-                        },
+                        "data":   data,
                     }
                     out.write(json.dumps(row, default=str) + "\n")
                     total += 1
-                by_source[name] = len(matched_paths)
+                    kept += 1
+                by_source[name] = kept
 
             else:
                 by_source[name] = 0
@@ -334,6 +389,7 @@ def build_dataset(design: dict) -> tuple[Path, dict]:
         "total":     total,
         "by_source": by_source,
         "by_kind":   by_kind,
+        "deduped":   deduped,
     }
 
 
@@ -360,6 +416,7 @@ def cmd_spec(slug: str) -> int:
     print(f"spec written: {p.relative_to(PROJECT_ROOT)}")
     print(f"dataset:      {ds_path.relative_to(PROJECT_ROOT)}")
     print(f"records:      {stats['total']}")
+    print(f"deduped:      {stats.get('deduped', 0)}")
     print(f"by source:    {stats['by_source']}")
     return 0
 
@@ -369,6 +426,7 @@ def cmd_dataset(slug: str) -> int:
     ds_path, stats = build_dataset(design)
     print(f"dataset: {ds_path.relative_to(PROJECT_ROOT)}")
     print(f"records: {stats['total']}")
+    print(f"deduped: {stats.get('deduped', 0)}")
     print(f"by source: {stats['by_source']}")
     print(f"by kind:   {stats['by_kind']}")
     return 0
@@ -385,6 +443,7 @@ def cmd_full(slug: str) -> int:
     ds_path, stats = build_dataset(design)
     print(f"dataset: {ds_path.relative_to(PROJECT_ROOT)}")
     print(f"records: {stats['total']}")
+    print(f"deduped: {stats.get('deduped', 0)}")
     print("\n=== spec ===")
     spec = build_training_spec(design, ds_path, stats)
     p = save_spec(design, spec)

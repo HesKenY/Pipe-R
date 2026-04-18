@@ -8,7 +8,7 @@
 
 import { createServer } from 'http';
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, appendFileSync, mkdirSync } from 'fs';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { join, basename, dirname } from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
@@ -46,6 +46,22 @@ if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
 
 function log(msg) {
   try { appendFileSync(LOG_FILE, `[${new Date().toISOString()}] [SERVER] ${msg}\n`); } catch {}
+}
+
+function runPowerShellFile(scriptPath, args = [], timeout = 8000) {
+  return execFileSync(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', scriptPath, ...args],
+    { encoding: 'utf8', timeout, windowsHide: true }
+  ).trim();
+}
+
+function runPowerShellCommand(command, timeout = 4000) {
+  return execFileSync(
+    'powershell.exe',
+    ['-NoProfile', '-Command', command],
+    { encoding: 'utf8', timeout, windowsHide: true }
+  ).trim();
 }
 
 function countFiles(dir) {
@@ -276,7 +292,13 @@ async function getSystemMetrics() {
   if (_metricsCache.data && (now - _metricsCache.ts) < 2000) return _metricsCache.data;
 
   const safeExec = (cmd, timeout = 4000) => {
-    try { return execSync(cmd, { encoding: 'utf8', timeout }).trim(); }
+    try {
+      const psPrefix = 'powershell -NoProfile -Command ';
+      if (cmd.startsWith(psPrefix)) {
+        return runPowerShellCommand(cmd.slice(psPrefix.length), timeout);
+      }
+      return execSync(cmd, { encoding: 'utf8', timeout, windowsHide: true }).trim();
+    }
     catch { return ''; }
   };
 
@@ -1003,6 +1025,105 @@ const server = createServer(async (req, res) => {
     try {
       const { status: haloStatus } = await import('./agent_mode/halo/agent.js');
       return jsonResp(res, haloStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  // ── Pokemon Crystal training endpoints ──────────────────
+  if (url === '/api/pokemon/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startLoop } = await import('./agent_mode/pokemon/agent.js');
+      const r = startLoop(opts);
+      log('Pokemon agent started: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/pokemon/stop' && req.method === 'POST') {
+    try {
+      const { stopLoop } = await import('./agent_mode/pokemon/agent.js');
+      return jsonResp(res, stopLoop());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/pokemon/status' && req.method === 'GET') {
+    try {
+      const { status: pStatus } = await import('./agent_mode/pokemon/agent.js');
+      return jsonResp(res, pStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/pokemon/log' && req.method === 'GET') {
+    try {
+      const { readRecentLog } = await import('./agent_mode/pokemon/agent.js');
+      return jsonResp(res, { log: readRecentLog(30) });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  if (url === '/api/pokemon/vision' && req.method === 'POST') {
+    try {
+      const r = spawnSync(_pythonBin || 'python', [join(process.cwd(), 'agent_mode/pokemon/pokemon_vision.py')], {
+        encoding: 'utf8', timeout: 50000, windowsHide: true
+      });
+      const line = (r.stdout||'').split('\n').find(l => l.trim().startsWith('{'));
+      return jsonResp(res, line ? JSON.parse(line) : { error: 'no output' });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/pokemon/keylog/start' && req.method === 'POST') {
+    try {
+      const { spawn } = await import('node:child_process');
+      const child = spawn('python', [join(process.cwd(), 'agent_mode/pokemon/keylog.py')], {
+        detached: true, stdio: 'ignore', windowsHide: true
+      });
+      child.unref();
+      return jsonResp(res, { ok: true, pid: child.pid });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/pokemon/postmortem' && req.method === 'POST') {
+    try {
+      const r = spawnSync(_pythonBin || 'python', [join(process.cwd(), 'agent_mode/pokemon/post_mortem.py')], {
+        encoding: 'utf8', timeout: 65000, windowsHide: true
+      });
+      const line = (r.stdout||'').split('\n').find(l => l.trim().startsWith('{'));
+      return jsonResp(res, line ? JSON.parse(line) : { error: 'no output' });
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  // ── Factorio training endpoints ─────────────────────────
+  if (url === '/api/factorio/scan' && req.method === 'POST') {
+    try {
+      const { fullScan } = await import('./agent_mode/factorio/game_scanner.js');
+      const k = fullScan();
+      log('Factorio scan: ' + (k.activeSave?.name || 'no save'));
+      return jsonResp(res, k);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/factorio/trainer/start' && req.method === 'POST') {
+    const body = await readBody(req);
+    try {
+      const opts = JSON.parse(body || '{}');
+      const { startTrainer } = await import('./agent_mode/factorio/trainer.js');
+      const r = startTrainer(opts);
+      log('Factorio trainer started: ' + JSON.stringify(r));
+      return jsonResp(res, r);
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/factorio/trainer/stop' && req.method === 'POST') {
+    try {
+      const { stopTrainer } = await import('./agent_mode/factorio/trainer.js');
+      return jsonResp(res, stopTrainer());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+  if (url === '/api/factorio/trainer/status' && req.method === 'GET') {
+    try {
+      const { trainerStatus } = await import('./agent_mode/factorio/trainer.js');
+      return jsonResp(res, trainerStatus());
+    } catch (e) { return jsonResp(res, { error: e.message }, 500); }
+  }
+
+  if (url === '/api/halo/scan' && req.method === 'POST') {
+    try {
+      const { fullScan } = await import('./agent_mode/halo/game_scanner.js');
+      const knowledge = fullScan();
+      log('Halo game scan: ' + knowledge.currentMission?.mission);
+      return jsonResp(res, knowledge);
     } catch (e) { return jsonResp(res, { error: e.message }, 500); }
   }
   if (url === '/api/halo/log' && req.method === 'GET') {
@@ -1921,10 +2042,7 @@ const server = createServer(async (req, res) => {
     try {
       const script = join(ROOT, '.claude', 'bin', 'volume.ps1');
       if (!existsSync(script)) return jsonResp(res, { ok: false, error: 'volume.ps1 missing' }, 500);
-      const out = execSync(
-        `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" get`,
-        { encoding: 'utf8', timeout: 8000 }
-      ).trim();
+      const out = runPowerShellFile(script, ['get'], 8000);
       try { return jsonResp(res, JSON.parse(out)); }
       catch { return jsonResp(res, { ok: false, raw: out.slice(0, 200) }); }
     } catch (e) {
@@ -1940,10 +2058,9 @@ const server = createServer(async (req, res) => {
       if (!Number.isFinite(v)) return jsonResp(res, { ok: false, error: 'value must be 0..1' }, 400);
       const script = join(ROOT, '.claude', 'bin', 'volume.ps1');
       const appName = app || 'Spotify';
-      const cmd = target === 'system'
-        ? `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" set system -Value ${v}`
-        : `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" set-app -Target "${appName.replace(/"/g,'')}" -Value ${v}`;
-      const out = execSync(cmd, { encoding: 'utf8', timeout: 8000 }).trim();
+      const out = target === 'system'
+        ? runPowerShellFile(script, ['set', 'system', '-Value', String(v)], 8000)
+        : runPowerShellFile(script, ['set-app', '-Target', appName.replace(/"/g, ''), '-Value', String(v)], 8000);
       try { return jsonResp(res, JSON.parse(out)); }
       catch { return jsonResp(res, { ok: false, raw: out.slice(0, 200) }); }
     } catch (e) {
@@ -1960,10 +2077,7 @@ const server = createServer(async (req, res) => {
       if (!valid.includes(action)) return jsonResp(res, { error: 'action must be one of ' + valid.join(', ') }, 400);
       const script = join(ROOT, '.claude', 'bin', 'smtc-control.ps1');
       if (!existsSync(script)) return jsonResp(res, { error: 'smtc-control.ps1 missing' }, 500);
-      const out = execSync(
-        `powershell -NoProfile -ExecutionPolicy Bypass -File "${script}" ${action}`,
-        { encoding: 'utf8', timeout: 5000 }
-      ).trim();
+      const out = runPowerShellFile(script, [action], 5000);
       // Invalidate now-playing cache so the next GET picks up the new state.
       _nowPlayingCache = { ts: 0, data: null };
       try { return jsonResp(res, JSON.parse(out)); }

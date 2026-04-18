@@ -92,10 +92,10 @@ is right there. match it exactly.
 4. `recon-102-memory-budget` — how much do we scan
 
 **reference material:**
-- `../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md`
-  holds the live MCC module list, updated every 5 minutes
+- `../agent_mode/memories/ken-ai-latest/halo-game-dump.md`
+  holds the local Codex-side MCC module list, updated every 5 minutes
   when the game_dumper loop is running
-- `../../Claude/agent_mode/memories/ken-ai-latest/halo-modules.jsonl`
+- `../agent_mode/memories/ken-ai-latest/halo-modules.jsonl`
   is the same data in one-json-per-line form
 
 **what "good" looks like:**

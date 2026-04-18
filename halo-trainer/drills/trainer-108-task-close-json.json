@@ -1,0 +1,17 @@
+{
+  "id": "trainer-108-task-close-json",
+  "title": "Ken AI closes a task with exact done JSON",
+  "student": "kenai:v1",
+  "curriculum": "trainer",
+  "contextFiles": [],
+  "prompt": "you finished the task 'add health pin thread to halo hunt'. respond with exactly one json object in this shape and nothing else: {\"done\":true,\"summary\":\"...\"}. summary must be 5-15 lowercase words.",
+  "rubric": [
+    { "type": "json_valid", "weight": 4 },
+    { "type": "contains", "needle": "\"done\":", "weight": 2 },
+    { "type": "contains", "needle": "\"summary\":", "weight": 2 },
+    { "type": "must_not_contain", "needle": "```", "weight": 2 },
+    { "type": "max_length", "value": 180, "weight": 1 }
+  ],
+  "passingPercent": 0.8,
+  "timeoutMs": 90000
+}

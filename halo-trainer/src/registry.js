@@ -4,7 +4,7 @@
    tutor    = observes + re-tunes prompts. */
 
 export const TRAINER = {
-  id: 'ken-ai:latest',
+  id: 'kenai:v1',
   displayName: 'Ken AI',
   role: 'trainer',
 };

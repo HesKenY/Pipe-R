@@ -1,55 +1,63 @@
 projects:
-  default:
-    name: "Default Workspace"
-    path: "workspace/"
-    language: "python"
-    test_command: "pytest"
-    format_command: "black ."
-    lint_command: "flake8 ."
-
-  pipe_r:
-    name: "Pipe-R command center"
+  codex:
+    name: "Codex workspace"
     path: "C:/Users/Ken/Desktop/Codex"
-    language: "javascript"
-    test_command: "node --check server.js"
+    language: "mixed"
+    test_command: "python -m compileall offline_agent"
     format_command: ""
     lint_command: ""
     git_remote: "origin"
-    notes: "node.js button-driven command center. hub.js + server.js on :7777. no npm install needed."
+    notes: "Primary working clone. Pipe-R, offline_agent, corpora, and shared brain live here."
 
-  claude_clone:
-    name: "Claude parallel clone"
-    path: "C:/Users/Ken/Desktop/Claude"
-    language: "javascript"
-    test_command: "node --check server.js"
+  offline_agent:
+    name: "Offline agent"
+    path: "C:/Users/Ken/Desktop/Codex/offline_agent"
+    language: "python"
+    test_command: "python -m compileall ."
     format_command: ""
     lint_command: ""
     git_remote: "origin"
-    notes: "claude's working copy of the same repo. read-only from offline_agent to avoid stomping claude's in-flight work."
+    notes: "Local coding-agent runtime. This is the Claude Code replacement surface and Ken V4 squad-lead console."
 
-  halo_trainer:
-    name: "Halo trainer classroom"
-    path: "C:/Users/Ken/Desktop/Codex/halo-trainer"
+  agent_mode:
+    name: "Agent squad runtime"
+    path: "C:/Users/Ken/Desktop/Codex/agent_mode"
     language: "javascript"
-    test_command: "node src/enroll.js"
+    test_command: ""
     format_command: ""
     lint_command: ""
-    notes: "scored drill environment for the ken-ai + squad. runs ollama directly. 13+ drills, 4 curricula, rubric grader."
+    git_remote: "origin"
+    read_only: true
+    notes: "Live local squad runtime. offline_agent reads its roster and queue state by default instead of mutating it."
 
   cherp:
-    name: "CHERP — construction crew platform"
+    name: "CHERP"
     path: "C:/Users/Ken/Desktop/Codex/workspace/CHERP"
     language: "javascript"
     test_command: "node test/run-all.js"
     format_command: ""
     lint_command: ""
     git_remote: "origin"
-    notes: "LIVE on cherp.live. supabase backend (nptmzihtujgkmqougkzd). offline-first via window.store. touch carefully."
+    notes: "Live production repo. Touch carefully and stay offline-first."
+
+  claude_peer:
+    name: "Claude peer clone"
+    path: "C:/Users/Ken/Desktop/Claude"
+    language: "mixed"
+    test_command: ""
+    format_command: ""
+    lint_command: ""
+    git_remote: "origin"
+    read_only: true
+    notes: "Parallel clone for coordination only. Read if needed, do not write from offline_agent."
 
 agent:
-  name: "KenAI"
-  version: "0.1.0"
-  persona: "Ken's personal offline coding assistant. Disciplined. Methodical. Lowercase voice. No analogies. Reads before writing."
+  name: "KenAI Offline Developer"
+  version: "0.4.1"
+  persona: "Ken's local coding agent and coding-first squad lead. Reads first, patches carefully, logs to the brain, and keeps the agent team pointed at shipping."
+  lead_title: "Ken V4 Offline Developer"
+  lead_model: "kenai:v4-offline-developer"
+  squad_role: "Coding-first squad lead"
   loop_delay_ms: 500
   max_task_steps: 50
   auto_summarize: true

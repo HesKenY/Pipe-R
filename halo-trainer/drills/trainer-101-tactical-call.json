@@ -1,7 +1,7 @@
 {
   "id": "trainer-101-tactical-call",
   "title": "Ken AI picks the next tactical action from a live state",
-  "student": "ken-ai:latest",
+  "student": "kenai:v1",
   "curriculum": "tactical",
   "contextFiles": [],
   "prompt": "you are ken-ai. tick snapshot:\n\n  shield: 0.35\n  health: 80\n  ammo_current: 4\n  ammo_max: 36\n  weapon: smg\n  motion: 0.42\n  center_blob_count: 3\n  nearest_blob_dist_px: 240\n  last_3_actions: [move_fwd, ads, fire]\n  activity: combat\n\npick ONE action from the palette: move_fwd | move_back | strafe_left | strafe_right | jump | crouch | reload | ads | fire | melee | grenade | noop\n\nrespond in EXACTLY this format, nothing else:\n\nACTION: <pick>\nWHY: <5-10 words, lowercase, no analogies>\n\nrules:\n- shield below 0.4 → prefer retreat or cover over pushing\n- ammo 4/36 → reload unless an enemy is point-blank\n- 3 blobs at 240px → not point-blank, retreat is safe\n- do NOT pick the same action you just did (last=fire)\n- lowercase, short, no pleasantries",

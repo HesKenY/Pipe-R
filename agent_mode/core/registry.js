@@ -6,9 +6,18 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import {
+  PRIMARY_TRAINER_ID,
+  LEGACY_TRAINER_ID,
+  TRAINER_DISPLAY_NAME,
+  TRAINER_MODEL_FALLBACKS,
+  isTrainerId,
+  normalizeTrainerId,
+  trainerFallbacksFor,
+} from './trainer_identity.js';
 
 const REGISTRY_FILE = join(process.cwd(), 'agent_mode', 'config', 'agents.json');
-const DEFAULT_TRAINER_ID = 'ken-ai:latest';
+const DEFAULT_TRAINER_ID = PRIMARY_TRAINER_ID;
 
 const TEAM_DEFAULTS = {
   'qwen2.5-coder:14b': {
@@ -144,22 +153,39 @@ const TEAM_DEFAULTS = {
     teamMission: 'Turns archived memory into better prompts and reusable operating doctrine for the whole party.',
     handoffContract: 'Return prompt improvements, reusable heuristics, and the evidence behind each learning change.',
   },
-  'ken-ai:latest': {
-    displayName: 'Ken AI',
-    role: 'Trainer Orchestrator',
+  [PRIMARY_TRAINER_ID]: {
+    displayName: TRAINER_DISPLAY_NAME,
+    role: 'Lead Developer Orchestrator',
     personality: 'ken-coder',
     teamRole: 'trainer',
     partySlot: 0,
-    partyBadge: 'TR',
-    battleRole: 'Trainer Orchestrator',
+    partyBadge: 'KV4',
+    battleRole: 'Lead Developer Orchestrator',
     specialistTrack: 'trainer',
     charterFile: 'agent_mode/training/charters/ken-ai-trainer.md',
     pokemon: 'Trainer',
     pokemonType: 'Leader',
-    trainingFocus: 'Set direction, sequence specialists, arbitrate tradeoffs, and speak in Ken\'s voice.',
-    independentMission: 'Can plan, review, and make architecture calls without delegating the final decision.',
-    teamMission: 'Keeps the party cohesive, resolves conflicts, and picks the next best move.',
+    trainingFocus: 'Lead the coding squad, sequence specialists, arbitrate tradeoffs, and keep the whole runtime aimed at shipping code instead of drifting into game-first behavior.',
+    independentMission: 'Can plan, review, make architecture calls, and own the final coding decision without delegating the last mile.',
+    teamMission: 'Keeps the squad cohesive, resolves conflicts, and picks the next best coding move.',
     handoffContract: 'Return final decisions, assignment changes, and approval notes.',
+  },
+  [LEGACY_TRAINER_ID]: {
+    displayName: TRAINER_DISPLAY_NAME,
+    role: 'Lead Developer Orchestrator',
+    personality: 'ken-coder',
+    teamRole: 'trainer',
+    partySlot: 0,
+    partyBadge: 'KV4',
+    battleRole: 'Lead Developer Orchestrator',
+    specialistTrack: 'trainer',
+    charterFile: 'agent_mode/training/charters/ken-ai-trainer.md',
+    pokemon: 'Trainer',
+    pokemonType: 'Leader',
+    trainingFocus: 'Legacy alias for the Ken V4 lead developer runtime.',
+    independentMission: 'Compatibility alias only.',
+    teamMission: 'Compatibility alias only.',
+    handoffContract: 'Compatibility alias only.',
   },
 };
 
@@ -168,15 +194,31 @@ export class AgentRegistry {
     this.agents = this._load();
   }
 
+  _liveModels() {
+    try {
+      const out = execSync('ollama list', { encoding: 'utf8', timeout: 3000 });
+      return out.trim().split('\n').slice(1).map(line => line.split(/\s+/)[0]).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
   _normalizeAgent(agent) {
-    const inferred = TEAM_DEFAULTS[agent.id] || {};
-    const isTrainer = agent.id === DEFAULT_TRAINER_ID || agent.teamRole === 'trainer';
+    const normalizedId = normalizeTrainerId(agent.id);
+    const inferred = TEAM_DEFAULTS[normalizedId] || TEAM_DEFAULTS[agent.id] || {};
+    const isTrainer = isTrainerId(agent.id) || agent.teamRole === 'trainer';
     const defaultStatus = isTrainer && agent.buildNote ? 'pending_build' : 'idle';
+    const base = isTrainer
+      ? PRIMARY_TRAINER_ID
+      : (agent.base || normalizedId);
+    const fallbackModels = Array.isArray(agent.fallbackModels) && agent.fallbackModels.length
+      ? [...new Set(agent.fallbackModels)]
+      : (isTrainer ? TRAINER_MODEL_FALLBACKS.slice(1) : []);
 
     return {
-      id: agent.id,
-      base: agent.base || agent.id,
-      displayName: agent.displayName || inferred.displayName || (agent.base || agent.id).split(':')[0],
+      id: normalizedId,
+      base,
+      displayName: agent.displayName || inferred.displayName || (base || normalizedId).split(':')[0],
       role: agent.role || inferred.role || inferred.battleRole || 'General Worker',
       personality: agent.personality || inferred.personality || null,
       modeEligibility: agent.modeEligibility || 'both',
@@ -186,6 +228,7 @@ export class AgentRegistry {
       lastUsed: agent.lastUsed || null,
       registeredAt: agent.registeredAt || new Date().toISOString(),
       buildNote: agent.buildNote || null,
+      fallbackModels,
       teamRole: agent.teamRole || inferred.teamRole || 'party',
       partySlot: Number.isFinite(agent.partySlot) ? agent.partySlot : (inferred.partySlot ?? null),
       partyBadge: agent.partyBadge || inferred.partyBadge || 'P?',
@@ -229,11 +272,12 @@ export class AgentRegistry {
 
   /** Register a new agent (Ollama model) */
   register(opts) {
-    const existing = this.getById(opts.id);
+    const normalizedId = normalizeTrainerId(opts.id);
+    const existing = this.getById(normalizedId);
     if (existing) return existing;
 
     const agent = this._normalizeAgent({
-      id: opts.id,
+      id: normalizedId,
       base: opts.base,
       displayName: opts.displayName || opts.base.split(':')[0],
       role: opts.role || 'General Worker',
@@ -241,6 +285,7 @@ export class AgentRegistry {
       modeEligibility: opts.modeEligibility || 'both',
       status: opts.status || null,
       buildNote: opts.buildNote || null,
+      fallbackModels: opts.fallbackModels || null,
       teamRole: opts.teamRole || null,
       partySlot: opts.partySlot,
       partyBadge: opts.partyBadge || null,
@@ -263,16 +308,13 @@ export class AgentRegistry {
   }
 
   getById(id) {
-    const agent = this.agents.find(a => a.id === id);
+    const normalizedId = normalizeTrainerId(id);
+    const agent = this.agents.find(a => a.id === normalizedId);
     return agent ? this._touchAgent(agent) : null;
   }
 
   list() {
-    let liveModels = [];
-    try {
-      const out = execSync('ollama list', { encoding: 'utf8', timeout: 3000 });
-      liveModels = out.trim().split('\n').slice(1).map(line => line.split(/\s+/)[0]).filter(Boolean);
-    } catch {}
+    const liveModels = this._liveModels();
 
     let dirty = false;
 
@@ -289,9 +331,14 @@ export class AgentRegistry {
         dirty = true;
       }
 
+      const modelChoices = trainerFallbacksFor(current);
+      const resolvedBase = modelChoices.find(model => liveModels.includes(model)) || modelChoices[0] || current.base;
+
       return {
         ...current,
-        available: liveModels.includes(current.base) || liveModels.includes(current.id),
+        available: modelChoices.some(model => liveModels.includes(model)),
+        resolvedBase,
+        fallbackUsed: resolvedBase !== current.base,
         attempts,
         failRate,
         successRate: attempts > 0 ? current.tasksCompleted / attempts : 0,
@@ -308,6 +355,14 @@ export class AgentRegistry {
       if (a.teamRole !== 'companion' && b.teamRole === 'companion') return 1;
       return (a.partySlot || 99) - (b.partySlot || 99);
     });
+  }
+
+  resolveRunModel(agentOrId) {
+    const agent = typeof agentOrId === 'string' ? this.getById(agentOrId) : this._touchAgent(agentOrId);
+    if (!agent) return null;
+    const liveModels = this._liveModels();
+    const choices = trainerFallbacksFor(agent);
+    return choices.find(model => liveModels.includes(model)) || choices[0] || agent.base || agent.id;
   }
 
   rename(id, newName) {

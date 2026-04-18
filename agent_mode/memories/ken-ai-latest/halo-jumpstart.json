@@ -1,0 +1,90 @@
+{
+  "builtAt": "2026-04-16T03:38:31.590Z",
+  "sourceCounts": {
+    "keyEvents": 1200,
+    "patternEvents": 220,
+    "haloTicks": 120
+  },
+  "dominantKeys": [
+    {
+      "name": "w",
+      "count": 272
+    },
+    {
+      "name": "mouse:left",
+      "count": 175
+    },
+    {
+      "name": "d",
+      "count": 55
+    },
+    {
+      "name": "backspace",
+      "count": 30
+    },
+    {
+      "name": "space",
+      "count": 26
+    },
+    {
+      "name": "s",
+      "count": 24
+    }
+  ],
+  "dominantPatterns": [
+    {
+      "name": "strafe_shoot",
+      "count": 71
+    },
+    {
+      "name": "grenade_throw",
+      "count": 15
+    },
+    {
+      "name": "melee_strike",
+      "count": 8
+    },
+    {
+      "name": "noob_combo",
+      "count": 6
+    },
+    {
+      "name": "reload_after_fire",
+      "count": 2
+    }
+  ],
+  "dominantActions": [
+    {
+      "name": "noop",
+      "count": 53
+    },
+    {
+      "name": "move_fwd",
+      "count": 20
+    },
+    {
+      "name": "strafe_left",
+      "count": 15
+    },
+    {
+      "name": "fire",
+      "count": 11
+    },
+    {
+      "name": "strafe_right",
+      "count": 9
+    },
+    {
+      "name": "melee",
+      "count": 5
+    }
+  ],
+  "styleNotes": [
+    "Ken pushes forward often. Default to pressure over freezing.",
+    "Ken fights while moving sideways. Keep lateral movement active in combat.",
+    "Ken resets with reload after exchanges. Build that into downtime.",
+    "Ken uses grenades as openers. Check throw windows before pure gunplay.",
+    "Ken reaches for the noob combo. Respect shield-pop into follow-up shots."
+  ],
+  "recentKeys": "l space h s a backspace a l"
+}

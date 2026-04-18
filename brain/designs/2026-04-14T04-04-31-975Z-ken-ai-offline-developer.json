@@ -1,0 +1,15 @@
+{
+  "savedAt": "2026-04-14T04:04:31.976Z",
+  "source": "pipe-r",
+  "name": "Ken AI Offline Developer",
+  "mission": "Build the BRAIN Controller and Ken AI Chat driven offline developer model.",
+  "capabilities": [
+    "vision context",
+    "tool execution",
+    "local-first execution"
+  ],
+  "permissions": [
+    "full-trust local mode",
+    "approved project read/write"
+  ]
+}

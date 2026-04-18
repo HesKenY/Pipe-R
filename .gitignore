@@ -31,3 +31,13 @@ brain/*.db
 brain/*.sqlite
 brain/*.sqlite3
 brain/exports/
+
+# Python compiled cache
+__pycache__/
+*.pyc
+
+# Unsloth auto-compiled ML trainer cache (regenerates automatically)
+unsloth_compiled_cache/
+
+# Local ephemeral state
+.claude/scheduled_tasks.lock

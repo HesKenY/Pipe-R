@@ -78,7 +78,7 @@ class SessionManager:
         if not self.log_path.exists():
             header = (
                 f"# Session log — {self.session_date}\n\n"
-                f"Agent: Ken AI (offline skeleton)\n"
+                f"Agent: KenAI Offline Developer\n"
                 f"Started: {self.session_start}\n\n"
                 f"---\n"
             )

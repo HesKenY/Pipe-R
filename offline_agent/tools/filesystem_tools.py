@@ -35,9 +35,62 @@ def write_file(path: str, content: str) -> str:
 
 
 def apply_patch(path: str, diff: str) -> str:
-    """Apply a unified diff to a file."""
+    """Apply a unified diff to a file. Context-anchored so
+    stale line numbers don't corrupt the file."""
     ok, msg = _patch_engine.apply_patch(path, diff)
     return msg
+
+
+def apply_multi_patch(diff: str) -> dict:
+    """Apply a unified diff that touches multiple files.
+    Atomic — rolls back every file if any one fails.
+    Returns {ok, message, files: [...]}."""
+    ok, msg, files = _patch_engine.apply_multi_file_patch(diff)
+    return {"ok": ok, "message": msg, "files": files}
+
+
+def propose_patch(path: str, new_content: str) -> dict:
+    """Stage a proposed edit. Returns {patch_id, preview}
+    without writing to disk. Call approve_patch(patch_id)
+    to commit after reviewing the preview diff."""
+    patch_id, preview = _patch_engine.propose_patch(path, new_content)
+    return {"patch_id": patch_id, "preview": preview}
+
+
+def approve_patch(patch_id: str) -> dict:
+    """Commit a previously-proposed patch. Re-reads the target
+    file to detect drift — fails if the file changed since
+    proposal."""
+    ok, msg = _patch_engine.approve_patch(patch_id)
+    return {"ok": ok, "message": msg}
+
+
+def reject_patch(patch_id: str) -> dict:
+    ok, msg = _patch_engine.reject_patch(patch_id)
+    return {"ok": ok, "message": msg}
+
+
+def list_pending_patches() -> dict:
+    """Return every pending proposed patch."""
+    return {"pending": _patch_engine.list_pending()}
+
+
+def preview_patch(path: str, new_content: str) -> str:
+    """Return a unified diff of what a proposed write would
+    change, without actually writing."""
+    return _patch_engine.preview_patch(path, new_content)
+
+
+def revert_last_patch(path: str) -> dict:
+    """Restore the most recent backup for a given file."""
+    ok, msg = _patch_engine.revert_last(path)
+    return {"ok": ok, "message": msg}
+
+
+def patch_history(path: str = "", limit: int = 20) -> dict:
+    """Return recent patch index rows, optionally filtered
+    to one file."""
+    return {"history": _patch_engine.history(path or None, limit)}
 
 
 def list_tree(path: str = ".", depth: int = 3) -> str:

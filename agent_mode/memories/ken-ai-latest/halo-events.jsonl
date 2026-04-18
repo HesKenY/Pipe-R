@@ -1,0 +1,371 @@
+{"at":"2026-04-14T00:10:48.938Z","kind":"shield_regen","streak":1,"action":"move_fwd","tickAt":"2026-04-14T00:10:48.938Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:10:55.500Z","kind":"scene_change","direction":"to_filled","action":"strafe_right","tickAt":"2026-04-14T00:10:55.500Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:11:01.731Z","kind":"shield_regen","streak":1,"action":"move_back","tickAt":"2026-04-14T00:11:01.730Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:11:17.046Z","kind":"scene_change","direction":"to_blank","action":"move_fwd","tickAt":"2026-04-14T00:11:17.046Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:11:25.960Z","kind":"shield_regen","streak":1,"action":"look_right","tickAt":"2026-04-14T00:11:25.960Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:11:40.926Z","kind":"shield_regen","streak":1,"action":"look_left","tickAt":"2026-04-14T00:11:40.926Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:12:00.558Z","kind":"scene_change","direction":"to_filled","action":"strafe_right","tickAt":"2026-04-14T00:12:00.558Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:12:06.874Z","kind":"ammo_changed","before":"' S","after":"w xz","action":"move_back","tickAt":"2026-04-14T00:12:06.874Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:13:07.174Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:13:19.290Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:13:23.497Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 731ms"}
+{"at":"2026-04-14T00:14:02.370Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:14:38.089Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:14:38.089Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 792ms"}
+{"at":"2026-04-14T00:14:56.335Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:15:09.177Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:15:23.055Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:15:35.582Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:15:54.062Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:16:41.576Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 739ms"}
+{"at":"2026-04-14T00:17:16.889Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:17:17.545Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:17:42.713Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:18:10.831Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:18:18.094Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:18:16.446Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 795ms"}
+{"at":"2026-04-14T00:18:31.217Z","kind":"died","cause":"shield_empty_3_ticks","action":"look_right","tickAt":"2026-04-14T00:18:31.217Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:18:38.998Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:18:47.277Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:19:03.241Z","kind":"shield_regen","streak":2,"action":"move_fwd","tickAt":"2026-04-14T00:19:03.241Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:19:14.893Z","kind":"ammo_changed","before":"Dy Mai","after":"@~ Ff","action":"look_right","tickAt":"2026-04-14T00:19:14.893Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:19:21.828Z","kind":"scene_change","direction":"to_blank","action":"move_fwd","tickAt":"2026-04-14T00:19:21.828Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:19:30.652Z","kind":"shield_regen","streak":2,"action":"look_left","tickAt":"2026-04-14T00:19:30.652Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:19:38.417Z","kind":"damage_taken","before":"oe","after":"De","action":"move_back","tickAt":"2026-04-14T00:19:38.417Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:19:39.121Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:19:46.828Z","kind":"damage_taken","before":"NA","after":"SD","action":"look_right","tickAt":"2026-04-14T00:19:46.828Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:20:00.276Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:20:10.086Z","kind":"died","cause":"shield_empty_3_ticks","action":"move_back","tickAt":"2026-04-14T00:20:10.086Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:20:20.224Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:20:27.906Z","kind":"scene_change","direction":"to_blank","action":"look_right","tickAt":"2026-04-14T00:20:27.906Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:25:31.571Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:25:43.204Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:25:40.358Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:25:47.935Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 501ms"}
+{"at":"2026-04-14T00:26:32.344Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:26:42.393Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:26:49.315Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 778ms"}
+{"at":"2026-04-14T00:27:13.453Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:27:17.859Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 592ms"}
+{"at":"2026-04-14T00:27:31.909Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:27:49.120Z","kind":"shield_regen","streak":1,"action":"look_left","tickAt":"2026-04-14T00:27:49.120Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:27:57.733Z","kind":"scene_change","direction":"to_filled","action":"move_fwd","tickAt":"2026-04-14T00:27:57.733Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:27:49.736Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:28:08.569Z","kind":"scene_change","direction":"to_filled","action":"strafe_right","tickAt":"2026-04-14T00:28:08.569Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:28:00.220Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:28:11.234Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:28:17.796Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:28:25.064Z","kind":"shield_regen","streak":1,"action":"look_right","tickAt":"2026-04-14T00:28:25.064Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:28:23.366Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:28:38.651Z","kind":"damage_taken","before":") =a","after":"; oe a","action":"move_back","tickAt":"2026-04-14T00:28:38.651Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:28:39.987Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:29:05.096Z","kind":"died","cause":"shield_empty_3_ticks","action":"strafe_right","tickAt":"2026-04-14T00:29:05.096Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:29:16.627Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:29:31.381Z","kind":"scene_change","direction":"to_blank","action":"look_left","tickAt":"2026-04-14T00:29:31.381Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:29:29.589Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:29:53.535Z","kind":"died","cause":"shield_empty_3_ticks","action":"strafe_left","tickAt":"2026-04-14T00:29:53.535Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:29:49.104Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:30:14.113Z","kind":"scene_change","direction":"to_blank","action":"move_fwd","tickAt":"2026-04-14T00:30:14.113Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:30:11.902Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:30:31.814Z","kind":"scene_change","direction":"to_blank","action":"look_left","tickAt":"2026-04-14T00:30:31.814Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:30:41.860Z","kind":"died","cause":"shield_empty_3_ticks","action":"move_fwd","tickAt":"2026-04-14T00:30:41.860Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:30:40.194Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:31:04.539Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:31:11.994Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:31:09.219Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:31:27.979Z","kind":"damage_taken","before":"a B% .","after":"——ZE “","action":"look_right","tickAt":"2026-04-14T00:31:27.979Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:31:41.143Z","kind":"scene_change","direction":"to_blank","action":"move_back","tickAt":"2026-04-14T00:31:41.143Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:31:53.178Z","kind":"shield_regen","streak":1,"action":"look_left","tickAt":"2026-04-14T00:31:53.178Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:32:01.997Z","kind":"scene_change","direction":"to_blank","action":"move_fwd","tickAt":"2026-04-14T00:32:01.997Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:32:00.321Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:32:10.796Z","kind":"shield_regen","streak":1,"action":"move_fwd","tickAt":"2026-04-14T00:32:10.796Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:32:11.384Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:32:19.718Z","kind":"scene_change","direction":"to_filled","action":"strafe_right","tickAt":"2026-04-14T00:32:19.718Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:32:23.350Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:32:27.516Z","kind":"scene_change","direction":"to_blank","action":"look_left","tickAt":"2026-04-14T00:32:27.516Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:32:33.851Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:32:38.198Z","kind":"shield_regen","streak":2,"action":"look_right","tickAt":"2026-04-14T00:32:38.198Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:32:52.730Z","kind":"damage_taken","before":"i > /","after":"Va","action":"move_fwd","tickAt":"2026-04-14T00:32:52.730Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:33:07.967Z","kind":"damage_taken","before":"Va","after":"— —. ip ;","action":"look_left","tickAt":"2026-04-14T00:33:07.967Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:33:14.427Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:33:24.846Z","kind":"shield_regen","streak":1,"action":"move_fwd","tickAt":"2026-04-14T00:33:24.846Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:33:24.492Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:33:35.194Z","kind":"scene_change","direction":"to_filled","action":"strafe_right","tickAt":"2026-04-14T00:33:35.194Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:33:33.243Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 667ms"}
+{"at":"2026-04-14T00:33:45.389Z","kind":"ammo_changed","before":"yA","after":": /, : , | = : ; i","action":"move_back","tickAt":"2026-04-14T00:33:45.389Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:33:52.286Z","kind":"shield_regen","streak":2,"action":"move_back","tickAt":"2026-04-14T00:33:52.286Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:34:02.477Z","kind":"damage_taken","before":"co","after":"&. Ber Pas","action":"move_fwd","tickAt":"2026-04-14T00:34:02.477Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:33:59.575Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:34:15.786Z","kind":"scene_change","direction":"to_filled","action":"look_left","tickAt":"2026-04-14T00:34:15.785Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:34:24.537Z","kind":"ammo_changed","before":">.","after":"Hy","action":"move_back","tickAt":"2026-04-14T00:34:24.537Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:34:25.484Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 721ms"}
+{"at":"2026-04-14T00:34:56.798Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:35:08.361Z","kind":"ammo_changed","before":"Tie Ta, Wee ee","after":"| eZ","action":"look_right","tickAt":"2026-04-14T00:35:08.361Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:35:19.186Z","kind":"ammo_changed","before":"wa","after":"ba _) i, _——","action":"move_fwd","tickAt":"2026-04-14T00:35:19.186Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:35:17.160Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:35:34.769Z","kind":"died","cause":"shield_empty_3_ticks","action":"look_left","tickAt":"2026-04-14T00:35:34.769Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:35:50.212Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:36:07.374Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:36:06.580Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 648ms"}
+{"at":"2026-04-14T00:36:15.367Z","kind":"damage_taken","before":"~we Y","after":"\\ ll","action":"look_right","tickAt":"2026-04-14T00:36:15.367Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:36:32.996Z","kind":"ammo_changed","before":"~ |","after":"w a","action":"move_fwd","tickAt":"2026-04-14T00:36:32.996Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:36:27.769Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:37:21.507Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 709ms"}
+{"at":"2026-04-14T00:37:40.113Z","kind":"shield_regen","streak":1,"action":"move_back","tickAt":"2026-04-14T00:37:40.113Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:37:57.217Z","kind":"damage_taken","before":"a a.","after":"SONY Qe:","action":"move_fwd","tickAt":"2026-04-14T00:37:57.217Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:37:46.597Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:37:48.428Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 735ms"}
+{"at":"2026-04-14T00:38:16.047Z","kind":"ammo_changed","before":"—— i","after":"ft rere","action":"look_left","tickAt":"2026-04-14T00:38:16.047Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:39:21.322Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T00:39:32.066Z","kind":"damage_taken","before":"A VEY ne","after":"Vel Vil","action":"move_fwd","tickAt":"2026-04-14T00:39:32.066Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:40:13.909Z","kind":"ammo_changed","before":"a See","after":"eee","action":"move_back","tickAt":"2026-04-14T00:40:13.909Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:40:41.885Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:41:06.951Z","kind":"shield_regen","streak":2,"action":"move_back","tickAt":"2026-04-14T00:41:06.951Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:41:04.611Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:41:49.196Z","kind":"damage_taken","before":"| e —","after":"a > ——","action":"move_back","tickAt":"2026-04-14T00:41:49.195Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:41:34.944Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:41:35.740Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:42:46.716Z","kind":"shield_regen","streak":1,"action":"move_fwd","tickAt":"2026-04-14T00:42:46.716Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:42:46.180Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:43:32.164Z","kind":"ammo_changed","before":">» |","after":"_————","action":"move_back","tickAt":"2026-04-14T00:43:32.164Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:43:29.381Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:44:04.210Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:44:30.679Z","kind":"shield_regen","streak":1,"action":"move_back","tickAt":"2026-04-14T00:44:30.679Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:44:34.962Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:45:15.403Z","kind":"damage_taken","before":"~~ -. 2","after":"EB","action":"move_back","tickAt":"2026-04-14T00:45:15.403Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:45:01.304Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:45:02.134Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:45:27.075Z","kind":"damage_taken","before":"ERERER\\sx","after":"oo","action":"move_back","tickAt":"2026-04-14T00:45:27.075Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:45:52.382Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:45:27.583Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T00:46:13.009Z","kind":"ammo_changed","before":"AN SSS SS","after":"—_—_ eee","action":"move_fwd","tickAt":"2026-04-14T00:46:13.009Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T00:48:05.995Z","kind":"ammo_changed","before":"Ss —","after":"HR","action":"move_fwd","tickAt":"2026-04-14T00:48:05.995Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:48:08.366Z","kind":"ammo_changed","before":"Re aa A a et","after":"<~ &®","action":"fire","tickAt":"2026-04-14T00:48:08.366Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:49:11.290Z","kind":"shield_regen","streak":2,"action":"ads","tickAt":"2026-04-14T00:49:11.290Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:50:27.909Z","kind":"ammo_changed","before":"oS Seen","after":"~<a","action":"strafe_left","tickAt":"2026-04-14T00:50:27.909Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:50:18.823Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:51:34.673Z","kind":"shield_regen","streak":2,"action":"move_fwd","tickAt":"2026-04-14T00:51:34.673Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:51:31.976Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T00:51:38.778Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:52:52.994Z","kind":"ammo_changed","before":"me / \\\\\\\\ \\","after":"a <<","action":"move_fwd","tickAt":"2026-04-14T00:52:52.994Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:53:34.595Z","kind":"ammo_changed","before":"= ;","after":"= |","action":"move_fwd","tickAt":"2026-04-14T00:53:34.594Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:53:51.185Z","kind":"shield_regen","streak":1,"action":"strafe_left","tickAt":"2026-04-14T00:53:51.185Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:54:07.687Z","kind":"damage_taken","before":"= ioe","after":"| Y | | 1","action":"strafe_right","tickAt":"2026-04-14T00:54:07.687Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:55:07.623Z","kind":"damage_taken","before":"_ |","after":"\\ ,","action":"move_fwd","tickAt":"2026-04-14T00:55:07.623Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:55:03.761Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:57:09.742Z","kind":"damage_taken","before":"x = q dee _—","after":"~, -’' Ne","action":"strafe_left","tickAt":"2026-04-14T00:57:09.742Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:57:07.760Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:59:10.925Z","kind":"damage_taken","before":"a, Se","after":"= wT @","action":"move_fwd","tickAt":"2026-04-14T00:59:10.925Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:59:26.039Z","kind":"damage_taken","before":"Zs","after":"- i","action":"noop","tickAt":"2026-04-14T00:59:26.039Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:59:46.808Z","kind":"ammo_changed","before":"sAANSA","after":"r i a","action":"noop","tickAt":"2026-04-14T00:59:46.808Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T00:59:53.486Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T00:59:51.499Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 595ms"}
+{"at":"2026-04-14T01:00:07.533Z","kind":"shield_regen","streak":1,"action":"noop","tickAt":"2026-04-14T01:00:07.533Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:01:13.310Z","kind":"ammo_changed","before":"ae","after":"ie row 20","action":"move_fwd","tickAt":"2026-04-14T01:01:13.310Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:00:51.938Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:02:19.466Z","kind":"damage_taken","before":"aa","after":"\\\\\" |","action":"noop","tickAt":"2026-04-14T01:02:19.466Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:04:04.078Z","kind":"scene_change","direction":"to_filled","action":"look_left","tickAt":"2026-04-14T01:04:04.078Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:03:50.676Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:04:47.504Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:06:01.050Z","kind":"shield_regen","streak":1,"action":"strafe_left","tickAt":"2026-04-14T01:06:01.050Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:07:09.382Z","kind":"damage_taken","before":"ARRAN","after":"Se Vk","action":"move_fwd","tickAt":"2026-04-14T01:07:09.382Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:07:22.559Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T01:08:25.053Z","kind":"damage_taken","before":"thie BG","after":"a - = =","action":"noop","tickAt":"2026-04-14T01:08:25.053Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:08:28.067Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:09:35.188Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T01:09:46.254Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 723ms"}
+{"at":"2026-04-14T01:10:47.865Z","kind":"shield_regen","streak":1,"action":"strafe_left","tickAt":"2026-04-14T01:10:47.865Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:10:50.973Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T01:10:37.904Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:15:06.336Z","kind":"shield_regen","streak":1,"action":"noop","tickAt":"2026-04-14T01:15:06.336Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:16:27.691Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:16:47.323Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:18:10.188Z","kind":"ammo_changed","before":"~~","after":"SS","action":"noop","tickAt":"2026-04-14T01:18:10.188Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:19:10.642Z","kind":"died","cause":"shield_empty_3_ticks","action":"noop","tickAt":"2026-04-14T01:19:10.642Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:22:48.035Z","kind":"ammo_changed","before":"y y :","after":"eS oe","action":"noop","tickAt":"2026-04-14T01:22:48.035Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:23:52.949Z","kind":"shield_regen","streak":1,"action":"strafe_left","tickAt":"2026-04-14T01:23:52.949Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:25:11.759Z","kind":"damage_taken","before":"—— |","after":": . / / ip | ,","action":"noop","tickAt":"2026-04-14T01:25:11.759Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:25:32.192Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:26:57.661Z","kind":"damage_taken","before":"LA","after":"» NS","action":"noop","tickAt":"2026-04-14T01:26:57.661Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:27:08.871Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:27:22.890Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:27:36.433Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:28:16.457Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:28:26.894Z","kind":"scene_change","direction":"to_blank","action":"noop","tickAt":"2026-04-14T01:28:26.893Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:28:50.094Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:29:01.084Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:29:56.268Z","kind":"shield_regen","streak":1,"action":"noop","tickAt":"2026-04-14T01:29:56.268Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:29:42.804Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:29:42.804Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 669ms"}
+{"at":"2026-04-14T01:36:01.335Z","kind":"damage_taken","before":"ae","after":"~~","action":"noop","tickAt":"2026-04-14T01:36:01.334Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:36:35.958Z","kind":"ammo_changed","before":"———————— ]","after":"— |","action":"noop","tickAt":"2026-04-14T01:36:35.958Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:37:29.563Z","kind":"shield_regen","streak":1,"action":"fire","tickAt":"2026-04-14T01:37:29.563Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:38:25.508Z","kind":"ammo_changed","before":"ys","after":"ee","action":"fire","tickAt":"2026-04-14T01:38:25.508Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:43:38.226Z","kind":"shield_regen","streak":1,"action":"noop","tickAt":"2026-04-14T01:43:38.226Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:43:37.495Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:44:40.580Z","kind":"damage_taken","before":"AD AT\\\\\\\\\\\\\\","after":"— ss","action":"strafe_left","tickAt":"2026-04-14T01:44:40.580Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:44:34.937Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:45:49.324Z","kind":"damage_taken","before":"re","after":"Va","action":"noop","tickAt":"2026-04-14T01:45:49.324Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:45:40.648Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:46:52.312Z","kind":"damage_taken","before":"re","after":"‘x \\4 222","action":"noop","tickAt":"2026-04-14T01:46:52.312Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:47:51.973Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:48:02.344Z","kind":"ammo_changed","before":"<1. ~","after":"aN SS. . > - >","action":"strafe_left","tickAt":"2026-04-14T01:48:02.344Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:49:07.174Z","kind":"shield_regen","streak":1,"action":"strafe_right","tickAt":"2026-04-14T01:49:07.174Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T01:49:23.873Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T01:49:34.515Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:50:01.330Z","kind":"ammo_changed","before":"=> -","after":"= = mn : = aie | = |","action":"strafe_left","tickAt":"2026-04-14T01:50:01.330Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T01:50:17.490Z","kind":"shield_regen","streak":1,"action":"strafe_left","tickAt":"2026-04-14T01:50:17.490Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T01:50:31.924Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:50:45.190Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:50:57.446Z","kind":"ammo_changed","before":"~— oo","after":"\\y","action":"move_fwd","tickAt":"2026-04-14T01:50:57.446Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T01:51:37.805Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:51:42.073Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T01:51:59.569Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T01:52:11.757Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:52:44.772Z","kind":"damage_taken","before":"% Sa l\\ eat","after":"s~ \\e","action":"move_fwd","tickAt":"2026-04-14T01:52:44.772Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T01:53:25.038Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:53:47.468Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:54:15.694Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:54:40.860Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:57:49.001Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T01:58:18.305Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:58:47.531Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T01:58:44.406Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T01:59:11.042Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:00:35.809Z","kind":"damage_taken","before":"KZ","after":"ha Qe","action":"strafe_left","tickAt":"2026-04-14T02:00:35.809Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:01:01.085Z","kind":"damage_taken","before":"ha Qe","after":"} |","action":"move_fwd","tickAt":"2026-04-14T02:01:01.085Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:01:16.235Z","kind":"damage_taken","before":"\\ \\","after":"> > 4","action":"strafe_left","tickAt":"2026-04-14T02:01:16.235Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:01:19.155Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:01:56.107Z","kind":"damage_taken","before":"a \\","after":"WA \\\\\\ \\. . |","action":"move_fwd","tickAt":"2026-04-14T02:01:56.107Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:01:57.588Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:02:20.439Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:02:26.416Z","kind":"ammo_changed","before":"— = i","after":"_—_","action":"move_fwd","tickAt":"2026-04-14T02:02:26.416Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:02:43.051Z","kind":"shield_regen","streak":2,"action":"move_fwd","tickAt":"2026-04-14T02:02:43.051Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:03:26.073Z","kind":"damage_taken","before":"= |","after":"ww","action":"move_fwd","tickAt":"2026-04-14T02:03:26.073Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:03:41.047Z","kind":"ammo_changed","before":"Uh eas | see","after":"~~","action":"melee","tickAt":"2026-04-14T02:03:41.047Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:03:39.384Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T02:03:59.833Z","kind":"shield_regen","streak":1,"action":"strafe_left","tickAt":"2026-04-14T02:03:59.833Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:04:15.935Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T02:04:34.404Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:04:40.422Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:04:43.591Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:05:00.150Z","kind":"damage_taken","before":"- | a","after":"Nos\\ eee \\","action":"melee","tickAt":"2026-04-14T02:05:00.150Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:04:58.232Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T02:05:07.449Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:05:16.843Z","kind":"ammo_changed","before":"~~ Ss","after":"~~","action":"move_fwd","tickAt":"2026-04-14T02:05:16.842Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:05:28.753Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:05:33.796Z","kind":"damage_taken","before":"pf:","after":"FA? #4 Ada 14a |","action":"move_fwd","tickAt":"2026-04-14T02:05:33.796Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:05:43.572Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:05:51.589Z","kind":"ammo_changed","before":"=f =— -","after":"es oe “ =— a","action":"move_fwd","tickAt":"2026-04-14T02:05:51.589Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:05:54.578Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:06:16.734Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:13:45.169Z","kind":"damage_taken","before":"xz a p=","after":"HUAIgS Cama ™ 7 | a","action":"strafe_left","tickAt":"2026-04-14T02:13:45.169Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:14:14.282Z","kind":"damage_taken","before":"HUAIgS CAwn ™ 7 | Wh","after":"sa","action":"strafe_right","tickAt":"2026-04-14T02:14:14.282Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:14:40.189Z","kind":"damage_taken","before":"sa","after":"Se","action":"strafe_right","tickAt":"2026-04-14T02:14:40.189Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:14:47.410Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:15:05.721Z","kind":"damage_taken","before":"ee SS) |","after":"Sao | -","action":"ads","tickAt":"2026-04-14T02:15:05.721Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:15:00.757Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:15:15.854Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:15:54.478Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:15:58.517Z","kind":"shield_regen","streak":1,"action":"move_fwd","tickAt":"2026-04-14T02:15:58.517Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:16:01.764Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 609ms"}
+{"at":"2026-04-14T02:16:09.577Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:16:24.276Z","kind":"damage_taken","before":"; : | y a . “ “e","after":"... \\\\ ia","action":"ads","tickAt":"2026-04-14T02:16:24.276Z","model":"llama3.1:8b"}
+{"at":"2026-04-14T02:18:40.035Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:18:40.035Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 702ms"}
+{"at":"2026-04-14T02:19:00.651Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:19:24.377Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:19:55.311Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:20:20.334Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:21:52.487Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-14T02:22:46.655Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-14T02:22:54.438Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:23:05.278Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:23:05.278Z","kind":"ken_pattern","pattern":"noob_combo","detail":"rmb → lmb in 750ms"}
+{"at":"2026-04-14T02:23:44.712Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:24:01.226Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:27:03.766Z","kind":"damage_taken","before":"\\Users\\Ken\\AppData\\L","after":"_ =","action":"strafe_right","tickAt":"2026-04-14T02:27:03.765Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:26:57.680Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:28:08.947Z","kind":"ammo_changed","before":"ie fo herr ee","after":"oar? —~ 9:28","action":"jump","tickAt":"2026-04-14T02:28:08.947Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:28:05.339Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:29:19.905Z","kind":"shield_regen","streak":1,"action":"fire","tickAt":"2026-04-14T02:29:19.905Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:30:35.988Z","kind":"damage_taken","before":"ao NN > \\","after":"SS SS A,","action":"noop","tickAt":"2026-04-14T02:30:35.988Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:31:21.255Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:32:14.865Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:32:43.000Z","kind":"damage_taken","before":"i CAUsers\\Ken\\AppDat","after":". ‘aii \\","action":"strafe_right","tickAt":"2026-04-14T02:32:43.000Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:40:05.709Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-14T02:41:07.805Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:41:20.272Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-14T02:42:23.921Z","kind":"ammo_changed","before":"~ SSN","after":"ie rea 942","action":"strafe_right","tickAt":"2026-04-14T02:42:23.921Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:43:24.440Z","kind":"ammo_changed","before":"a & Baw","after":"; A S 7 e! ee ee ae ","action":"move_fwd","tickAt":"2026-04-14T02:43:24.440Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:44:30.785Z","kind":"damage_taken","before":"SS \\} >. }","after":"A LEE","action":"look_left","tickAt":"2026-04-14T02:44:30.785Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:45:40.577Z","kind":"damage_taken","before":"ica causers\\Ker\\Appb","after":"~~ Nae","action":"noop","tickAt":"2026-04-14T02:45:40.577Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:47:14.519Z","kind":"damage_taken","before":"© _C\\users\\Ken\\AppDa","after":"| C:\\Users\\Ken\\AppDa","action":"strafe_right","tickAt":"2026-04-14T02:47:14.519Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:48:22.715Z","kind":"damage_taken","before":"© _cAusers\\Ken\\AppDa","after":"( _CAUsers\\Ken\\AppDa","action":"strafe_left","tickAt":"2026-04-14T02:48:22.715Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:49:30.371Z","kind":"damage_taken","before":"a EN","after":"\\Users\\Ken\\AppData\\L","action":"move_fwd","tickAt":"2026-04-14T02:49:30.371Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:50:45.125Z","kind":"damage_taken","before":"A=:","after":"( _CAUsers\\Ken\\AppDa","action":"strafe_right","tickAt":"2026-04-14T02:50:45.125Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:52:18.429Z","kind":"damage_taken","before":"__ + ie} a > Desktop","after":"i C:\\Users\\Ken\\AppDa","action":"noop","tickAt":"2026-04-14T02:52:18.429Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:53:55.962Z","kind":"damage_taken","before":"© _C\\users\\Ken\\AppDa","after":"© _C\\users\\Ken\\AppDa","action":"noop","tickAt":"2026-04-14T02:53:55.962Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:55:48.104Z","kind":"damage_taken","before":"\\Users\\Ken\\AppData\\L","after":"i CAUsers\\Ken\\AppDat","action":"noop","tickAt":"2026-04-14T02:55:48.104Z","model":"ken-ai:latest"}
+{"at":"2026-04-14T02:57:59.306Z","kind":"damage_taken","before":"“Ga","after":"© _C\\users\\Ken\\AppDa","action":"noop","tickAt":"2026-04-14T02:57:59.306Z","model":"ken-ai:latest"}
+{"at":"2026-04-15T03:20:03.435Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:14:13.034Z","kind":"damage_taken","before":"; z a Onan’ : | — sn","after":"; = a = - | — : : ,","action":"noop","tickAt":"2026-04-16T03:14:13.033Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:14:58.743Z","kind":"ammo_changed","before":"Mode » Mode @ “ ont ","after":"Mode » Mode @ — Read","action":"noop","tickAt":"2026-04-16T03:14:58.743Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:15:29.432Z","kind":"shield_regen","streak":1,"action":"noop","tickAt":"2026-04-16T03:15:29.432Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:16:09.611Z","kind":"damage_taken","before":"; = a — - : =\" : ; P","after":"; — a = : | — : : | ","action":"move_fwd","tickAt":"2026-04-16T03:16:09.611Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:16:49.191Z","kind":"damage_taken","before":"; - a — - | : = : : ","after":"; = a Oxewiii : : : ","action":"noop","tickAt":"2026-04-16T03:16:49.191Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:17:30.765Z","kind":"ammo_changed","before":"Mode » Mode @ — Read","after":"Mode » Mode @ “ ont ","action":"noop","tickAt":"2026-04-16T03:17:30.765Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:18:30.657Z","kind":"ammo_changed","before":"Mode » Mode @ — Read","after":"= 3 =: : : =","action":"noop","tickAt":"2026-04-16T03:18:30.657Z","model":"kenai:v1"}
+{"at":"2026-04-16T03:20:37.435Z","kind":"damage_taken","before":"; — a = - a : = _ |","after":"ND IIL LL IIS","action":"look_left","tickAt":"2026-04-16T03:20:37.435Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:21:13.278Z","kind":"damage_taken","before":"49 4","after":"wc 7","action":"noop","tickAt":"2026-04-16T03:21:13.278Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:21:45.866Z","kind":"damage_taken","before":"~/ 7] =","after":"7 i) +","action":"noop","tickAt":"2026-04-16T03:21:45.866Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:22:16.200Z","kind":"damage_taken","before":"ows _— i LI","after":". 61 =]","action":"noop","tickAt":"2026-04-16T03:22:16.200Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:22:52.659Z","kind":"ken_pattern","pattern":"reload_after_fire","detail":"r pressed after 3 lmbs"}
+{"at":"2026-04-16T03:23:32.459Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-16T03:23:38.190Z","kind":"damage_taken","before":"— EOE 25","after":"= 21 +","action":"noop","tickAt":"2026-04-16T03:23:38.190Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:24:05.136Z","kind":"damage_taken","before":"' 46 -","after":"? 21 +","action":"move_fwd","tickAt":"2026-04-16T03:24:05.136Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:24:08.137Z","kind":"damage_taken","before":"7 i) +","after":"\" 21 +","action":"fire","tickAt":"2026-04-16T03:24:08.137Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:25:33.452Z","kind":"damage_taken","before":"= 21 +","after":"i 21 +","action":"strafe_left","tickAt":"2026-04-16T03:25:33.452Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:25:36.640Z","kind":"damage_taken","before":"s 21 +","after":"> 21 +","action":"strafe_left","tickAt":"2026-04-16T03:25:36.640Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:25:52.515Z","kind":"damage_taken","before":"' 21 +","after":"; 21 =7","action":"fire","tickAt":"2026-04-16T03:25:52.515Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:26:32.152Z","kind":"shield_regen","streak":1,"action":"move_fwd","tickAt":"2026-04-16T03:26:32.152Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:26:29.178Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:26:53.351Z","kind":"damage_taken","before":"= 21 +","after":"— ILE LIE LLL LIL","action":"fire","tickAt":"2026-04-16T03:26:53.351Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:26:45.941Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:26:57.746Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-16T03:26:59.901Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-16T03:27:18.320Z","kind":"damage_taken","before":"S 17 +","after":"— ILE LIE LLL LIL","action":"fire","tickAt":"2026-04-16T03:27:18.320Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:27:13.932Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:27:40.802Z","kind":"damage_taken","before":"— ILE LIE LLL LIL","after":"58 =","action":"noop","tickAt":"2026-04-16T03:27:40.802Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:28:01.457Z","kind":"damage_taken","before":"ma . — - eT LLL","after":"45 -","action":"fire","tickAt":"2026-04-16T03:28:01.457Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:28:17.000Z","kind":"damage_taken","before":"sow . ILE LIE LLL LI","after":"37 7","action":"fire","tickAt":"2026-04-16T03:28:17.000Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:28:46.120Z","kind":"damage_taken","before":"— ILE LIE LLL LIL","after":": 21 -","action":"fire","tickAt":"2026-04-16T03:28:46.120Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:28:50.903Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-16T03:28:56.636Z","kind":"damage_taken","before":"54 -","after":": 21 -","action":"noop","tickAt":"2026-04-16T03:28:56.636Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:29:24.767Z","kind":"damage_taken","before":"36 =a","after":"mn brightness","action":"noop","tickAt":"2026-04-16T03:29:24.767Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:29:38.581Z","kind":"damage_taken","before":"28 7","after":"ano image","action":"noop","tickAt":"2026-04-16T03:29:38.581Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:29:56.714Z","kind":"damage_taken","before":": 21 -","after":"~- i. , Ae Master UM","action":"noop","tickAt":"2026-04-16T03:29:56.714Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:30:16.746Z","kind":"damage_taken","before":": 19 -","after":"\" Q _","action":"noop","tickAt":"2026-04-16T03:30:16.746Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:30:40.440Z","kind":"damage_taken","before":"Ee resolution","after":"2 FPS","action":"noop","tickAt":"2026-04-16T03:30:40.440Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:30:40.254Z","kind":"ken_pattern","pattern":"melee_strike","detail":"q pressed"}
+{"at":"2026-04-16T03:30:45.634Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:30:57.619Z","kind":"damage_taken","before":"~- _ Ae Master UMler","after":": Q2Qye","action":"noop","tickAt":"2026-04-16T03:30:57.619Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:30:58.561Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:31:09.249Z","kind":"damage_taken","before":"~- _ Ae Master UMler","after":"= Malo. Tne Waster C","action":"noop","tickAt":"2026-04-16T03:31:09.249Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:31:14.835Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:31:31.035Z","kind":"damage_taken","before":"~- iB He Master CNet","after":"_ Halo. Tne — ' LOne","action":"noop","tickAt":"2026-04-16T03:31:31.035Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:31:53.032Z","kind":"damage_taken","before":"_ Halo. TNE Waster a","after":"~- . . Ae Master UMl","action":"noop","tickAt":"2026-04-16T03:31:53.032Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:32:00.582Z","kind":"ken_pattern","pattern":"reload_after_fire","detail":"r pressed after 3 lmbs"}
+{"at":"2026-04-16T03:32:11.939Z","kind":"damage_taken","before":"oa ne Nlaster a","after":"_ _","action":"noop","tickAt":"2026-04-16T03:32:11.939Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:32:14.224Z","kind":"ken_pattern","pattern":"grenade_throw","detail":"f pressed"}
+{"at":"2026-04-16T03:32:25.974Z","kind":"damage_taken","before":"_ eee nes","after":"~- , Ae Master UMler","action":"noop","tickAt":"2026-04-16T03:32:25.974Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:32:46.638Z","kind":"damage_taken","before":"~- _ Ae Master UMler","after":"~- i Ae Master UMler","action":"noop","tickAt":"2026-04-16T03:32:46.638Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:33:12.349Z","kind":"damage_taken","before":"~- . , Ae Master UMl","after":"~- . Ae Master UMler","action":"noop","tickAt":"2026-04-16T03:33:12.349Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:33:23.255Z","kind":"damage_taken","before":"_ _","after":"~- _ Ae Master UMler","action":"noop","tickAt":"2026-04-16T03:33:23.254Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:33:21.273Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"d + lmb within 600ms"}
+{"at":"2026-04-16T03:33:38.833Z","kind":"damage_taken","before":"~- a , Ae Master UMl","after":": 2Dptions Seer","action":"noop","tickAt":"2026-04-16T03:33:38.833Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:33:59.715Z","kind":"damage_taken","before":"~- - / Ae Master UMl","after":"~- 7 Ae Master UMler","action":"noop","tickAt":"2026-04-16T03:33:59.715Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:34:39.615Z","kind":"damage_taken","before":"_ Halo. Tne Waster C","after":"~- _ , Ae Master UMl","action":"noop","tickAt":"2026-04-16T03:34:39.615Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:37:51.949Z","kind":"damage_taken","before":"in le Waster Unie! i","after":"~- _ Ae Master UMler","action":"noop","tickAt":"2026-04-16T03:37:51.949Z","model":"llama3.1:8b"}
+{"at":"2026-04-16T03:38:07.524Z","kind":"ken_pattern","pattern":"strafe_shoot","detail":"a + lmb within 600ms"}
+{"at":"2026-04-16T03:39:01.056Z","kind":"damage_taken","before":"~- a Ae Master UMler","after":"; = a = : ie =\" : P ","action":"noop","tickAt":"2026-04-16T03:39:01.056Z","model":"llama3.1:8b"}

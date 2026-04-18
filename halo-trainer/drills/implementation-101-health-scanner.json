@@ -4,7 +4,7 @@
   "student": "qwen2.5-coder:14b",
   "curriculum": "implementation",
   "contextFiles": [
-    "../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"
+    "../agent_mode/memories/ken-ai-latest/halo-game-dump.md"
   ],
   "prompt": "Write a Python script halo_health_delta.py that: (1) uses ctypes to attach to MCC-Win64-Shipping.exe via OpenProcess with PROCESS_VM_READ + PROCESS_VM_WRITE + PROCESS_VM_OPERATION, (2) enumerates RW memory regions with VirtualQueryEx, (3) scans all 4-byte floats in [0.0, 100.0] on first pass, (4) exposes a rescan(new_value) function that keeps only candidates whose current value matches new_value within epsilon 0.5, (5) exposes write_all(value) that writes a float to every remaining candidate.\n\nRequirements:\n- uses ONLY ctypes + struct + sys (no pip deps)\n- uses wintypes.HANDLE / wintypes.DWORD explicitly — do NOT pass raw HMODULEs as c_void_p\n- has a MBI ctypes.Structure matching MEMORY_BASIC_INFORMATION\n- includes the main loop with commands: i (initial scan), r N (rescan to N), w N (write N), s (status), q (quit)\n- handles 2M+ candidates without blowing memory\n\nRespond with ONLY the python code inside one fenced ```python block. No prose before or after.",
   "rubric": [

@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_tables",
+      "Bash(netstat -ano)",
+      "Bash(git *)",
+      "Bash(node agent_mode/training/corpus_builder_v4.mjs)",
+      "Bash(node agent_mode/training/export_kenai_v4_dataset.mjs)",
+      "Bash(node *)",
+      "Bash(python -m py_compile agent_mode/training/finetune_v4.py)",
+      "Bash(mkdir -p \".claude/archive/pre-linux-memory-snapshot\")",
+      "Bash(cp -r \"C:/Users/Ken/.claude/projects/C--Users-Ken-Desktop-Claude/memory/.\" \".claude/archive/pre-linux-memory-snapshot/\")",
+      "PowerShell(Get-Volume *)",
+      "PowerShell(Get-Disk *)",
+      "Bash(grep -iE \"pop|ubuntu|linux|\\\\.iso$\")",
+      "Read(//c/Users/Ken/Downloads//**)",
+      "PowerShell(Format-Volume *)",
+      "Bash(curl -sI https://iso.pop-os.org/22.04/amd64/nvidia/)",
+      "Bash(curl -s https://iso.pop-os.org/22.04/amd64/nvidia/)",
+      "Bash(curl -sI https://rufus.ie/downloads/)",
+      "Bash(curl -s https://rufus.ie/en/)",
+      "Bash(curl -sL https://pop.system76.com/)",
+      "Bash(mkdir -p /c/Users/Ken/Desktop/pop-install)",
+      "Bash(curl -sL -o /c/Users/Ken/Desktop/pop-install/rufus-4.13p.exe https://github.com/pbatard/rufus/releases/download/v4.13/rufus-4.13p.exe)",
+      "Read(//c/Users/Ken/Desktop/pop-install/**)"
+    ]
+  }
+}

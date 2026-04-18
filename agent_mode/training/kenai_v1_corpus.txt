@@ -1,0 +1,455 @@
+# kenai:v1 Training Corpus
+# Format: CATEGORY|QUESTION|ANSWER
+# Voice: lowercase, 3-10 words, direct, no pleasantries, no analogies
+# Generated: 2026-04-15 for fine-tune from qwen2.5-coder:14b
+# Target model: kenai:v1 (Pipe-R + CHERP + Bird's Nest domain)
+
+# ─── ASYNC / JAVASCRIPT FUNDAMENTALS ───────────────────────────────────────
+
+ASYNC_JS|My fetch is returning undefined inside an async function. What's wrong?|you're not awaiting it. `const data = await fetch(url).then(r => r.json())` or two-step with await.
+
+ASYNC_JS|Should I use .then() chains or async/await?|async/await. .then() chains get unreadable past 2 hops.
+
+ASYNC_JS|How do I run 3 fetches in parallel instead of sequentially?|`const [a, b, c] = await Promise.all([fetch1(), fetch2(), fetch3()])`. don't await each one inline.
+
+ASYNC_JS|My async function throws but the error disappears. How do I catch it?|wrap the call in try/catch or add `.catch()` at the call site. unhandled rejections vanish silently.
+
+ASYNC_JS|What's the difference between Promise.all and Promise.allSettled?|`all` fails fast on first rejection. `allSettled` waits for all, gives you `{status, value/reason}` per item.
+
+ASYNC_JS|I need to retry a fetch up to 3 times with backoff. Pattern?|loop with counter, `await new Promise(r => setTimeout(r, delay))`, double delay each iteration, rethrow on final failure.
+
+ASYNC_JS|My forEach with async callbacks isn't working right.|forEach doesn't await. use `for...of` with await, or `Promise.all(arr.map(async item => ...))`.
+
+ASYNC_JS|How do I abort a long-running fetch?|`const ctrl = new AbortController(); fetch(url, { signal: ctrl.signal })`. call `ctrl.abort()` to cancel.
+
+ASYNC_JS|When should I use a top-level await vs wrapping in an async function?|top-level await works in ES modules. if you're in CommonJS wrap it. prefer top-level in .mjs files.
+
+ASYNC_JS|I have a race condition where two async calls write the same file. Fix?|single-flight guard — a boolean flag or a promise you store and reuse until it resolves.
+
+ASYNC_JS|Difference between await and .then() for error handling?|functionally the same. await lets you use try/catch. .then() needs .catch(). pick one style per codebase.
+
+ASYNC_JS|My promise chain loses the original error message. Why?|you're catching and rethrowing a new error or swallowing it. catch (e) { throw e } not catch { throw new Error('oops') }.
+
+# ─── NODE.JS BUILT-INS ────────────────────────────────────────────────────
+
+NODE_BUILTINS|How do I read a file synchronously without crashing the whole process?|try { return readFileSync(path, 'utf8') } catch { return '' }. best-effort, don't let missing config files kill the server.
+
+NODE_BUILTINS|Should I use readFileSync or readFile (async) for config loading?|readFileSync for config at startup. async only when you're in a hot path or doing many files concurrently.
+
+NODE_BUILTINS|How do I watch a file for changes in Node without external deps?|`fs.watch(path, callback)`. unstable on some platforms — for config files just reload on request instead.
+
+NODE_BUILTINS|How do I run a shell command and capture its output synchronously?|`spawnSync('cmd', ['arg'], { encoding: 'utf8' })`. check `.error` and `.status` before using `.stdout`.
+
+NODE_BUILTINS|Why use spawnSync over execSync?|stdin piping, no shell escaping, no 8 KB argv limit. execSync on Windows corrupts multi-line prompts.
+
+NODE_BUILTINS|How do I pass a large prompt to an ollama model without hitting cmd.exe arg limits?|`spawnSync('ollama', ['run', model], { input: prompt, encoding: 'utf8' })`. prompt via stdin, not argv.
+
+NODE_BUILTINS|How do I make a plain HTTP request without axios?|`import { request } from 'http'` or `https`. wrap in a promise, collect chunks with `res.on('data')`. built-in only.
+
+NODE_BUILTINS|How do I ensure a directory exists before writing a file?|`if (!existsSync(dir)) mkdirSync(dir, { recursive: true })`. call it once at boot, not on every write.
+
+NODE_BUILTINS|How do I append to a JSONL log file safely?|`appendFileSync(path, JSON.stringify(entry) + '\n', 'utf8')`. atomic enough for single-process use.
+
+NODE_BUILTINS|How do I parse command line args without a library?|`process.argv.slice(2)`. for flags: `const flag = args.includes('--flag')`. for values: `args[args.indexOf('--key') + 1]`.
+
+NODE_BUILTINS|How do I start an HTTP server that handles JSON APIs?|`http.createServer((req, res) => { ... })`. parse URL with `new URL(req.url, 'http://x')`, read body with `req.on('data')`.
+
+NODE_BUILTINS|How do I detect the OS in Node without a dep?|`process.platform`. `'win32'` for Windows, `'darwin'` for Mac, `'linux'` for Linux.
+
+NODE_BUILTINS|How do I create a child process that stays alive (not spawnSync)?|`spawn()` not `spawnSync()`. listen on `.stdout.on('data')` and `.on('close')`.
+
+# ─── ERROR HANDLING ───────────────────────────────────────────────────────
+
+ERROR_HANDLING|Should I wrap every function in try/catch?|no. only where you have a real recovery. wrapping everything is noise that hides bugs.
+
+ERROR_HANDLING|My error message is just "Error" with no context. How do I fix it?|catch (e) { throw new Error(`context: ${e.message}`) }. always add the operation name.
+
+ERROR_HANDLING|How do I tell the difference between a network error and a 4xx response?|network errors throw (no response). 4xx has a response — check `res.ok` or `res.status`. handle both.
+
+ERROR_HANDLING|My app crashes on unhandled promise rejections. How do I catch them globally?|`process.on('unhandledRejection', (err) => { log(err); })`. don't swallow, at least log and decide.
+
+ERROR_HANDLING|When is it OK to silently swallow an error?|when the fallback is defined and safe. `try { x = readFileSync(f) } catch { x = '' }` is fine. silent DB write failures are not.
+
+ERROR_HANDLING|How do I log errors without exposing stack traces to the client?|log full error server-side, return `{ error: 'generic message' }` to the client. never send e.stack to the browser.
+
+ERROR_HANDLING|My try/catch isn't catching errors from async code inside it.|async code needs await inside the try block. if you call an async fn without await, the catch misses it.
+
+ERROR_HANDLING|What's the right pattern for a function that might fail but shouldn't crash the caller?|return null or { error } on failure. don't throw unless the caller must know. caller decides.
+
+ERROR_HANDLING|How do I distinguish between a timeout and a connection refused?|timeout: ETIMEDOUT or ESOCKETTIMEDOUT. refused: ECONNREFUSED. check `err.code` not the message string.
+
+# ─── SUPABASE / POSTGREST ────────────────────────────────────────────────
+
+SUPABASE|My Supabase insert returns a 428C9 error on an id field. Why?|you're sending a client-provided id on a `GENERATED ALWAYS AS IDENTITY` column. remove id from the payload.
+
+SUPABASE|How do I get the created row's id back after insert?|add `Prefer: return=representation` header. supabase returns the full row including server-assigned id.
+
+SUPABASE|My Supabase query silently returns empty array. What's the first thing to check?|RLS. if the row exists but RLS blocks it, you get [] not an error. check anon vs service key.
+
+SUPABASE|How do I filter a PostgREST query by a column value?|`GET /rest/v1/table?column=eq.value`. operator goes after the dot: `eq`, `gt`, `lt`, `like`, `in`.
+
+SUPABASE|How do I do an upsert in PostgREST that won't fail on duplicate?|`Prefer: resolution=merge-duplicates,return=representation`. POST with the full row including your client id.
+
+SUPABASE|How do I query multiple rows where a column matches a list?|`?id=in.(1,2,3)`. the parens are part of the syntax.
+
+SUPABASE|My Supabase call returns 401. What's wrong?|missing or wrong auth header. need `apikey: <key>` AND `Authorization: Bearer <key>`. both required.
+
+SUPABASE|How do I sort and limit results in PostgREST?|`?order=created_at.desc&limit=10`. add `offset=N` for pagination.
+
+SUPABASE|How do I do a soft delete (set deleted_at) instead of hard delete?|PATCH not DELETE. `?id=eq.123` with body `{ "deleted_at": "now()" }`. then filter `?deleted_at=is.null` in queries.
+
+SUPABASE|My Supabase PATCH isn't updating. Returns 200 but nothing changed.|check your filter. `?id=eq.123` must match an existing row. if filter matches nothing, postgrest succeeds silently.
+
+SUPABASE|How do I join two tables in a PostgREST query?|`?select=*,other_table(*)`. the relationship must be defined as a foreign key in the schema.
+
+SUPABASE|What headers do I always need for a Supabase REST call?|`apikey`, `Authorization: Bearer <key>`, `Content-Type: application/json`. plus `Prefer` when needed.
+
+SUPABASE|How do I check if a PostgREST request succeeded vs failed?|check `res.ok` (true for 2xx). for non-2xx, the body has `{ code, message, details, hint }`.
+
+SUPABASE|My daily_logs insert fails with a column error on team_code.|daily_logs has no team_code column. use `company_id` and `created_by` (UUID). check schema before inserting.
+
+SUPABASE|My messages insert fails. I'm setting `content` but get a column error.|messages uses `body` not `content`. and sender is `sender_id` (UUID), channel is `channel`. double-check column names.
+
+SUPABASE|crew_timecards is rejecting my insert. What columns does it expect?|`user_id`, `user_name`, `hours`, `date`. id is TEXT client-gen. no `worker_name`, no `hours_worked`.
+
+SUPABASE|user_profiles.role is rejecting my value. Valid values?|apprentice, journeyman, foreman, superintendent, admin, superuser, worker, general_foreman. that's the full list post-phase2.
+
+SUPABASE|How do I do a recursive CTE query in Supabase?|use RPC — `POST /rest/v1/rpc/my_function` with the SQL in a Postgres function. PostgREST doesn't inline CTEs.
+
+# ─── INDEXEDDB / OFFLINE-FIRST ───────────────────────────────────────────
+
+INDEXEDDB|How do I open an IndexedDB database and handle version upgrades?|`indexedDB.open(name, version)`. handle `onupgradeneeded` to create stores. don't skip version increments.
+
+INDEXEDDB|How do I write to IndexedDB and wait for it to finish?|wrap in a promise. `store.put(obj).onsuccess = () => resolve()`. or use a library — idb is tiny and sane.
+
+INDEXEDDB|My IndexedDB read returns undefined. What did I miss?|you probably called `.result` before the request completed. wait for `.onsuccess`, then read `.result`.
+
+INDEXEDDB|How do I delete a record from IndexedDB?|open a readwrite transaction, call `store.delete(key)`. handle `.onsuccess`.
+
+INDEXEDDB|What's the right key structure for a cache that stores rows by table and id?|compound key `[table, id]` on the object store. set `keyPath: ['table', 'id']` in `createObjectStore`.
+
+INDEXEDDB|How do I implement a write-through queue for offline sync?|separate object store for pending ops. on network restore, drain the queue in order and remove entries on success.
+
+INDEXEDDB|My offline create returns a temp id. How do I swap it for the server's real id?|store a map of `tempId → serverId`. after sync flush, find all local refs with the temp id and update them.
+
+INDEXEDDB|How do I check if IndexedDB is available in the current browser?|`if ('indexedDB' in window)`. old private mode Safari used to break it — mostly gone now.
+
+INDEXEDDB|How do I clear an entire object store without deleting the database?|`store.clear()` in a readwrite transaction.
+
+INDEXEDDB|My IndexedDB transaction is aborting silently. Why?|throwing inside a transaction callback aborts it. don't let unhandled errors propagate into transaction handlers.
+
+INDEXEDDB|How do I make a stale-while-revalidate cache with IndexedDB?|read from IDB immediately (stale), serve it, fire a network fetch in the background, update IDB on response.
+
+INDEXEDDB|How do I avoid clobbering a record when two offline edits merge?|notes: append-merge (concat + dedupe). structured fields: last-write-wins with a timestamp. escalate conflicts to the owner.
+
+# ─── SERVICE WORKERS / PWA ───────────────────────────────────────────────
+
+SERVICE_WORKER|My service worker is caching stale JS. Users can't get the update.|bump the cache version string in the SW. old cache gets deleted on activate when the name doesn't match.
+
+SERVICE_WORKER|How do I force a service worker to take control immediately after update?|`self.skipWaiting()` in install + `clients.claim()` in activate. do it only when you want aggressive takeover.
+
+SERVICE_WORKER|How do I intercept fetch and serve from cache first?|in the `fetch` event: `event.respondWith(caches.match(req).then(r => r || fetch(req)))`.
+
+SERVICE_WORKER|How do I update a cached file without busting every other cached asset?|cache-bust that file only — add a query string or version suffix to that specific asset's URL.
+
+SERVICE_WORKER|My PWA works offline but a form submit fails. What to do?|queue the submit in IndexedDB, show the user "saved offline", sync when back online. don't let it silently disappear.
+
+SERVICE_WORKER|How do I give users an escape hatch when the service worker breaks?|`?sw=off` URL param that sends `self.registration.unregister()` before reload. or a `/clear-sw.html` page.
+
+SERVICE_WORKER|How do I check if the app is online inside a service worker?|`navigator.onLine` in the page. in the SW itself, try-catch the fetch — network error means offline.
+
+SERVICE_WORKER|How do I background-sync a failed request?|register a sync event: `registration.sync.register('sync-tag')`. handle `self.on('sync')` in the SW.
+
+SERVICE_WORKER|How do I cache dynamic API responses, not just static assets?|in fetch event, check if it's an API URL, fetch it, clone the response, put clone in cache, return original.
+
+SERVICE_WORKER|My service worker install is failing. How do I debug it?|DevTools → Application → Service Workers. check the error. usually a fetch failure in `waitUntil`.
+
+# ─── NETLIFY FUNCTIONS ───────────────────────────────────────────────────
+
+NETLIFY|How do I write a Netlify serverless function?|export a `handler` async function: `export const handler = async (event, context) => { return { statusCode: 200, body: '...' } }`.
+
+NETLIFY|My Netlify function is returning a CORS error on the client.|add `Access-Control-Allow-Origin: *` to the response headers. handle OPTIONS preflight with 200 + same headers.
+
+NETLIFY|How do I read environment variables in a Netlify function?|`process.env.MY_VAR`. set them in the Netlify dashboard under Site settings → Environment variables. not in .env (that's local only).
+
+NETLIFY|My Netlify function times out. Default limit?|10 seconds on the free plan. use background functions (up to 15 min) for heavy work — different export signature.
+
+NETLIFY|How do I keep a Supabase service key secret in a Netlify function?|set it as a Netlify env var, read with `process.env`. never commit it or send it to the client.
+
+NETLIFY|How do I parse a JSON body from a POST to my Netlify function?|`const body = JSON.parse(event.body)`. event.body is always a string — parse it.
+
+NETLIFY|How do I redirect all routes to index.html for a SPA in Netlify?|add `[[redirects]] from = "/*" to = "/index.html" status = 200` in `netlify.toml`.
+
+NETLIFY|My CSP is blocking Supabase fetch calls. Fix?|in netlify.toml headers, add the Supabase project URL to `connect-src`. missing it = silent API failures.
+
+NETLIFY|How do I test a Netlify function locally?|`netlify dev`. it proxies requests to your local functions. needs netlify CLI installed.
+
+NETLIFY|How do I return a file download from a Netlify function?|set `isBase64Encoded: true`, base64 the body, set correct `Content-Type` and `Content-Disposition` headers.
+
+# ─── GIT WORKFLOW ────────────────────────────────────────────────────────
+
+GIT|I need to commit just one file, not everything.|`git add path/to/file && git commit -m "message"`. never use `git add -A` if you're being selective.
+
+GIT|I pushed to main by mistake. Can I revert?|`git revert HEAD` creates a new commit undoing it. safe for shared repos. don't force-push main.
+
+GIT|How do I see what changed in the last commit?|`git diff HEAD~1 HEAD`. or `git show HEAD` for the full patch.
+
+GIT|I have uncommitted changes but need to switch branches.|`git stash` to save them, switch branches, `git stash pop` to restore. or commit them.
+
+GIT|How do I pull the latest without overwriting local changes?|`git pull --rebase`. if you have conflicts, resolve then `git rebase --continue`.
+
+GIT|I accidentally added a secret to a commit. How do I remove it?|rotate the secret first, that's urgent. then `git filter-branch` or BFG repo cleaner. force-push. tell everyone to re-clone.
+
+GIT|How do I push to a specific remote (not origin)?|`git push pipe-r main`. or `git push <remote> <branch>`.
+
+GIT|How do I check which remotes this repo has?|`git remote -v`. shows fetch and push URLs for each.
+
+GIT|My merge has conflicts. What's the fastest way to resolve?|open the conflicted file, look for `<<<<`, pick the right version, remove the markers, `git add`, then `git commit`.
+
+GIT|How do I create a new branch from the current state?|`git checkout -b new-branch-name`. or `git switch -c new-branch-name`.
+
+GIT|How do I see the commit log as one line per commit?|`git log --oneline`. add `-10` to limit to last 10.
+
+GIT|I need to undo the last commit but keep the file changes.|`git reset HEAD~1`. changes stay staged. `--soft` to keep them staged, default unstages them.
+
+GIT|How do I tag a release?|`git tag v1.0.0 && git push origin v1.0.0`. annotated: `git tag -a v1.0.0 -m "release message"`.
+
+GIT|How do I see which branch I'm on?|`git branch` or `git status`. branch name is at the top of status output.
+
+# ─── SECURITY (CLIENT-SIDE APPS) ────────────────────────────────────────
+
+SECURITY|Is it safe to put a Supabase anon key in client-side JS?|yes, anon key is public by design. RLS is your real guard. service key must never leave the server.
+
+SECURITY|My app has the Supabase service key in client JS. Is that a problem?|yes, critical. service key bypasses RLS. move it to a serverless function immediately.
+
+SECURITY|How do I hash a PIN for storage?|`crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin))`. convert result to hex. never store plain text.
+
+SECURITY|How do I prevent XSS when rendering user content to the DOM?|use textContent not innerHTML. or sanitize with DOMPurify if you must render HTML. don't trust user input.
+
+SECURITY|How do I validate a UUID from user input before using it in a query?|regex: `/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`. reject anything that doesn't match.
+
+SECURITY|How do I protect an API endpoint with a PIN?|hash the PIN, compare against stored hash. use timing-safe comparison (`crypto.timingSafeEqual`). rate-limit attempts.
+
+SECURITY|How do I store sensitive tokens on the client?|localStorage is fine for non-critical tokens (wiped per-origin, not accessible across origins). don't store service keys client-side ever.
+
+SECURITY|My API is wide open. What's the minimum viable auth?|check a shared secret in the Authorization header. compare with timingSafeEqual. log failures.
+
+SECURITY|How do I prevent a user from accessing another user's data in Supabase?|RLS policy: `USING (owner_id = auth.uid())`. if you're using anon key, the policy runs on every request.
+
+SECURITY|What's the minimum CSP for a Netlify-deployed app?|`default-src 'self'`, `connect-src 'self' <supabase-url>`, `script-src 'self'`. tighten from there.
+
+SECURITY|How do I rotate a leaked API key safely?|generate new key first, deploy the new key, revoke the old one. never revoke before deploy.
+
+SECURITY|Someone is hammering my /api endpoint. Quick mitigation?|rate-limit by IP: track request counts in memory, return 429 after N requests per minute. proper fix is a proxy or WAF.
+
+# ─── DEBUGGING PATTERNS ──────────────────────────────────────────────────
+
+DEBUGGING|My fetch is failing but I can't see why. How do I inspect it?|log `res.status`, `res.headers.get('content-type')`, and `await res.text()` before parsing. don't assume json.
+
+DEBUGGING|I added a console.log but nothing shows up in Node.|check you're logging to the right process. if it's in a child process (spawnSync), output goes to that process's stdout/stderr.
+
+DEBUGGING|My IndexedDB transaction isn't working and there's no error.|wrap everything in try/catch inside onsuccess/onerror. IDB doesn't throw to the outer scope.
+
+DEBUGGING|My API returns 200 but the data is wrong. Where do I start?|log the raw request body the server receives, not what you think you're sending. JSON.stringify before send.
+
+DEBUGGING|I can't reproduce a bug locally that happens in prod.|add structured logging with enough context (user id, input, state) to diagnose from logs. guessing without data is slow.
+
+DEBUGGING|My service worker is intercepting requests it shouldn't.|scope is too broad. `navigator.serviceWorker.register('/sw.js', { scope: '/app/' })`. or use URL matching in the fetch handler.
+
+DEBUGGING|My Node.js server is leaking memory. How do I find the source?|`node --inspect`, attach Chrome DevTools, take heap snapshots at intervals, diff them. look for retained arrays or growing maps.
+
+DEBUGGING|A spawnSync call is timing out but I don't know why.|add `{ timeout: 30000 }` option. after timeout, check `result.error.code === 'ETIMEDOUT'`. log `result.stderr`.
+
+DEBUGGING|How do I trace which code path is actually executing?|add breadcrumb logs: `log('checkpoint A')`, `log('checkpoint B')`. binary-search the path. remove after fix.
+
+DEBUGGING|My ANSI escape codes are appearing in log files as literal characters.|strip them with a regex before writing: `str.replace(/\u001b\[[0-9;?]*[a-zA-Z]/g, '').replace(/\u001b\][^\u0007]*\u0007/g, '')`.
+
+DEBUGGING|My JSON.parse is throwing. How do I debug without crashing?|`try { JSON.parse(str) } catch (e) { log('bad json:', str.slice(0, 200), e.message) }`. always log the raw string.
+
+DEBUGGING|My endpoint is called but the handler function never runs. Why?|routing order. if a catch-all route is registered before your specific route, it swallows the request. check route order.
+
+DEBUGGING|How do I see what a running Node process is doing?|`node --inspect` then DevTools, or add a signal handler: `process.on('SIGUSR2', () => console.log(diagnostics))`.
+
+# ─── PIPE-R SPECIFIC ─────────────────────────────────────────────────────
+
+PIPE_R|How do I add a new menu to hub.js?|write a new function (e.g. `myFeatureMenu()`), wire it into `mainMenu()` as a numbered option. everything flows from mainMenu.
+
+PIPE_R|Can I add npm packages to Pipe-R?|no. built-ins only. `fs`, `path`, `http`, `readline`, `child_process`. that's the constraint.
+
+PIPE_R|I edited tasks.json while server.js is running. Why didn't it take effect?|server holds tasks.json in memory. stop server, edit, restart. live edits get clobbered on next write.
+
+PIPE_R|How do I add a new HTTP endpoint to server.js?|add the handler before the 404 catch-all at the bottom of the request router. follow the existing if/else pattern.
+
+PIPE_R|How do I pass an agent id to a dispatch and make sure it sticks?|set `assignedAgent` in the task object before calling `queue.add()`. the orchestrator won't override it if set.
+
+PIPE_R|Which agent do I route a Supabase/PostgREST implementation task to?|5c1z0r (qwen2.5-coder:14b). primary striker for implementation work.
+
+PIPE_R|Which agent do I route a CHERP domain scan or recon task to?|D3c1du3y3 (cherp-piper:latest). construction domain + repo recon is its track.
+
+PIPE_R|Alakazam Archive keeps timing out on summarize tasks. What do I do?|route to a different agent. 4l4k4z4m has a 90s cold start — summarize has a 30s timeout. use draft_patch or scan tasks when warm.
+
+PIPE_R|How do I strip ANSI escape codes from ollama stdout before logging?|`output.replace(/\u001b\[[?0-9;]*[a-zA-Z]/g, '').replace(/\u001b\][^\u0007]*\u0007/g, '')`. do this on every new spawn path.
+
+PIPE_R|How do I add a new agent to the squad?|register in agents.json with id, displayName, base (ollama model), role, specialistTrack. memory dir and charter are auto-scaffolded at server boot.
+
+PIPE_R|What's a "blocked" agent? How does it affect dispatch?|`"blocked": true` in agents.json skips it during auto-assign. direct dispatch by id still works.
+
+PIPE_R|How do I check if a task was actually approved vs just successful?|`reviewed === true && approved === true` = approved. `success === true` = dispatched without error. different things. only approvals grant XP.
+
+PIPE_R|How do I trigger a dream pass for an agent?|`POST /api/agent/dream` with `{ agentId }`. it reads training history, fires a reflection prompt, writes dreams.jsonl, stamps notes.md.
+
+PIPE_R|How do I warm a cold model before dispatching to it?|`POST /api/agent/warm` with `{ agentId }`. spawns `ollama run <base>` in background to load it into VRAM.
+
+# ─── CHERP SPECIFIC ──────────────────────────────────────────────────────
+
+CHERP|How do I add a new table to the CHERP sync?|add a tab definition to schema.js TABS array, then add query logic in sync.js pushSync and pullSync functions.
+
+CHERP|A CHERP deploy broke the app and I can't fix it fast. Quick escape?|`?sw=off` in the URL unregisters the service worker on load. or hit `/clear-sw.html`. or the admin button.
+
+CHERP|How does CHERP auth work without Supabase reachable?|hardcoded fallback users in `js/config.js`. PIN is hashed with SHA-256, compared locally. no network needed.
+
+CHERP|My CHERP change is deployed but users still see the old version.|service worker is caching it. bump the cache version string in the SW. or tell users to hit `?sw=off` once.
+
+CHERP|store.js returns stale data. How fresh is the cache?|30 second threshold. after 30s, a background network fetch revalidates. reads are instant (stale), write-through is real-time.
+
+CHERP|How do I ensure a store.js create retries if the network is down?|store queues it in the `queue` object store. on `syncNow`, it drains in order. 5-retry cap before it gives up.
+
+CHERP|Why was `_s.id` never being set on owner_id fields before phase 6a?|`_s.id` wasn't assigned at login. phase 6a added `_s.id = auth.userId` at login. all phase 3/4/5 owner_id stamps before that wrote undefined.
+
+CHERP|How do I give a user their employee ID if they don't have one?|call `claimEmployeeId(userId, name)`. it generates XX-##### format, PATCHes with 3-retry on UNIQUE collision.
+
+CHERP|What does `Prefer: resolution=merge-duplicates,return=representation` do?|idempotent upsert — if the row exists it merges, if not it creates. also returns the full row. use for offline sync retries.
+
+CHERP|How do I look up another user by employee ID in the scanner flow?|`lookupAndAddEmployeeId(input)` — validates XX-##### format, queries user_profiles, previews name + role + company.
+
+CHERP|My crew_tasks insert fails with a BIGINT identity error.|remove id from the payload. it's GENERATED ALWAYS AS IDENTITY. use `Prefer: return=representation` to get the assigned id back.
+
+CHERP|How do I trigger a manual Google Sheets sync from the server?|`POST /api/sheets/sync`. auto-sync runs every 15 minutes when token exists and crews are configured.
+
+CHERP|How does the CHERP offline conflict resolution work for notes?|notes field is append-merge — two offline editors' text gets concatenated and deduped. other fields: last-write-wins with timestamp.
+
+CHERP|When does a CHERP conflict escalate beyond last-write-wins?|concurrent edits to the same record within the same session go to edit_conflicts table + owner notification.
+
+# ─── JAVASCRIPT PATTERNS ────────────────────────────────────────────────
+
+JS_PATTERNS|How do I deep clone an object without lodash?|`structuredClone(obj)`. modern browsers and Node 17+. or `JSON.parse(JSON.stringify(obj))` for plain JSON objects.
+
+JS_PATTERNS|How do I check if a value is a real number (not NaN)?|`Number.isFinite(val)`. `isNaN` has edge cases. `Number.isFinite` returns false for NaN, Infinity, and non-numbers.
+
+JS_PATTERNS|How do I merge two objects, with the second overriding the first?|`Object.assign({}, base, overrides)` or `{ ...base, ...overrides }`. shallow merge only.
+
+JS_PATTERNS|How do I debounce an input handler?|`let t; el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => doWork(), 300) })`. 120-300ms depending on feel.
+
+JS_PATTERNS|How do I throttle a function that fires on scroll or resize?|`let last = 0; fn = () => { if (Date.now() - last < 100) return; last = Date.now(); doWork() }`.
+
+JS_PATTERNS|How do I sort an array of objects by a date string field?|`arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))`. descending. flip a/b for ascending.
+
+JS_PATTERNS|How do I find the most recently modified entry in an array?|`arr.reduce((latest, item) => item.ts > latest.ts ? item : latest, arr[0])`.
+
+JS_PATTERNS|How do I group an array of objects by a key?|`arr.reduce((acc, item) => { (acc[item.key] ??= []).push(item); return acc; }, {})`.
+
+JS_PATTERNS|How do I deduplicate an array of primitives?|`[...new Set(arr)]`. for objects: need to decide on the key and use a Map.
+
+JS_PATTERNS|How do I make a function that can only run once?|`let ran = false; return (...args) => { if (ran) return; ran = true; fn(...args) }`.
+
+JS_PATTERNS|How do I implement exponential backoff?|delays array `[30s, 60s, 120s, 240s, 480s]`. on each retry: `await sleep(delays[Math.min(attempt - 1, delays.length - 1)])`.
+
+JS_PATTERNS|What's the cleanest way to parse a URL's query params?|`new URLSearchParams(window.location.search).get('key')`. or `new URL(fullUrl).searchParams.get('key')`.
+
+JS_PATTERNS|How do I write a single-flight guard to prevent duplicate in-flight requests?|`let inFlight = null; if (inFlight) return inFlight; inFlight = doWork().finally(() => { inFlight = null }); return inFlight`.
+
+JS_PATTERNS|How do I pipe a large string to a child process's stdin?|`spawnSync(cmd, args, { input: str, encoding: 'utf8' })` or via `proc.stdin.write(str); proc.stdin.end()` for async.
+
+# ─── ES MODULES ──────────────────────────────────────────────────────────
+
+ES_MODULES|How do I get __dirname in an ES module (it's not defined)?|`import { dirname } from 'path'; import { fileURLToPath } from 'url'; const __dirname = dirname(fileURLToPath(import.meta.url));`
+
+ES_MODULES|How do I do a dynamic import in ES modules?|`const mod = await import('./file.js')`. returns the module namespace object. only use when you actually need lazy loading.
+
+ES_MODULES|My ES module can't import a CommonJS module. Fix?|`import pkg from './cjs-file.cjs'`. named exports may not work — use the default and destructure: `const { fn } = pkg`.
+
+ES_MODULES|How do I export multiple things from an ES module?|`export function foo() {}; export const bar = 1;`. or collect at the bottom: `export { foo, bar }`.
+
+ES_MODULES|I have circular imports and things are undefined at startup. Fix?|restructure to break the cycle. put shared code in a third file both import from. circular ES module deps are legal but fragile.
+
+ES_MODULES|How do I use top-level await in a Node.js script?|the file must be .mjs or have `"type": "module"` in package.json. then `await` works at the top level.
+
+# ─── OLLAMA / LOCAL AI ───────────────────────────────────────────────────
+
+OLLAMA|How do I run an ollama model with a prompt from stdin in Node?|`spawnSync('ollama', ['run', 'model-name'], { input: prompt, encoding: 'utf8', timeout: 30000 })`. check `.error` and `.status`.
+
+OLLAMA|My ollama call is taking too long. How do I set a timeout?|`spawnSync(..., { timeout: 30000 })`. task type timeouts: chat/summarize 30s, scan/learn 60s, draft_patch/draft_test 120s.
+
+OLLAMA|How do I create a custom ollama model from a Modelfile?|`ollama create model-name -f path/to/Modelfile`. the Modelfile needs FROM and optionally SYSTEM.
+
+OLLAMA|My Modelfile SYSTEM prompt isn't taking effect.|rebuild after every edit: `ollama create model-name -f Modelfile`. running model doesn't pick up changes until rebuild.
+
+OLLAMA|How do I list which models are currently loaded in VRAM?|`ollama ps`. also available via `GET /api/metrics` which calls ollama ps internally.
+
+OLLAMA|Ollama stdout has ANSI spinner codes. How do I strip them before logging?|`.replace(/\u001b\[[?0-9;]*[a-zA-Z]/g, '').replace(/\u001b\][^\u0007]*\u0007/g, '')`. apply before any write to disk.
+
+OLLAMA|Which ollama model should I use for code generation tasks?|qwen2.5-coder:14b. best code output in the squad. route draft_patch, draft_test, implement, refactor to it.
+
+OLLAMA|How do I warm a model before it gets a task dispatch?|`POST /api/agent/warm` or directly: `spawn('ollama', ['run', model])` and let it idle. first token is the slow part.
+
+# ─── WINDOWS / POWERSHELL (GIT BASH CONTEXT) ─────────────────────────────
+
+WINDOWS|How do I find and kill a Node.js process on Windows?|`tasklist //FI "IMAGENAME eq node.exe"` to find the PID. `taskkill //PID <pid> //F` to kill it.
+
+WINDOWS|My shell command works in PowerShell but not Git Bash.|use forward slashes, not backslashes. use `//` for PowerShell flags when running from Git Bash. test both shells.
+
+WINDOWS|How do I run a PowerShell script from Node.js?|`spawnSync('powershell', ['-ExecutionPolicy', 'Bypass', '-File', 'script.ps1'], { encoding: 'utf8' })`.
+
+WINDOWS|How do I get the current wallpaper path in Windows programmatically?|`HKCU\Control Panel\Desktop\TranscodedWallpaper` registry key. or read the file directly: `%AppData%\Microsoft\Windows\Themes\TranscodedWallpaper`.
+
+WINDOWS|My Windows path has spaces and my shell command breaks.|quote it: `"C:\\path with spaces\\file"`. in Git Bash double-quote shell args that contain spaces.
+
+WINDOWS|How do I check if a process is running by name in Node on Windows?|spawnSync `tasklist`, capture stdout, check if the name appears. or `powershell Get-Process -Name node`.
+
+# ─── CODE REVIEW / QUALITY ───────────────────────────────────────────────
+
+CODE_REVIEW|This PR adds 400 lines for a feature I can do in 60. What do I say?|too much abstraction. ask: what does this layer add that the call site doesn't already have? shrink it.
+
+CODE_REVIEW|The code works but has no error handling at all. How bad is that?|depends on the path. user-facing write path with no catch = bad. internal utility that's always called correctly = fine.
+
+CODE_REVIEW|This function is 200 lines. Should I split it?|if it does one thing, no. if it does three separate phases with different concerns, yes. don't split for line count alone.
+
+CODE_REVIEW|The PR adds a try/catch around every single function call including pure functions.|error handling theater. remove the catches on pure functions. only catch at real recovery points.
+
+CODE_REVIEW|There are console.log statements all over this code.|dev logs don't belong in a commit. replace with proper log calls or remove. flag in review.
+
+CODE_REVIEW|The PR uses a class where a closure would do.|classes earn their keep when you need inheritance or multiple instances with shared methods. single-use? closure is fine.
+
+CODE_REVIEW|This code imports an npm package for a 10-line utility function.|in Pipe-R: no external deps ever. rewrite the 10 lines. in CHERP: same — if it's browser vanilla, write it.
+
+CODE_REVIEW|The PR has no comments at all. Is that a problem?|only if the why isn't obvious. don't comment what — comment why. missing a "why this approach over X" on a non-obvious call is worth flagging.
+
+# ─── HALO / GAME TRAINING (BONUS) ───────────────────────────────────────
+
+HALO|How do I structure a game-state keylog for a training loop?|timestamp, action, screen coordinates, game state snapshot. JSON lines, one per event. append-only file.
+
+HALO|How do I detect what's on screen without a game API?|screenshot → vision model inference. or template matching with OpenCV if the UI is consistent.
+
+HALO|How do I build a drive loop for automated game training?|observe state (vision/keylog), decide action (policy), execute action (input injection), log (reward signal). repeat.
+
+HALO|How do I inject keystrokes into a game window programmatically on Windows?|`[System.Windows.Forms.SendKeys]::SendWait('{key}')` via PowerShell. or pyautogui. game must be in foreground.
+
+HALO|How do I record and replay a sequence of inputs for testing?|capture to a JSON array with timestamps. replay by iterating and sleeping between events. delta-time replay = `setTimeout(send, item.ts - prev.ts)`.
+
+# ─── ARCHITECTURE DECISIONS ──────────────────────────────────────────────
+
+ARCHITECTURE|Should I use a class or module-level functions for a utility?|functions unless you need shared mutable state or multiple instances. `Executor` class makes sense — it holds registry. a one-off util doesn't.
+
+ARCHITECTURE|When do I split a 3000-line file into multiple files?|when two unrelated concerns need to be imported independently or maintained by different owners. not for line count.
+
+ARCHITECTURE|I need to cache expensive data with a TTL. Pattern?|`let _cache = null; let _cacheAt = 0; function get(ttl) { if (Date.now() - _cacheAt < ttl && _cache) return _cache; _cache = compute(); _cacheAt = Date.now(); return _cache; }`.
+
+ARCHITECTURE|Should I use JSON or a database for task queue storage?|JSON file for small queues under load. switch to SQLite or a real DB when concurrent writes start clobbering. Pipe-R stays JSON.
+
+ARCHITECTURE|My config has grown to 50 fields spread across 8 files. Fix?|consolidate into one JSON file with namespaced keys. `{ "agent": {}, "queue": {}, "sheets": {} }`. one read, one write.
+
+ARCHITECTURE|When should I use spawnSync vs spawn in Node?|spawnSync: waiting for result is the right thing (task dispatch, one-off tool calls). spawn: streaming output or long-lived process.
+
+ARCHITECTURE|Should the CHERP store.js cache TTL be shorter or longer?|30s is right for crew data. too short = too many fetches. too long = stale task status. tune per table, not globally.
+
+ARCHITECTURE|How do I add a new data store to an existing IndexedDB schema?|increment the DB version, add the store in `onupgradeneeded`. existing stores are preserved. don't delete and recreate.

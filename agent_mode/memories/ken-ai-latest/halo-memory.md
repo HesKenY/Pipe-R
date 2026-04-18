@@ -6,9 +6,7 @@ Sections are scanned by agent_mode/halo/memory.js appendLesson.
 
 ## current_mission
 
-- unknown — detect via MCC save mtimes
-- updated_at: 2026-04-14T00:46:43.466Z
-
+- 2026-04-17T09:08:55 — scanner: current mission is "The Heretic" (Opening cutscene, Covenant civil war begins)
 
 ## controls_verified
 
@@ -97,6 +95,8 @@ Sections are scanned by agent_mode/halo/memory.js appendLesson.
 
 ## wins_log
 
+- 2026-04-16 03:26:32 — survived low shield after move_fwd
+- 2026-04-16 03:15:29 — survived low shield after noop
 - 2026-04-14 02:57:56 — coach:WIN Ken's strafe_shoot pattern is strong and consistent.
 - 2026-04-14 02:55:45 — coach:WIN Ken's strafe_shoot pattern is strong. Keep using it.
 - 2026-04-14 02:53:52 — coach:WIN Consistent strafe shooting; keep it sharp and fast.
@@ -182,6 +182,23 @@ Sections are scanned by agent_mode/halo/memory.js appendLesson.
 
 ## tactics_learned
 
+- 2026-04-16 03:38:09 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:33:28 — ken:strafe_shoot — d + lmb within 600ms
+- 2026-04-16 03:32:14 — ken:grenade_throw — f pressed
+- 2026-04-16 03:32:09 — ken:reload_after_fire — r pressed after 3 lmbs
+- 2026-04-16 03:31:20 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:31:03 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:30:47 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:30:40 — ken:melee_strike — q pressed
+- 2026-04-16 03:28:53 — ken:grenade_throw — f pressed
+- 2026-04-16 03:27:18 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:27:03 — ken:strafe_shoot — d + lmb within 600ms
+- 2026-04-16 03:27:03 — ken:grenade_throw — f pressed
+- 2026-04-16 03:26:53 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:26:32 — ken:strafe_shoot — a + lmb within 600ms
+- 2026-04-16 03:23:34 — ken:grenade_throw — f pressed
+- 2026-04-16 03:23:06 — ken:reload_after_fire — r pressed after 3 lmbs
+- 2026-04-15 03:20:07 — ken:strafe_shoot — a + lmb within 600ms
 - 2026-04-14 02:57:56 — coach:NEXT Experiment with burst fire after aiming instead of single shots.
 - 2026-04-14 02:55:45 — coach:NEXT Experiment with burst fire after aiming.
 - 2026-04-14 02:53:52 — coach:NEXT Practice quick shield pops after taking hits.
@@ -441,6 +458,6 @@ Sections are scanned by agent_mode/halo/memory.js appendLesson.
 ## meta
 
 - created_at: 2026-04-14T00:04:24.775Z
-- dispatches: 185
+- dispatches: 232
 - deaths: 14
-- wins: 34
+- wins: 36

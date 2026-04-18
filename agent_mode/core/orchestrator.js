@@ -14,14 +14,19 @@ import { Executor } from './executor.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import {
+  PRIMARY_TRAINER_ID,
+  TRAINER_DISPLAY_NAME,
+  normalizeTrainerId,
+} from './trainer_identity.js';
 
 const CONFIG_DIR = join(process.cwd(), 'agent_mode', 'config');
 const LOG_DIR = join(process.cwd(), 'agent_mode', 'logs');
-const DEFAULT_TRAINER_ID = 'ken-ai:latest';
+const DEFAULT_TRAINER_ID = PRIMARY_TRAINER_ID;
 const DEFAULT_THEME = {
   name: 'gba-trainer-deck',
-  trainerLabel: 'Ken AI',
-  partyLabel: 'P0K3M0N-Style Dev Party',
+  trainerLabel: TRAINER_DISPLAY_NAME,
+  partyLabel: 'Agent Squad',
 };
 
 export class Orchestrator {
@@ -31,7 +36,8 @@ export class Orchestrator {
     this.executor = new Executor(this.registry);
     this.runtime = this._loadRuntime();
     this.mode = this.runtime.mode || 'hybrid';
-    this.trainerAgentId = this.runtime.trainerAgentId || DEFAULT_TRAINER_ID;
+    this.trainerAgentId = normalizeTrainerId(this.runtime.trainerAgentId || DEFAULT_TRAINER_ID);
+    this.runtime.trainerAgentId = this.trainerAgentId;
   }
 
   /** Detect what's available and return system state */
@@ -70,7 +76,6 @@ export class Orchestrator {
   /** Get dashboard summary */
   dashboard() {
     const agents = this.registry.list();
-    const byId = new Map(agents.map(agent => [agent.id, agent]));
     const trainer = agents.find(agent => agent.id === this.trainerAgentId || agent.teamRole === 'trainer') || null;
     const companion = agents.find(agent => agent.teamRole === 'companion') || null;
     const party = agents.filter(agent => agent.id !== trainer?.id && agent.id !== companion?.id);
@@ -79,24 +84,29 @@ export class Orchestrator {
       .filter(Boolean)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 12)
-      .map(task => ({
-        id: task.id,
-        type: task.type,
-        objective: task.objective,
-        status: task.status,
-        assignedAgent: task.assignedAgent,
-        assignedAgentName: task.assignedAgent ? (byId.get(task.assignedAgent)?.displayName || null) : null,
-        supportAgent: task.supportAgent,
-        supportAgentName: task.supportAgent ? (byId.get(task.supportAgent)?.displayName || null) : null,
-        coordinatorAgent: task.coordinatorAgent,
-        coordinatorAgentName: task.coordinatorAgent ? (byId.get(task.coordinatorAgent)?.displayName || null) : null,
-        routingLane: task.routingLane,
-        routingReason: task.routingReason,
-        retries: task.retries,
-        maxRetries: task.maxRetries,
-        nextRetryAt: task.nextRetryAt,
-        failureReason: task.failureReason,
-      }));
+      .map(task => {
+        const assigned = task.assignedAgent ? this.registry.getById(task.assignedAgent) : null;
+        const support = task.supportAgent ? this.registry.getById(task.supportAgent) : null;
+        const coordinator = task.coordinatorAgent ? this.registry.getById(task.coordinatorAgent) : null;
+        return {
+          id: task.id,
+          type: task.type,
+          objective: task.objective,
+          status: task.status,
+          assignedAgent: task.assignedAgent ? normalizeTrainerId(task.assignedAgent) : null,
+          assignedAgentName: assigned?.displayName || null,
+          supportAgent: task.supportAgent ? normalizeTrainerId(task.supportAgent) : null,
+          supportAgentName: support?.displayName || null,
+          coordinatorAgent: task.coordinatorAgent ? normalizeTrainerId(task.coordinatorAgent) : null,
+          coordinatorAgentName: coordinator?.displayName || null,
+          routingLane: task.routingLane,
+          routingReason: task.routingReason,
+          retries: task.retries,
+          maxRetries: task.maxRetries,
+          nextRetryAt: task.nextRetryAt,
+          failureReason: task.failureReason,
+        };
+      });
 
     return {
       mode: this.mode,
@@ -118,8 +128,8 @@ export class Orchestrator {
       objective: opts.objective,
       scope: opts.scope || [],
       priority: opts.priority || 2,
-      assignedAgent: opts.assignedAgent || null,
-      coordinatorAgent: opts.coordinatorAgent || this.trainerAgentId,
+      assignedAgent: opts.assignedAgent ? normalizeTrainerId(opts.assignedAgent) : null,
+      coordinatorAgent: normalizeTrainerId(opts.coordinatorAgent || this.trainerAgentId),
       maxRetries: Number.isFinite(opts.maxRetries) ? opts.maxRetries : (this.runtime.maxRetries || 5),
       requiresClaudeReview: opts.requiresClaudeReview ?? (this.mode === 'hybrid'),
     });
@@ -143,7 +153,7 @@ export class Orchestrator {
   assignTask(taskId, agentId) {
     const task = this.queue.get(taskId);
     if (!task) return null;
-    task.assignedAgent = agentId;
+    task.assignedAgent = normalizeTrainerId(agentId);
     task.coordinatorAgent = task.coordinatorAgent || this.trainerAgentId;
     this._applyAssignedRouting(task);
     this._log('task_assigned', {
@@ -166,6 +176,9 @@ export class Orchestrator {
     }
 
     task.maxRetries = task.maxRetries || this.runtime.maxRetries || 5;
+    if (task.assignedAgent) task.assignedAgent = normalizeTrainerId(task.assignedAgent);
+    if (task.coordinatorAgent) task.coordinatorAgent = normalizeTrainerId(task.coordinatorAgent);
+    if (task.supportAgent) task.supportAgent = normalizeTrainerId(task.supportAgent);
     task.status = 'in_progress';
     task.startedAt = new Date().toISOString();
     this.queue.save();

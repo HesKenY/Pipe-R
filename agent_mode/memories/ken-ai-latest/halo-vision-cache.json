@@ -1,0 +1,10 @@
+{
+  "description": "combat|none|battle rifle|noop",
+  "situation": "combat",
+  "enemies_visible": false,
+  "enemies": "none",
+  "weapon_hint": "battle rifle",
+  "suggestion": "noop",
+  "at": "2026-04-15T03:30:35.601444+00:00",
+  "elapsedMs": 4605
+}

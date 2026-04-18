@@ -5,13 +5,13 @@
   "requireClaudeReview": true,
   "maxConcurrentTasks": 2,
   "maxRetries": 5,
-  "trainerAgentId": "ken-ai:latest",
+  "trainerAgentId": "kenai:v4-offline-developer",
   "remotePin": "0615",
   "theme": {
     "name": "vaporwave-ops",
     "flavor": "vaporwave",
-    "trainerLabel": "Ken AI",
+    "trainerLabel": "Ken V4",
     "partyLabel": "Agent Squad",
-    "workbenchLabel": "Vaporwave Ops Deck"
+    "workbenchLabel": "Ken V4 Ops Deck"
   }
 }

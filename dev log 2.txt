@@ -1,0 +1,35 @@
+dev log 2
+
+fucking figured it out
+
+ive been working off an unbuild local model anyway from file system.
+logging system i guess accidently had the same effect on claude code as corpus training an llm anyway?
+
+anyway brain logging system is so over detailed its literally every back of forth 
+of cherp from the beginning so i paid up front token cost as development dues for an incredibly obsessive compulsive note taking system that pretty much is the point that cherp is centered around in my management style that made me get pissed off enough to fucking build the thing in the first place
+
+document everything thats going on, dont use it maliciously and average out all of it because its going to point right whewre the fucking issue in your production is anyway
+if you cant get material so you spreadsheet every step of the process itll literally be right in front of your face
+
+so anyway im reverse engineering my own pirated version of a college degree i always wanted
+because i got so mad at the fucking industry that i wanted out and the best way i to do so
+was to make that chatbot for if i die for the kids
+
+im fighting a rogue script attempt that trying to play pokemon crystal
+im about to let my first proper ai model attempt try to play it instead
+cherp works
+pokemon agent style system is the answer to how to fix crews. trainercard foreman, agent squad setup as workers
+the fix for my crew system is to rip out my little pokemon ai squad attempt and use that as the crew setup system. nxot fxrom txhe sxupabase end. fuckin script
+anyway crews doesn't need to be on the backend, group messaging setup between workers fixes that, keep everything off their sms. its discord for hands
+so pokemon pc and squad wiring is simple, easy enough for pokemon children to use and the office doesn't need to know if jerry is working with adam and ted. thats the foreman and their problem
+trainer mode for foreman
+trainer mode foir general foreman
+trainer mode for superintendant
+shooxtx umbrella view out as one rung up, one down
+everyone has their "trainer"
+and can see the fucking pokemon party theyre in
+
+its not overengineered that way, its just visual sorting
+
+crew documents dont need to be filed to workers
+just dump all of them into a sorted JSA folder for safety

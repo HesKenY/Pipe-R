@@ -1,0 +1,5 @@
+# Force LF line endings for files that run on Linux.
+# Prevents CRLF crashes like "bad interpreter: /usr/bin/env bash^M".
+*.sh text eol=lf
+*.py text eol=lf
+linux-setup/** text eol=lf

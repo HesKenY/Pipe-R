@@ -1,71 +1,46 @@
 # Tech Stack
 
-## Agent Runtime
+## Runtime
 - Python 3.11+
-- FastAPI (HTTP + WebSocket server)
-- Uvicorn (ASGI server)
-- Ollama (local model runtime, localhost:11434)
+- FastAPI
+- Uvicorn
+- Ollama on `127.0.0.1:11434`
 
-## Data Layer
-- SQLite (session memory, brain index search)
-- Markdown files (human-readable brain index)
-- JSONL (action log)
+## Storage
+- SQLite for memory index
+- Markdown for human-readable brain files
+- JSONL for action and training logs
+- JSON config files for live squad state under `agent_mode/config`
 
-## Tools / Shell
-- ripgrep (rg) — fast code search
-- git — version control
-- black — Python formatter
-- flake8 — Python linter
-- pytest — Python test runner
-
-## Desktop Automation (Mode 3 only)
-- pyautogui — mouse, keyboard control
-- Pillow — screenshot capture
-- pytesseract — OCR (optional)
+## Core tools
+- git
+- ripgrep
+- pytest
+- black / flake8 / ruff when available
+- node for local repo checks
 
 ## Frontend
-- Single HTML file served by FastAPI
-- Vanilla JS with WebSocket client
-- No build step required
+- single static HTML file
+- vanilla JS
+- WebSocket chat loop
 
-## Config
-- YAML (permissions, models, tools, projects)
-- python-yaml (PyYAML)
+## Port map
+- Pipe-R: `127.0.0.1:7777`
+- offline_agent: `127.0.0.1:7778`
+- Ollama: `127.0.0.1:11434`
+- Bird's Nest: `127.0.0.1:8080`
 
-## Platform
-- Windows 10/11 (primary target)
-- Linux compatible (paths adjust)
+## Preferred local models
+- `kenai:v4-offline-developer` - target planner tag
+- `kenai:v3` - immediate fallback
+- `ken-ai:latest` - voice-aware fallback
+- `qwen2.5-coder:14b` - coding backbone
+- `llama3.1:8b` - fast lightweight tasks
+- `llama3.2-vision` - screenshots and UI reads
 
-## Port Map — Ken's machine
-- **Pipe-R server**: `127.0.0.1:7777` (Node.js, `server.js`)
-- **Ken AI offline agent**: `127.0.0.1:7778` (this project,
-  moved off 7777 to avoid clashing with Pipe-R — see `main.py`)
-- **Ollama**: `127.0.0.1:11434`
-- **Bird's Nest**: `127.0.0.1:8080`
-
-## Local Ollama roster (Ken's machine as of 2026-04-14)
-- `ken-ai:latest` — trainer (qwen2.5-coder:14b + Ken profile
-  SYSTEM block)
-- `qwen2.5-coder:14b` — implementation
-- `cherp-piper:latest` — recon
-- `forgeagent:latest` — integration
-- `llama3.1:8b` — observability
-- `jefferyjefferferson:latest` — quality
-- `jefferferson:latest` — memory/archive (slow cold start)
-- `m3w-learning:latest` — learning/tutor
-- `llama3.2-vision` — for HUD reading, halo_vision_hunt
-
-Prefer `ken-ai:latest` for anything voice-sensitive. Prefer
-`qwen2.5-coder:14b` for code generation. Routing lives in
-`config/models.yaml` under `profiles:`.
-
-## Related Ken projects on this machine
-See `config/projects.yaml` for paths. The key ones the agent
-will touch most:
-- `C:/Users/Ken/Desktop/Codex` — this clone (parallel Codex
-  coordination with Claude)
-- `C:/Users/Ken/Desktop/Claude` — the parallel Claude clone
-- `C:/Users/Ken/Desktop/Codex/halo-trainer` — classroom drills
-- `C:/Users/Ken/Desktop/Codex/offline_agent` — this project
-- Workspace (via `workspace/` alias) — default sandbox for
-  throwaway edits
+## Working paths
+- `C:/Users/Ken/Desktop/Codex`
+- `C:/Users/Ken/Desktop/Codex/offline_agent`
+- `C:/Users/Ken/Desktop/Codex/agent_mode`
+- `C:/Users/Ken/Desktop/Codex/workspace/CHERP`
+- `C:/Users/Ken/Desktop/Claude` read-only from this runtime

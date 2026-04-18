@@ -24,13 +24,16 @@ import argparse
 import json
 import re
 import subprocess
-from tools.win_subprocess import run as _win_run
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PROJECT_ROOT = HERE.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+from tools.win_subprocess import run as _win_run
+
 DESIGNS_DIR  = HERE / "model_designs"
 EVAL_DIR     = HERE / "training" / "evaluations"
 EVAL_DIR.mkdir(parents=True, exist_ok=True)

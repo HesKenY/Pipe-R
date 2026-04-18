@@ -1,0 +1,300 @@
+# Python pathlib (5/5)
+source: https://github.com/python/cpython/blob/main/Doc/library/pathlib.rst
+repo: https://github.com/python/cpython
+license: PSF License Version 2 | https://github.com/python/cpython/blob/main/LICENSE
+fetched_at: 2026-04-15T11:52:35+00:00
+dir` instead.
+
+If *missing_ok* is false (the default), :exc:`FileNotFoundError` is
+   raised if the path does not exist.
+
+If *missing_ok* is true, :exc:`FileNotFoundError` exceptions will be
+   ignored (same behavior as the POSIX ``rm -f`` command).
+
+.. versionchanged:: 3.8
+      The *missing_ok* parameter was added.
+
+.. method:: Path.rmdir()
+
+Remove this directory.  The directory must be empty.
+
+Permissions and ownership
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. method:: Path.owner(*, follow_symlinks=True)
+
+Return the name of the user owning the file. :exc:`KeyError` is raised
+   if the file's user identifier (UID) isn't found in the system database.
+
+This method normally follows symlinks; to get the owner of the symlink, add
+   the argument ``follow_symlinks=False``.
+
+.. versionchanged:: 3.13
+      Raises :exc:`UnsupportedOperation` if the :mod:`pwd` module is not
+      available. In earlier versions, :exc:`NotImplementedError` was raised.
+
+.. versionchanged:: 3.13
+      The *follow_symlinks* parameter was added.
+
+.. method:: Path.group(*, follow_symlinks=True)
+
+Return the name of the group owning the file. :exc:`KeyError` is raised
+   if the file's group identifier (GID) isn't found in the system database.
+
+This method normally follows symlinks; to get the group of the symlink, add
+   the argument ``follow_symlinks=False``.
+
+.. versionchanged:: 3.13
+      Raises :exc:`UnsupportedOperation` if the :mod:`grp` module is not
+      available. In earlier versions, :exc:`NotImplementedError` was raised.
+
+.. versionchanged:: 3.13
+      The *follow_symlinks* parameter was added.
+
+.. method:: Path.chmod(mode, *, follow_symlinks=True)
+
+Change the file mode and permissions, like :func:`os.chmod`.
+
+This method normally follows symlinks. Some Unix flavours support changing
+   permissions on the symlink itself; on these platforms you may add the
+   argument ``follow_symlinks=False``, or use :meth:`~Path.lchmod`.
+
+::
+
+>>> p = Path('setup.py')
+      >>> p.stat().st_mode
+      33277
+      >>> p.chmod(0o444)
+      >>> p.stat().st_mode
+      33060
+
+.. versionchanged:: 3.10
+      The *follow_symlinks* parameter was added.
+
+.. method:: Path.lchmod(mode)
+
+Like :meth:`Path.chmod` but, if the path points to a symbolic link, the
+   symbolic link's mode is changed rather than its target's.
+
+.. _pathlib-pattern-language:
+
+Pattern language
+----------------
+
+The following wildcards are supported in patterns for
+:meth:`~PurePath.full_match`, :meth:`~Path.glob` and :meth:`~Path.rglob`:
+
+``**`` (entire segment)
+  Matches any number of file or directory segments, including zero.
+``*`` (entire segment)
+  Matches one file or directory segment.
+``*`` (part of a segment)
+  Matches any number of non-separator characters, including zero.
+``?``
+  Matches one non-separator character.
+``[seq]``
+  Matches one character in *seq*, where *seq* is a sequence of characters.
+  Range expressions are supported; for example, ``[a-z]`` matches any lowercase ASCII letter.
+  Multiple ranges can be combined: ``[a-zA-Z0-9_]`` matches any ASCII letter, digit, or underscore.
+
+``[!seq]``
+  Matches one character not in *seq*, where *seq* follows the same rules as above.
+
+For a literal match, wrap the meta-characters in brackets.
+For example, ``"[?]"`` matches the character ``"?"``.
+
+The "``**``" wildcard enables recursive globbing. A few examples:
+
+=========================  ===========================================
+Pattern                    Meaning
+=========================  ===========================================
+"``**/*``"                 Any path with at least one segment.
+"``**/*.py``"              Any path with a final segment ending "``.py``".
+"``assets/**``"            Any path starting with "``assets/``".
+"``assets/**/*``"          Any path starting with "``assets/``", excluding "``assets/``" itself.
+=========================  ===========================================
+
+.. note::
+   Globbing with the "``**``" wildcard visits every directory in the tree.
+   Large directory trees may take a long time to search.
+
+.. versionchanged:: 3.13
+   Globbing with a pattern that ends with "``**``" returns both files and
+   directories. In previous versions, only directories were returned.
+
+In :meth:`Path.glob` and :meth:`~Path.rglob`, a trailing slash may be added to
+the pattern to match only directories.
+
+.. versionchanged:: 3.11
+   Globbing with a pattern that ends with a pathname components separator
+   (:data:`~os.sep` or :data:`~os.altsep`) returns only directories.
+
+Comparison to the :mod:`glob` module
+------------------------------------
+
+The patterns accepted and results generated by :meth:`Path.glob` and
+:meth:`Path.rglob` differ slightly from those by the :mod:`glob` module:
+
+1. Files beginning with a dot are not special in pathlib. This is
+   like passing ``include_hidden=True`` to :func:`glob.glob`.
+2. "``**``" pattern components are always recursive in pathlib. This is like
+   passing ``recursive=True`` to :func:`glob.glob`.
+3. "``**``" pattern components do not follow symlinks by default in pathlib.
+   This behaviour has no equivalent in :func:`glob.glob`, but you can pass
+   ``recurse_symlinks=True`` to :meth:`Path.glob` for compatible behaviour.
+4. Like all :class:`PurePath` and :class:`Path` objects, the values returned
+   from :meth:`Path.glob` and :meth:`Path.rglob` don't include trailing
+   slashes.
+5. The values returned from pathlib's ``path.glob()`` and ``path.rglob()``
+   include the *path* as a prefix, unlike the results of
+   ``glob.glob(root_dir=path)``.
+6. The values returned from pathlib's ``path.glob()`` and ``path.rglob()``
+   may include *path* itself, for example when globbing "``**``", whereas the
+   results of ``glob.glob(root_dir=path)`` never include an empty string that
+   would correspond to *path*.
+
+Comparison to the :mod:`os` and :mod:`os.path` modules
+------------------------------------------------------
+
+pathlib implements path operations using :class:`PurePath` and :class:`Path`
+objects, and so it's said to be *object-oriented*. On the other hand, the
+:mod:`os` and :mod:`os.path` modules supply functions that work with low-level
+``str`` and ``bytes`` objects, which is a more *procedural* approach. Some
+users consider the object-oriented style to be more readable.
+
+Many functions in :mod:`os` and :mod:`os.path` support ``bytes`` paths and
+:ref:`paths relative to directory descriptors <dir_fd>`. These features aren't
+available in pathlib.
+
+Python's ``str`` and ``bytes`` types, and portions of the :mod:`os` and
+:mod:`os.path` modules, are written in C and are very speedy. pathlib is
+written in pure Python and is often slower, but rarely slow enough to matter.
+
+pathlib's path normalization is slightly more opinionated and consistent than
+:mod:`os.path`. For example, whereas :func:`os.path.abspath` eliminates
+"``..``" segments from a path, which may change its meaning if symlinks are
+involved, :meth:`Path.absolute` preserves these segments for greater safety.
+
+pathlib's path normalization may render it unsuitable for some applications:
+
+1. pathlib normalizes ``Path("my_folder/")`` to ``Path("my_folder")``, which
+   changes a path's meaning when supplied to various operating system APIs and
+   command-line utilities. Specifically, the absence of a trailing separator
+   may allow the path to be resolved as either a file or directory, rather
+   than a directory only.
+2. pathlib normalizes ``Path("./my_program")`` to ``Path("my_program")``,
+   which changes a path's meaning when used as an executable search path, such
+   as in a shell or when spawning a child process. Specifically, the absence
+   of a separator in the path may force it to be looked up in :envvar:`PATH`
+   rather than the current directory.
+
+As a consequence of these differences, pathlib is not a drop-in replacement
+for :mod:`os.path`.
+
+Corresponding tools
+^^^^^^^^^^^^^^^^^^^
+
+Below is a table mapping various :mod:`os` functions to their corresponding
+:class:`PurePath`/:class:`Path` equivalent.
+
+=====================================   ==============================================
+:mod:`os` and :mod:`os.path`            :mod:`!pathlib`
+=====================================   ==============================================
+:func:`os.path.dirname`                 :attr:`PurePath.parent`
+:func:`os.path.basename`                :attr:`PurePath.name`
+:func:`os.path.splitext`                :attr:`PurePath.stem`, :attr:`PurePath.suffix`
+:func:`os.path.join`                    :meth:`PurePath.joinpath`
+:func:`os.path.isabs`                   :meth:`PurePath.is_absolute`
+:func:`os.path.relpath`                 :meth:`PurePath.relative_to` [1]_
+:func:`os.path.expanduser`              :meth:`Path.expanduser` [2]_
+:func:`os.path.realpath`                :meth:`Path.resolve`
+:func:`os.path.abspath`                 :meth:`Path.absolute` [3]_
+:func:`os.path.exists`                  :meth:`Path.exists`
+:func:`os.path.isfile`                  :meth:`Path.is_file`
+:func:`os.path.isdir`                   :meth:`Path.is_dir`
+:func:`os.path.islink`                  :meth:`Path.is_symlink`
+:func:`os.path.isjunction`              :meth:`Path.is_junction`
+:func:`os.path.ismount`                 :meth:`Path.is_mount`
+:func:`os.path.samefile`                :meth:`Path.samefile`
+:func:`os.getcwd`                       :meth:`Path.cwd`
+:func:`os.stat`                         :meth:`Path.stat`
+:func:`os.lstat`                        :meth:`Path.lstat`
+:func:`os.listdir`                      :meth:`Path.iterdir`
+:func:`os.walk`                         :meth:`Path.walk` [4]_
+:func:`os.mkdir`, :func:`os.makedirs`   :meth:`Path.mkdir`
+:func:`os.link`                         :meth:`Path.hardlink_to`
+:func:`os.symlink`                      :meth:`Path.symlink_to`
+:func:`os.readlink`                     :meth:`Path.readlink`
+:func:`os.rename`                       :meth:`Path.rename`
+:func:`os.replace`                      :meth:`Path.replace`
+:func:`os.remove`, :func:`os.unlink`    :meth:`Path.unlink`
+:func:`os.rmdir`                        :meth:`Path.rmdir`
+:func:`os.chmod`                        :meth:`Path.chmod`
+:func:`os.lchmod`                       :meth:`Path.lchmod`
+=====================================   ==============================================
+
+.. rubric:: Footnotes
+
+.. [1] :func:`os.path.relpath` calls :func:`~os.path.abspath` to make paths
+   absolute and remove "``..``" parts, whereas :meth:`PurePath.relative_to`
+   is a lexical operation that raises :exc:`ValueError` when its inputs'
+   anchors differ (e.g. if one path is absolute and the other relative.)
+.. [2] :func:`os.path.expanduser` returns the path unchanged if the home
+   directory can't be resolved, whereas :meth:`Path.expanduser` raises
+   :exc:`RuntimeError`.
+.. [3] :func:`os.path.abspath` removes "``..``" components without resolving
+   symlinks, which may change the meaning of the path, whereas
+   :meth:`Path.absolute` leaves any "``..``" components in the path.
+.. [4] :func:`os.walk` always follows symlinks when categorizing paths into
+   *dirnames* and *filenames*, whereas :meth:`Path.walk` categorizes all
+   symlinks into *filenames* when *follow_symlinks* is false (the default.)
+
+Protocols
+---------
+
+.. module:: pathlib.types
+   :synopsis: pathlib types for static type checking
+
+The :mod:`!pathlib.types` module provides types for static type checking.
+
+.. versionadded:: 3.14
+
+.. class:: PathInfo()
+
+A :class:`typing.Protocol` describing the
+   :attr:`Path.info <pathlib.Path.info>` attribute. Implementations may
+   return cached results from their methods.
+
+.. method:: exists(*, follow_symlinks=True)
+
+Return ``True`` if the path is an existing file or directory, or any
+      other kind of file; return ``False`` if the path doesn't exist.
+
+If *follow_symlinks* is ``False``, return ``True`` for symlinks without
+      checking if their targets exist.
+
+.. method:: is_dir(*, follow_symlinks=True)
+
+Return ``True`` if the path is a directory, or a symbolic link pointing
+      to a directory; return ``False`` if the path is (or points to) any other
+      kind of file, or if it doesn't exist.
+
+If *follow_symlinks* is ``False``, return ``True`` only if the path
+      is a directory (without following symlinks); return ``False`` if the
+      path is any other kind of file, or if it doesn't exist.
+
+.. method:: is_file(*, follow_symlinks=True)
+
+Return ``True`` if the path is a file, or a symbolic link pointing to
+      a file; return ``False`` if the path is (or points to) a directory or
+      other non-file, or if it doesn't exist.
+
+If *follow_symlinks* is ``False``, return ``True`` only if the path
+      is a file (without following symlinks); return ``False`` if the path
+      is a directory or other non-file, or if it doesn't exist.
+
+.. method:: is_symlink()
+
+Return ``True`` if the path is a symbolic link (even if broken); return
+      ``False`` if the path is a directory or any kind of file, or if it
+      doesn't exist.

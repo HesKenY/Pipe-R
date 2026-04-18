@@ -3,67 +3,49 @@ ollama:
   timeout: 180
 
 models:
-  default: "ken-ai:latest"
+  target: "kenai:v4-offline-developer"
+  default: "kenai:v4-offline-developer"
 
   profiles:
     planner:
-      model: "ken-ai:latest"
-      num_ctx: 16384
-      temperature: 0.2
+      model: "kenai:v4-offline-developer"
+      num_ctx: 32768
+      temperature: 0.15
       top_p: 0.9
-      description: "Ken's voice planner — reads brain, picks tools, writes session. 16k context keeps VRAM happy when Halo or another model is loaded."
+      description: "Target planner model for Ken V4 offline developer as the coding-first squad lead. Falls back automatically if the local tag is not built yet."
+      fallback_chain:
+        - "kenai:v3"
+        - "ken-ai:latest"
+        - "qwen2.5-coder:14b"
+        - "llama3.1:8b"
 
     coder:
       model: "qwen2.5-coder:14b"
       num_ctx: 65536
       temperature: 0.1
       top_p: 0.95
-      description: "Code generation and patching. No voice constraint — code must be correct."
+      description: "Primary code generation and patching model."
 
     reviewer:
       model: "qwen2.5-coder:14b"
       num_ctx: 32768
       temperature: 0.0
-      description: "Code review and diff analysis"
-
-    vision:
-      model: "llama3.2-vision"
-      num_ctx: 8192
-      temperature: 0.1
-      description: "Screenshot + HUD reading — the one Ken has pulled locally"
+      description: "Diff review, bug hunting, and regression checks."
 
     fast:
       model: "llama3.1:8b"
       num_ctx: 16384
       temperature: 0.2
-      description: "Quick tasks, grep, summaries, JSON patches"
+      description: "Fast summaries, status checks, and lightweight JSON shaping."
 
-    recon:
-      model: "cherp-piper:latest"
-      num_ctx: 32768
-      temperature: 0.2
-      description: "Terrain mapping, memory budgeting, install tree walks"
-
-    integration:
-      model: "forgeagent:latest"
-      num_ctx: 32768
-      temperature: 0.2
-      description: "Wiring modules, JSON config patches, daemon healing"
-
-    quality:
-      model: "jefferyjefferferson:latest"
-      num_ctx: 16384
+    vision:
+      model: "llama3.2-vision"
+      num_ctx: 8192
       temperature: 0.1
-      description: "QA checks, rubric verification, regression risk taxonomy"
+      description: "Screenshots and UI reading for local operator workflows."
 
-    tutor:
-      model: "m3w-learning:latest"
-      num_ctx: 16384
-      temperature: 0.3
-      description: "Prompt tuning and post-task learning reflection"
-
-  # Fallback priority order if primary model not available
   fallback_chain:
+    - "kenai:v3"
     - "ken-ai:latest"
     - "qwen2.5-coder:14b"
     - "llama3.1:8b"

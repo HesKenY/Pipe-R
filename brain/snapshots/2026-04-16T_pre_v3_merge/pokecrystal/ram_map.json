@@ -1,0 +1,15 @@
+{
+  "_notes": "Crystal v1.0 RAM symbols (pret/pokecrystal). Verify per-ROM; tweak if values look wrong.",
+  "battle_mode":   { "addr": "d22d", "size": 1, "desc": "0=overworld, 1=wild, 2=trainer" },
+  "party_count":   { "addr": "dcd7", "size": 1 },
+  "party_species": { "addr": "dcd8", "size": 6, "desc": "one byte per slot (species id)" },
+  "map_group":     { "addr": "dcb5", "size": 1 },
+  "map_number":    { "addr": "dcb6", "size": 1 },
+  "y":             { "addr": "dcb7", "size": 1 },
+  "x":             { "addr": "dcb8", "size": 1 },
+  "player_dir":    { "addr": "dcb9", "size": 1, "desc": "0=down,4=up,8=left,c=right" },
+  "mon1_species":  { "addr": "dcdf", "size": 1 },
+  "mon1_hp":       { "addr": "dd01", "size": 2, "desc": "big-endian in box struct; may need byte-swap" },
+  "mon1_max_hp":   { "addr": "dd23", "size": 2 },
+  "text_delay":    { "addr": "cfb1", "size": 1, "desc": "nonzero while text scrolls" }
+}

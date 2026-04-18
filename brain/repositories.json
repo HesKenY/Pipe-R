@@ -1,0 +1,23 @@
+[
+  {
+    "label": "codex",
+    "path": "C:\\Users\\Ken\\Desktop\\Codex",
+    "kind": "primary",
+    "priority": 100,
+    "ingest": true
+  },
+  {
+    "label": "codex_source_main",
+    "path": "C:\\Users\\Ken\\Desktop\\Codex\\input\\Codex-source-main",
+    "kind": "source_mirror",
+    "priority": 95,
+    "ingest": true
+  },
+  {
+    "label": "claude_import",
+    "path": "C:\\Users\\Ken\\Desktop\\Codex\\input\\Claude-import",
+    "kind": "mirror",
+    "priority": 90,
+    "ingest": true
+  }
+]

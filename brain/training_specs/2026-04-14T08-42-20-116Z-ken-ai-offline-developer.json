@@ -1,0 +1,53 @@
+{
+  "savedAt": "2026-04-14T08:42:20.116Z",
+  "name": "Ken AI Offline Developer",
+  "source": "pipe-r",
+  "mission": "Build the BRAIN Controller and Ken AI Chat driven offline developer model.",
+  "capabilities": [
+    "vision context",
+    "tool execution",
+    "local-first execution"
+  ],
+  "permissions": [
+    "full-trust local mode",
+    "approved project read/write"
+  ],
+  "dataset": {
+    "name": "Ken AI Offline Developer",
+    "generatedAt": "2026-04-14T08:42:20Z",
+    "datasetFile": "C:\\Users\\Ken\\Desktop\\Codex\\brain\\exports\\2026-04-14T08-42-20Z-ken-ai-offline-developer.jsonl",
+    "datasetFileRelative": "brain\\exports\\2026-04-14T08-42-20Z-ken-ai-offline-developer.jsonl",
+    "filters": {
+      "query": "ken ai chat",
+      "repo": "codex",
+      "owner": null,
+      "intent": null,
+      "limit": 50
+    },
+    "recordCount": 50,
+    "branchCount": 0,
+    "itemCount": 50,
+    "repositories": {
+      "codex": 50
+    },
+    "kinds": {
+      "agent_chat": 11,
+      "agent_notes": 2,
+      "runtime_log": 8,
+      "brain_doc": 5,
+      "repo_brief": 1,
+      "training_log": 19,
+      "worklist": 2,
+      "brief": 1,
+      "task_registry": 1
+    },
+    "manifestFile": "C:\\Users\\Ken\\Desktop\\Codex\\brain\\exports\\2026-04-14T08-42-20Z-ken-ai-offline-developer.manifest.json",
+    "manifestFileRelative": "brain\\exports\\2026-04-14T08-42-20Z-ken-ai-offline-developer.manifest.json"
+  },
+  "runtimePlan": "BRAIN Controller + Ken AI Chat + offline squad",
+  "evaluationGoals": [
+    "reason across indexed project memory",
+    "use tool and shell workflows safely in local mode",
+    "retain branch-aware and repo-aware context"
+  ]
+}

@@ -1,143 +1,192 @@
 tools:
   filesystem:
     read_file:
-      description: "Read contents of a file"
+      description: "Read a file"
       params: [path]
       min_mode: 0
-
-    write_file:
-      description: "Write content to a file (creates or overwrites)"
-      params: [path, content]
-      min_mode: 1
-
-    apply_patch:
-      description: "Apply a unified diff patch to a file"
-      params: [path, diff]
-      min_mode: 1
-
     list_tree:
-      description: "List directory tree structure"
+      description: "List a directory tree"
       params: [path, depth]
       min_mode: 0
-
+    file_info:
+      description: "Read file metadata"
+      params: [path]
+      min_mode: 0
+    preview_patch:
+      description: "Preview a proposed write without touching disk"
+      params: [path, new_content]
+      min_mode: 0
+    write_file:
+      description: "Write or overwrite a file"
+      params: [path, content]
+      min_mode: 1
+    apply_patch:
+      description: "Apply a unified diff to one file"
+      params: [path, diff]
+      min_mode: 1
+    apply_multi_patch:
+      description: "Apply a multi-file unified diff atomically"
+      params: [diff]
+      min_mode: 1
+    propose_patch:
+      description: "Stage a patch for approval"
+      params: [path, new_content]
+      min_mode: 1
+    approve_patch:
+      description: "Approve a staged patch"
+      params: [patch_id]
+      min_mode: 1
+    reject_patch:
+      description: "Reject a staged patch"
+      params: [patch_id]
+      min_mode: 1
+    revert_last_patch:
+      description: "Restore the latest backup for a file"
+      params: [path]
+      min_mode: 1
     delete_file:
-      description: "Delete a file (requires confirmation)"
+      description: "Delete a file after backup"
       params: [path]
       min_mode: 2
-      requires_confirm: true
 
   search:
     search_repo:
-      description: "Search codebase with ripgrep"
+      description: "Search the repo"
       params: [query, path, file_pattern]
       min_mode: 0
-
     find_files:
-      description: "Find files by name/pattern"
+      description: "Find files by pattern"
       params: [pattern, path]
+      min_mode: 0
+    grep_file:
+      description: "Search inside one file"
+      params: [path, query]
+      min_mode: 0
+    count_lines:
+      description: "Count lines in files"
+      params: [path, file_pattern]
       min_mode: 0
 
   git:
     git_status:
-      description: "Show working tree status"
+      description: "Show git status"
       params: [repo_path]
       min_mode: 0
-
     git_diff:
-      description: "Show changes between commits/working tree"
+      description: "Show git diff"
       params: [repo_path, target]
       min_mode: 0
-
     git_log:
-      description: "Show commit log"
+      description: "Show git log"
       params: [repo_path, limit]
       min_mode: 0
-
     git_add:
-      description: "Stage files for commit"
+      description: "Stage files"
       params: [repo_path, files]
       min_mode: 1
-
     git_commit:
-      description: "Create a commit with message"
+      description: "Commit staged files"
       params: [repo_path, message]
       min_mode: 1
-
     git_branch:
-      description: "List or create branches"
+      description: "List or switch branches"
       params: [repo_path, name, create]
+      min_mode: 1
+    git_stash:
+      description: "Stash working tree changes"
+      params: [repo_path]
       min_mode: 1
 
   shell:
     run_command:
-      description: "Execute a shell command"
+      description: "Run a shell command"
       params: [cmd, cwd, timeout]
       min_mode: 1
-
     run_tests:
-      description: "Run test suite"
+      description: "Run a test command"
       params: [target, cwd]
       min_mode: 1
-
     run_formatter:
-      description: "Run black/prettier/etc"
+      description: "Run formatting"
       params: [path, formatter]
       min_mode: 1
-
+    run_linter:
+      description: "Run linting"
+      params: [path, linter]
+      min_mode: 1
     install_package:
-      description: "Install a package via pip or npm"
+      description: "Install a package"
       params: [package, manager]
       min_mode: 2
-      requires_confirm: true
 
   desktop:
     capture_screen:
       description: "Take a screenshot"
       params: [region]
       min_mode: 2
-
-    move_mouse:
-      description: "Move mouse cursor to coordinates"
-      params: [x, y]
-      min_mode: 3
-
-    click:
-      description: "Click mouse button"
-      params: [button, x, y]
-      min_mode: 3
-
-    type_text:
-      description: "Type text via keyboard"
-      params: [text, delay_ms]
-      min_mode: 3
-
     get_active_window:
-      description: "Get title of active window"
+      description: "Read the active window title"
       params: []
       min_mode: 2
-
+    move_mouse:
+      description: "Move the mouse"
+      params: [x, y]
+      min_mode: 3
+    click:
+      description: "Click the mouse"
+      params: [button, x, y]
+      min_mode: 3
+    type_text:
+      description: "Type text"
+      params: [text, delay_ms]
+      min_mode: 3
     hotkey:
-      description: "Send keyboard shortcut"
+      description: "Send a hotkey"
       params: [keys]
+      min_mode: 3
+    scroll:
+      description: "Scroll"
+      params: [amount]
       min_mode: 3
 
   brain:
-    read_brain:
-      description: "Read a brain index file"
-      params: [filename]
-      min_mode: 0
-
-    write_brain:
-      description: "Update a brain index file"
-      params: [filename, content]
-      min_mode: 1
-
-    search_memory:
-      description: "Search session memory for relevant context"
+    search_brain:
+      description: "Search the brain index"
       params: [query, limit]
       min_mode: 0
-
-    write_session_log:
-      description: "Append to current session log"
+    read_brain_file:
+      description: "Read one brain file"
+      params: [filename]
+      min_mode: 0
+    list_brain_files:
+      description: "List brain files"
+      params: []
+      min_mode: 0
+    brain_stats:
+      description: "Read brain index stats"
+      params: []
+      min_mode: 0
+    list_open_tasks:
+      description: "List open tasks"
+      params: []
+      min_mode: 0
+    read_task:
+      description: "Read an open or completed task"
+      params: [slug, bucket]
+      min_mode: 0
+    write_brain_file:
+      description: "Write a brain file"
+      params: [filename, content]
+      min_mode: 1
+    append_session_entry:
+      description: "Append to today's session log"
       params: [entry]
+      min_mode: 1
+    open_task:
+      description: "Create an open task"
+      params: [title, description]
+      min_mode: 1
+    close_task:
+      description: "Close an open task"
+      params: [slug, summary]
       min_mode: 1

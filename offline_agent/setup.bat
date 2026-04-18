@@ -3,7 +3,7 @@ setlocal
 
 echo.
 echo ================================================
-echo   OfflineAgent Setup — Windows 10/11
+echo   KenAI Offline Developer Setup - Windows 10/11
 echo ================================================
 echo.
 
@@ -73,7 +73,7 @@ echo ================================================
 echo   Setup complete!
 echo.
 echo   Run:  python main.py
-echo   Open: http://localhost:7777
+echo   Open: http://localhost:7778
 echo ================================================
 echo.
 pause

@@ -17,6 +17,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
 import { createHash } from 'crypto';
+import { PRIMARY_TRAINER_ID, TRAINER_DISPLAY_NAME } from './trainer_identity.js';
 
 const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const LT_DIR = join(ROOT, 'agent_mode', 'livetest');
@@ -663,8 +664,8 @@ const V1_ROSTER = {
     },
   ],
   trainer: {
-    id: 'ken-ai:latest',
-    persona: 'Ken AI',
+    id: PRIMARY_TRAINER_ID,
+    persona: TRAINER_DISPLAY_NAME,
     title: 'Trainer decision',
     promptBody: (ctx) => [
       'you are ken. read team a narration + team b audit + the operation',

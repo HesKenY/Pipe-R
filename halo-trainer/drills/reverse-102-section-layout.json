@@ -4,7 +4,7 @@
   "student": "cherp-piper:latest",
   "curriculum": "reverse-engineering",
   "contextFiles": [
-    "../../Claude/agent_mode/memories/ken-ai-latest/halo-game-dump.md"
+    "../agent_mode/memories/ken-ai-latest/halo-game-dump.md"
   ],
   "prompt": "You know halo2.dll is loaded in MCC. You need to explain to a teammate where player state lives inside the DLL. Write a markdown doc '# PE section layout — halo2.dll':\n\n1. List the 5 standard PE sections (.text, .rdata, .data, .pdata, .rsrc) with one-line purpose each.\n2. Which section(s) could hold mutable player state (health, shield, ammo)? Explain WHY using the section's page permissions (RWX vs R vs RX).\n3. How to find a section's RVA + size from a PE header: the IMAGE_NT_HEADERS.OptionalHeader.SizeOfImage + IMAGE_SECTION_HEADER walk. Don't code it, just describe the walk in 4-5 steps.\n4. Given halo2.dll base 0x7ff6xxxxx and typical .data offsets, what absolute address range should a first-pass scanner cover for mutable globals?\n5. Why .rdata is useless for health hunting (it's const strings / vtables / jump tables — read-only).\n\nDense bullets. No prose intro. No code fences around the whole thing.",
   "rubric": [

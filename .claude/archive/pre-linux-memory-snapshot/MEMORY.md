@@ -1,0 +1,30 @@
+- [Ken — Builder & Non-Coder](user_profile.md) — Non-coder who builds through AI agents, button-driven UIs
+- [Learning Tracker](user_learning.md) — Apprenticeship program: concepts understood, in progress, and next up
+- [Apprenticeship Mode](feedback_apprenticeship.md) — Ramp technical language gradually as Ken learns
+- [Pipe-R Command Center](project_piper.md) — Node.js orchestrator: hub.js TUI + server.js on :7777 + planned web UI
+- [CHERP Platform Architecture](project_cherp_platform.md) — App, website, web version, Android offline, Nest backend manager
+- [Project Ecosystem](project_ecosystem.md) — CHERP, Bird's Nest, CodeForge, ForgeAgent and their repos
+- [Codex Incident](project_naming.md) — ChatGPT Codex dumped REVV into repo 2026-04-08, cleaned up 2026-04-09
+- [Button-Driven UX](feedback_ux.md) — All UIs must be button-driven, no typing required
+- [Sci-Fi Design Language](feedback_scifi_theme.md) — Dark space theme, neon accents, glow effects, robot mascot
+- [CHERP Design Principles](feedback_cherp_design.md) — Offline-first, GPS trust, role-based access, Pipe-R as journeyman
+- [CHERP Security](project_cherp_security.md) — Service key in client JS, needs serverless proxy eventually
+- [Supabase Project](reference_supabase.md) — Active project nptmzihtujgkmqougkzd, 21 tables, old projects dead
+- [Logging & Sessions](reference_logging.md) — Logs in .claude/logs/, sessions in SESSION_LOG.md, server on :7777
+- [CHERP SW Recovery](reference_cherp_recovery.md) — ?sw=off URL, /clear-sw.html, admin button — three escape hatches when SW breaks
+- [Ken AI Model Priority](project_ken_ai.md) — After Sheets sync ships, build Ken's personality AI coding model
+- [Ken AI Voice](feedback_ken_ai_voice.md) — Ken AI speaks as Ken: lowercase, short, no analogies, no pleasantries
+- [Multi-Instance Architecture](project_multi_instance.md) — Hub routing table, Play Store onboarding, instance isolation
+- [Google Sheets Sync](reference_google_sheets.md) — OAuth via cherp-493003, Alpha Crew sheet live, 15-min auto-sync
+- [CHERP Personal Version](project_cherp_personal.md) — localStorage + personal Google Sheets as DB, no Supabase needed
+- [Sell Model: 90-day Handoff](project_sell_model.md) — Piper → Nest → CHERP; maintain 90 days then hand off to customer
+- [Unified Workbench](project_unified_workbench.md) — Piper + Nest + Claude share one agent runtime; PIPE-R.bat co-launches everything
+- [Pilot Customers: JSBackyard + REVV](project_pilot_customers.md) — two friend-business test customers queued for first Nest builds
+- [Nest Dependency Install Hook](project_nest_dep_install.md) — wizard should check/install Node.js + deps with user permission
+- [Nest Backend Adapter (Phase 4.5)](project_nest_backend_adapter.md) — future: write Supabase out via store.js adapter, chat network is sweet spot
+- [Clean Money Corporation (CMC)](project_cmc.md) — S-corp Ken+Sean, sells ACE (CHERP rebrand). Repo HesKenY/CMC, site at cleanmoneycorporation.com
+- [Game-based AI Training](project_game_training.md) — Pokemon Crystal (mGBA) + Factorio as training envs; Halo stack stays but paused
+- [Ken AI = kenai:v1 Offline Claude Code](project_kenai_offline.md) — CRITICAL: Codex folder is canonical workspace, not Claude folder. Ken AI is a real Ollama model.
+- [Codex BRAIN System](reference_codex_brain.md) — Top-level brain/ at Codex root is multi-repo indexer + dataset emitter for the offline model
+- [Codex/Brain Definitions (RULES)](feedback_codex_brain_rules.md) — codex = the folder; brain = memory/archive/logs. Document everything into brain. Default new work to codex.
+- [kenai:v3 Three-Tier Routing](feedback_kenai_v3_routing.md) — Always use ask_kenai.py wrapper. Parse tier 1/2/3. High stakes always go to Ken regardless of tier.

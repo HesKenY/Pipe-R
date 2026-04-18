@@ -38,8 +38,22 @@ import { promptBlock as trainingPromptBlock, detectTrainers } from './training_m
 import { rebuildIndex, buildContextBlock } from './index.js';
 import { pickTacticalAction, resetTacticalState } from './tactical.js';
 import { jumpstartPromptBlock } from './jumpstart.js';
+import { getMissionContext, fullScan } from './game_scanner.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Game file knowledge — scanned once at import, refreshed every 5 min
+let _cachedMissionContext = '';
+let _lastScanAt = 0;
+function refreshGameKnowledge() {
+  try {
+    fullScan();
+    _cachedMissionContext = getMissionContext();
+    _lastScanAt = Date.now();
+  } catch (e) { /* scanner is optional */ }
+}
+refreshGameKnowledge();
+setInterval(refreshGameKnowledge, 300000);
 const MEMORIES_DIR = join(__dirname, '..', 'memories');
 const KEN_AI_SLUG = 'ken-ai-latest';
 const HALO_LOG        = join(MEMORIES_DIR, KEN_AI_SLUG, 'halo-log.jsonl');
@@ -156,7 +170,7 @@ let _running = false;
 let _mode = 'observe'; // 'observe' | 'drive'
 let _history = [];
 let _pythonBin = process.env.PYTHON || 'python';
-let _model = 'ken-ai:latest';
+let _model = 'llama3.1:8b';
 let _tickMs = 4000; // base tick — used for observe mode + as a fallback
 let _lifelike = true; // drive mode uses per-action timing when true
 let _stats = { ticks: 0, startedAt: null, lastAction: null, lastState: null, lastTickMs: null, mode: 'observe', observeTicks: 0, handoffAt: null };
@@ -170,7 +184,7 @@ let _ticksSinceDream = 0;
 // primary key is held (for hold-type actions only — taps are
 // instant). All values get ±25% jitter in pickDelay/pickHold.
 const ACTION_TIMING = {
-  fire:          { nextDelayMs: 260,  holdMs: 80,  followThroughs: 2 },
+  fire:          { nextDelayMs: 260,  holdMs: 80,  followThroughs: 0 },
   ads:           { nextDelayMs: 500,  holdMs: 380, followThroughs: 0 },
   reload:        { nextDelayMs: 1500, holdMs: 40,  followThroughs: 0 },
   grenade:       { nextDelayMs: 1100, holdMs: 40,  followThroughs: 0 },
@@ -509,15 +523,24 @@ function buildDrivePrompt(state, history) {
   // Retrieve only relevant context via the index.
   const contextBlock = buildContextBlock(state, history, 6);
 
+  // Mission context from game file scanner (cached at module level)
+  let missionBlock = _cachedMissionContext || '';
+  if (missionBlock) missionBlock = missionBlock + '\n';
+
   return (
     'halo mcc. pick ONE action word. no prose.\n' +
     'vocab: move_fwd move_back strafe_left strafe_right jump crouch sprint reload interact grenade melee fire ads look_left look_right look_up look_down noop\n' +
+    (missionBlock ? missionBlock : 'MISSION: explore the map, learn the layout, advance through the level.\n') +
     'rules:\n' +
-    '- activity=combat → fire or ads or strafe\n' +
-    '- activity=idle → look_left or look_right\n' +
-    '- activity=exploring → move_fwd\n' +
+    '- PRIORITY: move_fwd, strafe_left, strafe_right, look_left, look_right. ALWAYS prefer movement.\n' +
+    '- fire ONLY when activity=combat AND motion > 0.05 (enemy is close and moving)\n' +
+    '- activity=exploring → move_fwd or look_left or look_right (NEVER fire while exploring)\n' +
+    '- activity=idle → look_left or look_right or move_fwd\n' +
+    '- activity=combat → strafe_left or strafe_right first, fire only if you already strafed last tick\n' +
+    '- activity=transition → move_fwd\n' +
     '- never noop unless in a menu\n' +
     '- never repeat the same action 3 times in a row\n' +
+    '- never fire 2 ticks in a row\n' +
     `state: ${shortState}\n` +
     `last 3: ${last3 || '(none)'}\n` +
     contextBlock +
@@ -865,7 +888,7 @@ function queueAutoDream() {
 export function startLoop(opts = {}) {
   if (_running) return { ok: false, reason: 'already running' };
   _tickMs = Math.max(2000, Math.min(30000, opts.tickMs || 4000));
-  _model = opts.model || 'ken-ai:latest';
+  _model = opts.model || 'llama3.1:8b';
   _mode = opts.mode === 'drive' ? 'drive' : 'observe'; // safe default
   _running = true;
   _stats.startedAt = new Date().toISOString();

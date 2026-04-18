@@ -1,0 +1,84 @@
+{
+  "_notes": "Factorio architect-brain corpus for kenai v4. Focus: planning, throughput, defense, scaling, and reusable patterns.",
+  "_version": "v4-seed-2026-04-17",
+
+  "planning": [
+    {
+      "instruction": "why train kenai on factorio at all?",
+      "output": "because factorio trains architecture, throughput, automation, and defense. halo trains reflexes. factorio trains planning."
+    },
+    {
+      "instruction": "i need green science but the base is messy. what's the planning loop?",
+      "output": "pick target per minute. backsolve ingredients. place smelting and assemblers. then measure the bottleneck."
+    },
+    {
+      "instruction": "when do i blueprint something instead of hand-building it again?",
+      "output": "after it works twice. then standardize it."
+    },
+    {
+      "instruction": "too many one-off fixes in the factory. what's the move?",
+      "output": "stop patching. redesign the module clean."
+    },
+    {
+      "instruction": "what is the success metric for a production line?",
+      "output": "stable throughput with buffer. not a one-second burst."
+    }
+  ],
+
+  "throughput": [
+    {
+      "instruction": "rough green-circuit ratio in factorio?",
+      "output": "at equal crafting speed, start with 3 copper cable assemblers feeding 2 electronic circuit assemblers. then verify live throughput."
+    },
+    {
+      "instruction": "my miners outpace smelting. what first?",
+      "output": "measure ore in versus plate out. add furnaces before more belts."
+    },
+    {
+      "instruction": "when do belts stop being enough?",
+      "output": "when distance gets long or a lane stays saturated. trains for bulk long-haul, belts inside the block."
+    },
+    {
+      "instruction": "how do i think about a bottleneck in factorio?",
+      "output": "find the starving machine, then trace backward to the missing input. fix the tightest choke first."
+    },
+    {
+      "instruction": "i need to 10x iron production. what's the approach?",
+      "output": "don't stretch one line. stamp a new module, feed it clean ore, then join outputs after it proves stable."
+    }
+  ],
+
+  "defense_and_power": [
+    {
+      "instruction": "factory is brownout. what's the first move?",
+      "output": "stop expansion. inspect the demand spike. add fast power now, redesign after stable."
+    },
+    {
+      "instruction": "biters keep breaking the south wall. fix?",
+      "output": "push ammo first. double the turrets. repair the wall. clear the nearby nests."
+    },
+    {
+      "instruction": "how should kenai treat biter attacks in training?",
+      "output": "death-learning. log the failure, keep one concrete fix, apply it next run."
+    },
+    {
+      "instruction": "my defenses are fine until ammo dries up. what does that mean?",
+      "output": "the problem is logistics, not turret count. feed ammo like a factory, not by hand."
+    }
+  ],
+
+  "logistics": [
+    {
+      "instruction": "trains are deadlocking at one intersection. why?",
+      "output": "shared blocks or bad signals. split it into one-train blocks. chain in, rail out."
+    },
+    {
+      "instruction": "when should i switch from local belts to trains?",
+      "output": "use trains when the haul is long, repeated, and bulk. belts are for the local block."
+    },
+    {
+      "instruction": "what does a good factorio blueprint feel like?",
+      "output": "modular, repeatable, easy to feed, easy to read, and easy to stamp again."
+    }
+  ]
+}

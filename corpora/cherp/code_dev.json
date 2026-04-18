@@ -1,0 +1,84 @@
+{
+  "_notes": "CHERP code-dev corpus seed. Schema gotchas, dev rules, common task patterns. Each entry becomes an instruction/response pair via Codex/brain/build_v3_corpus.py.",
+  "_version": "v3-seed-2026-04-16",
+
+  "schema_gotchas": [
+    {
+      "instruction": "How do I insert into crew_tasks?",
+      "output": "crew_tasks.id is BIGINT GENERATED ALWAYS AS IDENTITY. NEVER send a client-provided id. Use Prefer: return=representation header so the bigint id comes back in the response. Example: POST /rest/v1/crew_tasks with header Prefer: return=representation, body without id."
+    },
+    {
+      "instruction": "Why does my insert into daily_logs fail with team_code error?",
+      "output": "daily_logs has NO team_code column. Use company_id (uuid) and created_by (uuid) instead. Tracking belongs to the row id, not a team_code field."
+    },
+    {
+      "instruction": "How do I write to messages table in CHERP?",
+      "output": "messages has NO team_code. Use sender_id (uuid) and channel field. Content column is body, NOT content. Example: { sender_id, channel: team_code_value, body: text }."
+    },
+    {
+      "instruction": "What's the schema for crew_timecards?",
+      "output": "crew_timecards uses client-generated TEXT id (not auto-increment). Columns: user_id, user_name, hours, date. Don't use worker_name or hours_worked — those don't exist."
+    },
+    {
+      "instruction": "What roles are allowed in user_profiles.role?",
+      "output": "As of phase 2 ownership migration: apprentice, journeyman, foreman, general_foreman, superintendent, admin, superuser, worker. Pre-phase-2 worker was rejected. The role check constraint enforces this list."
+    },
+    {
+      "instruction": "Why is my Supabase API call silently failing in CHERP?",
+      "output": "Check netlify.toml CSP. connect-src must include the Supabase project URL or the request gets blocked silently. Also check the service worker isn't serving stale config.js."
+    },
+    {
+      "instruction": "How do I add a new screen to CHERP that needs offline support?",
+      "output": "Route through window.store (js/store.js) instead of direct SB() calls. store.list/get/create/update/delete go to IndexedDB first, then sync to Supabase in background. Stamp owner_id: _s.id on creates."
+    }
+  ],
+
+  "dev_rules": [
+    {
+      "instruction": "Should I push to main on CHERP without testing?",
+      "output": "no. main auto-deploys to cherp.live via netlify. test on dev branch first. main is production."
+    },
+    {
+      "instruction": "Where do I save before editing CHERP code?",
+      "output": "stash or commit to dev branch first. emergency backup zip exists at C:/Users/Ken/Desktop/cherp emergency.zip if you nuke the repo."
+    },
+    {
+      "instruction": "Service worker is caching stale CHERP files — how do I fix it?",
+      "output": "three escape hatches: ?sw=off URL param, /clear-sw.html page, admin button in app. for breaking deploys, bump the cache version constant in service-worker.js."
+    },
+    {
+      "instruction": "How does CHERP authenticate users without Supabase?",
+      "output": "hardcoded fallback users in js/config.js allow PIN login when Supabase is unreachable. PIN is SHA-256 hashed at signup. don't break this fallback path."
+    }
+  ],
+
+  "ownership_migration": [
+    {
+      "instruction": "What is the ownership migration status in CHERP?",
+      "output": "Phases 1-6 are LIVE on main as of 2026-04-13. Store.js IndexedDB cache (phase 1), additive schema (phase 2), tasks/timeclock/safety/work/certs migrated to store.js (phases 3-5), employee_id + QR scanner (phase 6a/6b). Phases 7-10 queued. See .claude/plans/cherp-ownership-system.md."
+    },
+    {
+      "instruction": "What is owner_id used for in CHERP tables?",
+      "output": "owner_id (uuid, nullable) on crew_tasks, crew_timecards, jsa_reports, mro_equipment, daily_logs, certifications, messages, crew_jsa, crew_mros. Set to _s.id (auth user id) on creates. RLS-scoped to owner. Replaces team_code-only ownership."
+    },
+    {
+      "instruction": "What does item_shares do in CHERP?",
+      "output": "item_shares is the first-class sharing graph. Lets workers explicitly share their tasks/timecards/etc. with other employees by employee_id, instead of relying on team_code group membership."
+    }
+  ],
+
+  "common_pitfalls": [
+    {
+      "instruction": "Why is _s.id undefined in my CHERP code?",
+      "output": "_s.id is set at login from auth.userId. Before phase 6a it wasn't being set, so owner_id stamps wrote undefined. Verify _s.id = auth.userId is set in your login path. This was a critical fix during the ownership migration."
+    },
+    {
+      "instruction": "Why does my chat-log.jsonl have weird control codes?",
+      "output": "ollama run leaks ANSI CSI and OSC terminal spinner codes into stdout. Strip them: replace /\\u001b\\[\\??[0-9;]*[a-zA-Z]/g and /\\u001b\\][^\\u0007]*\\u0007/g. server.js does this in the chat endpoint; copy that pattern in any new ollama spawn path."
+    },
+    {
+      "instruction": "How do I query CHERP from PowerShell or curl for verification?",
+      "output": "use the public anon key + REST endpoint: curl 'https://nptmzihtujgkmqougkzd.supabase.co/rest/v1/<table>?select=*' -H 'apikey: <anon_key>' -H 'Authorization: Bearer <anon_key>'. table names like user_profiles, crew_tasks, item_shares."
+    }
+  ]
+}

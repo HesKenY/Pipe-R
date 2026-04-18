@@ -165,8 +165,65 @@ def classify_activity(motion, brightness, has_ocr):
     return "exploring"
 
 
+def _find_halo_window():
+    """Find the MCC window and return its bounding box, or None."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        user32 = ctypes.windll.user32
+
+        # Search by window title substring
+        TITLES = [b"Halo", b"MCC", b"Master Chief"]
+
+        def _enum_cb(hwnd, results):
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            length = user32.GetWindowTextLengthW(hwnd)
+            if length == 0:
+                return True
+            buf = ctypes.create_unicode_buffer(length + 1)
+            user32.GetWindowTextW(hwnd, buf, length + 1)
+            title = buf.value
+            for t in TITLES:
+                if t.decode() in title:
+                    rect = wintypes.RECT()
+                    user32.GetWindowRect(hwnd, ctypes.byref(rect))
+                    results.append((hwnd, title, rect.left, rect.top, rect.right, rect.bottom))
+            return True
+
+        results = []
+        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, ctypes.POINTER(ctypes.py_object))
+        # simpler approach: iterate with FindWindow
+        hwnd = user32.FindWindowW(None, None)
+        while hwnd:
+            if user32.IsWindowVisible(hwnd):
+                length = user32.GetWindowTextLengthW(hwnd)
+                if length > 0:
+                    buf = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buf, length + 1)
+                    title = buf.value
+                    for t in ["Halo", "MCC", "Master Chief"]:
+                        if t in title:
+                            rect = wintypes.RECT()
+                            user32.GetWindowRect(hwnd, ctypes.byref(rect))
+                            if rect.right - rect.left > 200 and rect.bottom - rect.top > 200:
+                                return (rect.left, rect.top, rect.right, rect.bottom)
+                            break
+            hwnd = user32.GetWindow(hwnd, 2)  # GW_HWNDNEXT
+        return None
+    except Exception as e:
+        sys.stderr.write("halo window search failed: " + str(e) + "\n")
+        return None
+
+
 def main():
-    shot = pyautogui.screenshot()
+    # Try to capture the Halo window specifically. Fall back to full screen.
+    halo_rect = _find_halo_window()
+    if halo_rect:
+        left, top, right, bottom = halo_rect
+        shot = pyautogui.screenshot(region=(left, top, right - left, bottom - top))
+    else:
+        shot = pyautogui.screenshot()
     w, h = shot.size
 
     # ── Multi-region OCR candidates ──

@@ -1,0 +1,29 @@
+{
+  "id": "trainer-103-brain-index-files",
+  "title": "Ken AI names the core brain index files",
+  "student": "kenai:v1",
+  "curriculum": "trainer",
+  "contextFiles": [
+    "../offline_agent/brain/brain_index/identity.md",
+    "../offline_agent/brain/brain_index/rules.md",
+    "../offline_agent/brain/brain_index/project_map.md",
+    "../offline_agent/brain/brain_index/repo_map.md",
+    "../offline_agent/brain/brain_index/known_fixes.md",
+    "../offline_agent/brain/brain_index/tech_stack.md"
+  ],
+  "prompt": "using the context above, list the six core files that live in brain/brain_index/ and what each one is for. one short lowercase bullet per file. do not invent filenames that are not in the context.",
+  "rubric": [
+    { "type": "contains", "needle": "identity.md", "weight": 2 },
+    { "type": "contains", "needle": "rules.md", "weight": 2 },
+    { "type": "contains", "needle": "project_map.md", "weight": 2 },
+    { "type": "contains", "needle": "repo_map.md", "weight": 2 },
+    { "type": "contains", "needle": "known_fixes.md", "weight": 1 },
+    { "type": "contains", "needle": "tech_stack.md", "weight": 1 },
+    { "type": "bullet_count_min", "value": 6, "weight": 2 },
+    { "type": "must_not_contain", "needle": "context.md", "weight": 1 },
+    { "type": "must_not_contain", "needle": "As an AI", "weight": 1 }
+  ],
+  "passingPercent": 0.75,
+  "timeoutMs": 90000
+}
+

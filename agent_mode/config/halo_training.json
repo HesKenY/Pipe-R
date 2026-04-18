@@ -1,0 +1,10 @@
+{
+  "safety_net": true,
+  "goal": "one-hit-kill headshot target practice while Ken steers and Ken AI learns dev reflexes",
+  "graduated": false,
+  "detected_trainer": null,
+  "enabled_at": "2026-04-15T03:18:43.219Z",
+  "last_check_at": "2026-04-15T03:18:42.438Z",
+  "target_practice": true,
+  "one_hit_kill": true
+}

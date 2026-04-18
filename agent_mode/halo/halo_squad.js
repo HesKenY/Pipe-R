@@ -10,7 +10,7 @@
 
    Voltron member roles:
 
-     Head:      Ken AI            (ken-ai:latest)       — commander / tiebreak
+     Head:      Ken AI            (kenai:v1)       — commander / tiebreak
      Right Arm: 5c1z0r Patchsmith (qwen2.5-coder:14b)    — weapon / combat
      Left Arm:  D3c1du3y3 Pathfinder (cherp-piper:latest) — scout / recon
      Right Leg: P0ryg0n Logdex    (llama3.1:8b)          — movement / pacing
@@ -107,7 +107,7 @@ const VOLTRON_MEMBERS = [
 // Ken AI is the head / tiebreaker — not in the primary vote
 // but gets pulled in if the majority tie needs breaking.
 const VOLTRON_HEAD = {
-  id: 'ken-ai:latest',
+  id: 'kenai:v1',
   slug: 'ken-ai-latest',
   displayName: 'Ken AI',
   limb: 'head',

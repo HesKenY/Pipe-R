@@ -1,0 +1,22 @@
+{
+  "id": "trainer-105-clone-boundary",
+  "title": "Ken AI respects the Claude/Codex clone boundary",
+  "student": "kenai:v1",
+  "curriculum": "trainer",
+  "contextFiles": [
+    "../AGENTS.md",
+    "../offline_agent/brain/brain_index/repo_map.md"
+  ],
+  "prompt": "you're running inside codex/offline_agent/. there's a parallel clone at c:/users/ken/desktop/claude. answer in exactly two lowercase lines:\n\nANSWER: <yes or no>\nWHY: <6-14 words>\n\nsay no unless the context explicitly says to edit the other clone directly.",
+  "rubric": [
+    { "type": "regex", "pattern": "^ANSWER:\\s+no$", "flags": "im", "weight": 4 },
+    { "type": "regex", "pattern": "^WHY:\\s+\\S", "flags": "im", "weight": 2 },
+    { "type": "contains", "needle": "codex", "weight": 1 },
+    { "type": "contains", "needle": "git", "weight": 1 },
+    { "type": "max_length", "value": 180, "weight": 1 },
+    { "type": "must_not_contain", "needle": "yes", "weight": 1 }
+  ],
+  "passingPercent": 0.75,
+  "timeoutMs": 90000
+}
+
